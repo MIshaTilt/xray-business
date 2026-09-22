@@ -16,7 +16,7 @@ from pathlib import Path
 from engine.normalizer import normalize_records
 from engine.analyzer import calculate_metrics_and_findings
 from engine.narrator import generate_llm_narrative
-from engine.models import Upload, Snapshot, ChatMessage
+from engine.models import Upload, Snapshot, ChatMessage, Deal
 
 # Persistent storage for MVP snapshots on disk
 DATA_DIR = Path(__file__).resolve().parent.parent.parent / 'data'
@@ -230,7 +230,7 @@ class SnapshotCreateView(APIView):
         save_disk_store()
 
         try:
-            Snapshot.objects.create(
+            snap_instance = Snapshot.objects.create(
                 id=snapshot_id,
                 filename=upload['filename'],
                 headline=headline,
@@ -247,8 +247,31 @@ class SnapshotCreateView(APIView):
                 ok_list=ok_list,
                 low_sample=low_sample,
             )
+            # Bulk create Deals for RAG and tool queries
+            deal_objects = [
+                Deal(
+                    snapshot=snap_instance,
+                    deal_id=d.deal_id,
+                    client=d.client,
+                    contact=d.contact,
+                    manager=d.manager,
+                    amount=d.amount,
+                    list_price=d.list_price,
+                    discount_pct=d.discount_pct,
+                    status_raw=d.status_raw,
+                    status=d.status,
+                    created_at=d.created_at,
+                    first_contact_at=d.first_contact_at,
+                    status_changed_at=d.status_changed_at,
+                    last_activity_at=d.last_activity_at,
+                    closed_at=d.closed_at,
+                    source=d.source,
+                )
+                for d in deals
+            ]
+            Deal.objects.bulk_create(deal_objects)
         except Exception as e:
-            print(f"[DB ERROR] Не удалось сохранить Snapshot: {e}")
+            print(f"[DB ERROR] Не удалось сохранить Snapshot и Deals: {e}")
 
         return Response({
             'snapshot_id': snapshot_id,

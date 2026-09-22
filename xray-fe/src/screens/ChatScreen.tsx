@@ -2,6 +2,7 @@ import { Button, Typography } from '@maxhub/max-ui'
 import { useState, useRef, useEffect } from 'react'
 import { marked } from 'marked'
 import type { Diagnosis as DiagnosisData } from '../api/types.ts'
+import { ToolCallBadge } from './ToolCallBadge.tsx'
 
 // Configure marked for clean inline rendering with breaks
 marked.setOptions({
@@ -9,9 +10,16 @@ marked.setOptions({
   gfm: true,
 })
 
+export type ToolCallData = {
+  tool_name: string
+  arguments: any
+  result: any
+}
+
 export type ChatMessage = {
   role: 'user' | 'assistant'
   content: string
+  toolCalls?: ToolCallData[]
 }
 
 export function ChatScreen({
@@ -55,6 +63,7 @@ export function ChatScreen({
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
   const [currentStreamText, setCurrentStreamText] = useState('')
+  const [activeToolCalls, setActiveToolCalls] = useState<ToolCallData[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -117,13 +126,19 @@ export function ChatScreen({
 
     const apiUrl = (import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '')
 
+    setActiveToolCalls([])
+    const currentTools: ToolCallData[] = []
+
     try {
       const response = await fetch(`${apiUrl}/api/chat/stream/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ messages: payloadMessages }),
+        body: JSON.stringify({
+          snapshot_id: snapshotId,
+          messages: payloadMessages,
+        }),
       })
 
       if (!response.ok) {
@@ -154,7 +169,15 @@ export function ChatScreen({
 
           try {
             const data = JSON.parse(payloadStr)
-            if (data.choices && data.choices[0] && data.choices[0].delta) {
+            if (data.type === 'tool_call') {
+              const tc: ToolCallData = {
+                tool_name: data.tool_name,
+                arguments: data.arguments,
+                result: typeof data.result === 'string' ? JSON.parse(data.result) : data.result,
+              }
+              currentTools.push(tc)
+              setActiveToolCalls([...currentTools])
+            } else if (data.choices && data.choices[0] && data.choices[0].delta) {
               const chunk = data.choices[0].delta.content || ''
               accumulated += chunk
               setCurrentStreamText(accumulated)
@@ -168,7 +191,14 @@ export function ChatScreen({
         }
       }
 
-      setMessages([...newMessages, { role: 'assistant', content: accumulated }])
+      setMessages([
+        ...newMessages,
+        {
+          role: 'assistant',
+          content: accumulated,
+          toolCalls: currentTools.length > 0 ? currentTools : undefined,
+        },
+      ])
     } catch (err: any) {
       setMessages([
         ...newMessages,
@@ -176,6 +206,7 @@ export function ChatScreen({
       ])
     } finally {
       setCurrentStreamText('')
+      setActiveToolCalls([])
       setStreaming(false)
     }
   }
@@ -215,6 +246,15 @@ export function ChatScreen({
             <div className="chat-bubble-author">
               {m.role === 'user' ? 'Вы' : 'AI Аналитик'}
             </div>
+
+            {m.toolCalls && m.toolCalls.length > 0 && (
+              <div className="chat-tool-calls-list">
+                {m.toolCalls.map((tc, tcIdx) => (
+                  <ToolCallBadge key={tcIdx} toolCall={tc} />
+                ))}
+              </div>
+            )}
+
             {m.role === 'assistant' ? (
               <div
                 className="chat-bubble-content markdown-body"
@@ -229,6 +269,15 @@ export function ChatScreen({
         {streaming && (
           <div className="chat-bubble assistant">
             <div className="chat-bubble-author">AI Аналитик</div>
+
+            {activeToolCalls.length > 0 && (
+              <div className="chat-tool-calls-list">
+                {activeToolCalls.map((tc, tcIdx) => (
+                  <ToolCallBadge key={tcIdx} toolCall={tc} />
+                ))}
+              </div>
+            )}
+
             <div className="chat-bubble-content markdown-body">
               <span
                 dangerouslySetInnerHTML={{

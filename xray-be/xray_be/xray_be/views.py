@@ -4,13 +4,14 @@ import requests
 from django.http import StreamingHttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from engine.llm_logger import log_llm_interaction
+from engine.tools import AI_TOOLS_DEFINITIONS, execute_tool_call
 
 
-def stream_openai_response(messages_list: list):
+def stream_openai_response(messages_list: list, snapshot_id: str = None):
     """
     Generator that proxies streaming response from OpenAI-compatible API to the client.
     Formats data as Server-Sent Events (SSE): 'data: {json}\n\n'.
-    Accepts full messages list with system prompt and history.
+    Supports Tool Calling (Function Calling) with SQLite deals querying before streaming final answer.
     """
     base_url = os.environ.get('OPENAI_BASE_URL', 'http://144.31.157.209:8317/v1').rstrip('/')
     api_key = os.environ.get('OPENAI_API_KEY', '')
@@ -20,9 +21,61 @@ def stream_openai_response(messages_list: list):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
+
+    current_messages = list(messages_list)
+
+    # 1. Step 1: Tool resolution (if snapshot_id is provided, allow model to inspect deals)
+    if snapshot_id:
+        try:
+            tool_payload = {
+                "model": "gemini-3.8-flash-high",
+                "messages": current_messages,
+                "tools": AI_TOOLS_DEFINITIONS,
+                "tool_choice": "auto",
+                "stream": False
+            }
+            resp_tool = requests.post(target_url, headers=headers, json=tool_payload, timeout=20)
+            if resp_tool.status_code == 200:
+                t_json = resp_tool.json()
+                choice = t_json.get("choices", [{}])[0]
+                msg = choice.get("message", {})
+                tool_calls = msg.get("tool_calls", [])
+
+                if tool_calls:
+                    current_messages.append(msg)
+                    for tc in tool_calls:
+                        func_name = tc.get("function", {}).get("name")
+                        raw_args = tc.get("function", {}).get("arguments", "{}")
+                        try:
+                            parsed_args = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
+                        except Exception:
+                            parsed_args = {}
+
+                        tool_result = execute_tool_call(func_name, parsed_args, snapshot_id)
+
+                        # Emit an event to client about this tool execution
+                        tool_event = {
+                            "type": "tool_call",
+                            "tool_name": func_name,
+                            "arguments": parsed_args,
+                            "result": tool_result
+                        }
+                        yield f"data: {json.dumps(tool_event, ensure_ascii=False)}\n\n"
+
+                        current_messages.append({
+                            "role": "tool",
+                            "tool_call_id": tc.get("id"),
+                            "name": func_name,
+                            "content": tool_result
+                        })
+        except Exception as e:
+            # Fallback smoothly to standard completion without tools
+            print(f"[TOOL CALL ERROR]: {e}")
+
+    # 2. Step 2: Stream final synthesized answer with SSE
     payload = {
         "model": "gemini-3.8-flash-high",
-        "messages": messages_list,
+        "messages": current_messages,
         "stream": True
     }
 
@@ -60,7 +113,7 @@ def stream_openai_response(messages_list: list):
 
         full_stream_response = "".join(collected_chunks)
         log_llm_interaction(
-            title="ПОТОКОВЫЙ ЧАТ: УСПЕШНЫЙ ОТВЕТ",
+            title="ПОТОКОВЫЙ ЧАТ: УСПЕШНЫЙ ОТВЕТ (RAG/TOOLS)",
             payload_data=payload,
             response_data=full_stream_response,
             extra_info=f"URL: {target_url} | STATUS: 200"
@@ -79,12 +132,14 @@ def stream_openai_response(messages_list: list):
 @csrf_exempt
 def chat_stream(request):
     """
-    POST or GET endpoint for streaming chat completion with message history and context.
+    POST or GET endpoint for streaming chat completion with message history, context and tool calling.
     """
     messages_list = []
+    snapshot_id = None
     if request.method == 'POST':
         try:
             body = json.loads(request.body.decode('utf-8'))
+            snapshot_id = body.get('snapshot_id')
             if 'messages' in body and isinstance(body['messages'], list):
                 messages_list = body['messages']
             else:
@@ -101,13 +156,14 @@ def chat_stream(request):
             ]
     else:
         prompt = request.GET.get('prompt', 'Hello world')
+        snapshot_id = request.GET.get('snapshot_id')
         messages_list = [
             {"role": "system", "content": "You are a helpful assistant for AI Business X-Ray."},
             {"role": "user", "content": prompt}
         ]
 
     response = StreamingHttpResponse(
-        stream_openai_response(messages_list),
+        stream_openai_response(messages_list, snapshot_id=snapshot_id),
         content_type='text/event-stream'
     )
     # Necessary headers for smooth streaming through proxies/browsers

@@ -1008,6 +1008,98 @@ body {
   border-bottom-left-radius: 4px;
 }
 
+.chat-tool-calls-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.tool-call-container {
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 13px;
+}
+
+.tool-call-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  background: none;
+  border: none;
+  color: #38bdf8;
+  font-weight: 550;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.tool-call-header:hover {
+  background: color-mix(in srgb, currentColor 5%, transparent);
+}
+
+.tool-call-header.open {
+  border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.tool-call-icon {
+  font-size: 13px;
+}
+
+.tool-call-title {
+  flex: 1;
+}
+
+.tool-call-chevron {
+  font-size: 10px;
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+}
+
+.tool-call-chevron.rotated {
+  transform: rotate(180deg);
+}
+
+.tool-call-body {
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tool-call-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tool-call-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.tool-call-code {
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-family: monospace;
+  overflow-x: auto;
+  max-height: 180px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+
 .markdown-body {
   font-size: 14.5px;
   line-height: 1.6;

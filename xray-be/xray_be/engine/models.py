@@ -67,6 +67,31 @@ class Snapshot(models.Model):
         ordering = ['-created_at']
 
 
+class Deal(models.Model):
+    snapshot = models.ForeignKey(Snapshot, on_delete=models.CASCADE, related_name="deals")
+    deal_id = models.CharField(max_length=64)
+    client = models.CharField(max_length=255, blank=True)
+    contact = models.CharField(max_length=255, blank=True)
+    manager = models.CharField(max_length=255, blank=True)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    list_price = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    discount_pct = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    status_raw = models.CharField(max_length=255, blank=True)
+    status = models.CharField(max_length=32)
+    created_at = models.DateTimeField(null=True, blank=True)
+    first_contact_at = models.DateTimeField(null=True, blank=True)
+    status_changed_at = models.DateTimeField(null=True, blank=True)
+    last_activity_at = models.DateTimeField(null=True, blank=True)
+    closed_at = models.DateTimeField(null=True, blank=True)
+    source = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["snapshot", "-amount"]),
+            models.Index(fields=["snapshot", "status"]),
+        ]
+
+
 class ChatMessage(models.Model):
     class Role(models.TextChoices):
         USER = "user"
