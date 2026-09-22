@@ -104,6 +104,34 @@ export function Diagnosis({
         >
           💬 Задать вопрос AI по отчету
         </Button>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', width: '100%' }}>
+          <Button
+            className="action action-secondary"
+            type="button"
+            size="large"
+            stretched
+            variant="secondary"
+            onClick={() => {
+              const base = (import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '')
+              window.open(`${base}/api/snapshots/${snapshotId}/export-pdf`, '_blank')
+            }}
+          >
+            📄 Скачать PDF
+          </Button>
+          <Button
+            className="action action-secondary"
+            type="button"
+            size="large"
+            stretched
+            variant="secondary"
+            onClick={() => {
+              const base = (import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '')
+              window.open(`${base}/api/snapshots/${snapshotId}/export-excel`, '_blank')
+            }}
+          >
+            📊 Скачать Excel
+          </Button>
+        </div>
         <Button className="action action-secondary" type="button" size="large" stretched variant="secondary" onClick={() => void copy()}>
           {copied ? 'Скопировано' : 'Скопировать заключение'}
         </Button>

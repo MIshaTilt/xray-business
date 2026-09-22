@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { marked } from 'marked'
 import type { Diagnosis as DiagnosisData } from '../api/types.ts'
 import { ToolCallBadge } from './ToolCallBadge.tsx'
+import { api } from '../api/client.ts'
 
 // Configure marked for clean inline rendering with breaks
 marked.setOptions({
@@ -33,31 +34,57 @@ export function ChatScreen({
 }) {
   const storageKey = `xray_chat_history_${snapshotId}`
 
-  const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    try {
-      const saved = localStorage.getItem(storageKey)
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed
-      }
-    } catch {
-      // fallback
-    }
-    return [
-      {
-        role: 'assistant',
-        content:
-          'Здравствуйте! Я проанализировал ваш бизнес-рентген и готов ответить на любые вопросы по найденным угрозам, зависшим сделкам или рекомендациям.',
-      },
-    ]
-  })
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      role: 'assistant',
+      content:
+        'Здравствуйте! Я проанализировал ваш бизнес-рентген и готов ответить на любые вопросы по найденным угрозам, зависшим сделкам или рекомендациям.',
+    },
+  ])
 
-  // Save chat history to localStorage on change
+  // Load chat history from backend database (with fallback to localStorage)
+  useEffect(() => {
+    let ignore = false
+    async function loadHistory() {
+      try {
+        const dbMsgs = await api.getChatHistory(snapshotId)
+        if (!ignore && dbMsgs && dbMsgs.length > 0) {
+          setMessages(
+            dbMsgs.map((m: any) => ({
+              role: m.role,
+              content: m.content,
+              toolCalls: m.tool_calls && m.tool_calls.length > 0 ? m.tool_calls : undefined,
+            }))
+          )
+          return
+        }
+      } catch {
+        // DB load failed, check local storage
+      }
+
+      try {
+        const saved = localStorage.getItem(storageKey)
+        if (!ignore && saved) {
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed)
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    void loadHistory()
+    return () => {
+      ignore = true
+    }
+  }, [snapshotId, storageKey])
+
+  // Also cache in localStorage for fast local re-render
   useEffect(() => {
     try {
       localStorage.setItem(storageKey, JSON.stringify(messages))
     } catch {
-      // ignore storage full
+      // ignore
     }
   }, [messages, storageKey])
   const [input, setInput] = useState('')
@@ -236,6 +263,7 @@ export function ChatScreen({
                 ]
                 setMessages(initMsg)
                 localStorage.removeItem(storageKey)
+                void api.clearChatHistory(snapshotId)
               }}
             >
               Очистить историю

@@ -101,6 +101,7 @@ class ChatMessage(models.Model):
     snapshot = models.ForeignKey(Snapshot, on_delete=models.CASCADE, related_name="messages")
     role = models.CharField(max_length=16, choices=Role.choices)
     content = models.TextField()
+    tool_calls = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

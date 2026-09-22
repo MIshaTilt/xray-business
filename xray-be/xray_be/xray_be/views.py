@@ -5,6 +5,7 @@ from django.http import StreamingHttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from engine.llm_logger import log_llm_interaction
 from engine.tools import AI_TOOLS_DEFINITIONS, execute_tool_call
+from engine.models import ChatMessage, Snapshot
 
 
 def stream_openai_response(messages_list: list, snapshot_id: str = None):
@@ -23,6 +24,7 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
     }
 
     current_messages = list(messages_list)
+    executed_tools_for_saving = []
 
     # 1. Step 1: Tool resolution (if snapshot_id is provided, allow model to inspect deals)
     if snapshot_id:
@@ -60,6 +62,7 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
                             "arguments": parsed_args,
                             "result": tool_result
                         }
+                        executed_tools_for_saving.append(tool_event)
                         yield f"data: {json.dumps(tool_event, ensure_ascii=False)}\n\n"
 
                         current_messages.append({
@@ -118,6 +121,34 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
             response_data=full_stream_response,
             extra_info=f"URL: {target_url} | STATUS: 200"
         )
+
+        # 3. Step 3: Persist user prompt & assistant response in Django ORM ChatMessage
+        if snapshot_id and full_stream_response:
+            try:
+                snap_obj = Snapshot.objects.filter(id=snapshot_id).first()
+                if snap_obj:
+                    # Find the last user message from current_messages
+                    last_user_msg = next((m for m in reversed(messages_list) if m.get("role") == "user"), None)
+                    if last_user_msg:
+                        # Avoid duplicate user message if already exists as last user record
+                        last_saved_user = ChatMessage.objects.filter(snapshot=snap_obj, role="user").last()
+                        if not last_saved_user or last_saved_user.content != last_user_msg.get("content"):
+                            ChatMessage.objects.create(
+                                snapshot=snap_obj,
+                                role="user",
+                                content=last_user_msg.get("content", "")
+                            )
+
+                    # Save assistant response with tool_calls
+                    ChatMessage.objects.create(
+                        snapshot=snap_obj,
+                        role="assistant",
+                        content=full_stream_response,
+                        tool_calls=executed_tools_for_saving
+                    )
+            except Exception as e:
+                print(f"[CHAT ORM SAVE ERROR]: {e}")
+
 
     except Exception as e:
         log_llm_interaction(

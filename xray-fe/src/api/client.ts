@@ -132,6 +132,23 @@ export const api = {
     )
   },
 
+  async getChatHistory(snapshotId: string): Promise<any[]> {
+    const res = await request<{ messages: any[] }>(
+      `/api/snapshots/${snapshotId}/chat`,
+      { method: 'GET' },
+      false,
+    )
+    return res?.messages || []
+  },
+
+  async clearChatHistory(snapshotId: string): Promise<void> {
+    return request<void>(
+      `/api/snapshots/${snapshotId}/chat`,
+      { method: 'DELETE' },
+      false,
+    )
+  },
+
   async list(): Promise<SnapshotListItem[]> {
     if (usesFixtures()) return fixtures.list()
     const res = await request<{ items: SnapshotListItem[]; next_cursor: string | null }>(

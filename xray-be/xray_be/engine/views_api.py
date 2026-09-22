@@ -18,6 +18,8 @@ from engine.analyzer import calculate_metrics_and_findings
 from engine.narrator import generate_llm_narrative
 from engine.models import Upload, Snapshot, ChatMessage, Deal
 from engine.ai_mapper import ai_smart_column_mapping
+from engine.reports import generate_excel_report, generate_pdf_report
+from django.http import HttpResponse
 
 # Persistent storage for MVP snapshots on disk
 DATA_DIR = Path(__file__).resolve().parent.parent.parent / 'data'
@@ -445,4 +447,77 @@ class LoadTemplateView(APIView):
             'suggested_mapping': suggested_mapping,
             'coverage': coverage
         }, status=status.HTTP_201_CREATED)
+
+
+class SnapshotChatHistoryView(APIView):
+    """
+    GET: Returns complete chat history from PostgreSQL/SQLite for a given snapshot.
+    DELETE: Clears chat history for a snapshot.
+    """
+    def get(self, request, snapshot_id):
+        s_id = str(snapshot_id)
+        messages_qs = ChatMessage.objects.filter(snapshot_id=s_id).order_by('created_at')
+        items = []
+        for m in messages_qs:
+            items.append({
+                'id': m.id,
+                'role': m.role,
+                'content': m.content,
+                'tool_calls': m.tool_calls or [],
+                'created_at': m.created_at.isoformat()
+            })
+        return Response({'messages': items})
+
+    def delete(self, request, snapshot_id):
+        s_id = str(snapshot_id)
+        ChatMessage.objects.filter(snapshot_id=s_id).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SnapshotExportExcelView(APIView):
+    """
+    GET /api/snapshots/<id>/export-excel
+    Generates beautiful multi-sheet Excel spreadsheet with audit summary and stagnant deals registry.
+    """
+    def get(self, request, snapshot_id):
+        s_id = str(snapshot_id)
+        snap = Snapshot.objects.filter(id=s_id).first()
+        if not snap:
+            return Response({'code': 'not_found', 'message': 'Снимок не найден'}, status=status.HTTP_404_NOT_FOUND)
+
+        deals_qs = Deal.objects.filter(snapshot=snap)
+        excel_buffer = generate_excel_report(snap, deals_qs)
+
+        filename = f"xray_audit_{s_id[:8]}.xlsx"
+        response = HttpResponse(
+            excel_buffer.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
+
+class SnapshotExportPdfView(APIView):
+    """
+    GET /api/snapshots/<id>/export-pdf
+    Generates branded PDF audit report with health score, threats and action plan.
+    """
+    def get(self, request, snapshot_id):
+        s_id = str(snapshot_id)
+        snap = Snapshot.objects.filter(id=s_id).first()
+        if not snap:
+            return Response({'code': 'not_found', 'message': 'Снимок не найден'}, status=status.HTTP_404_NOT_FOUND)
+
+        deals_qs = Deal.objects.filter(snapshot=snap)
+        pdf_buffer = generate_pdf_report(snap, deals_qs)
+
+        filename = f"xray_audit_{s_id[:8]}.pdf"
+        response = HttpResponse(
+            pdf_buffer.getvalue(),
+            content_type='application/pdf'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
+
 

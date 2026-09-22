@@ -27,6 +27,9 @@ from engine.views_api import (
     SnapshotsListView,
     TemplatesListView,
     LoadTemplateView,
+    SnapshotChatHistoryView,
+    SnapshotExportExcelView,
+    SnapshotExportPdfView,
 )
 
 urlpatterns = [
@@ -41,6 +44,13 @@ urlpatterns = [
     path('api/snapshots/<uuid:snapshot_id>/diagnosis', SnapshotDiagnosisView.as_view(), name='api_snapshot_diagnosis'),
     path('api/snapshots/<uuid:snapshot_id>/metrics/<str:metric_id>', SnapshotMetricDetailView.as_view(), name='api_snapshot_metric_detail'),
     path('api/snapshots', SnapshotsListView.as_view(), name='api_snapshots_list'),
+
+    # Chat history endpoints
+    path('api/snapshots/<uuid:snapshot_id>/chat', SnapshotChatHistoryView.as_view(), name='api_snapshot_chat_history'),
+
+    # Export endpoints
+    path('api/snapshots/<uuid:snapshot_id>/export-excel', SnapshotExportExcelView.as_view(), name='api_snapshot_export_excel'),
+    path('api/snapshots/<uuid:snapshot_id>/export-pdf', SnapshotExportPdfView.as_view(), name='api_snapshot_export_pdf'),
 
     # Templates endpoints
     path('api/templates', TemplatesListView.as_view(), name='api_templates_list'),
