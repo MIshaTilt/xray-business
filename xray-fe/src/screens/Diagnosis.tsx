@@ -15,12 +15,14 @@ export function Diagnosis({
   onMetric,
   onMissing,
   onNew,
+  onOpenChat,
 }: {
   snapshotId: string
   wide: boolean
   onMetric: (metricId: MetricId) => void
   onMissing: () => void
   onNew: () => void
+  onOpenChat: (diagnosis: DiagnosisData) => void
 }) {
   const [diagnosis, setDiagnosis] = useState<DiagnosisData | null>(null)
   const [error, setError] = useState('')
@@ -92,13 +94,23 @@ export function Diagnosis({
         </label>
       ) : null}
       <div className="diagnosis-actions">
+        <Button
+          className="action action-accent"
+          type="button"
+          size="large"
+          stretched
+          variant="primary"
+          onClick={() => diagnosis && onOpenChat(diagnosis)}
+        >
+          💬 Задать вопрос AI по отчету
+        </Button>
         <Button className="action action-secondary" type="button" size="large" stretched variant="secondary" onClick={() => void copy()}>
           {copied ? 'Скопировано' : 'Скопировать заключение'}
         </Button>
         <Button className="action action-quiet" type="button" size="large" stretched variant="ghost" onClick={onMissing}>
           Чтобы увидеть больше
         </Button>
-        <Button className="action action-primary" type="button" size="large" stretched variant="primary" onClick={onNew}>
+        <Button className="action action-primary" type="button" size="large" stretched variant="ghost" onClick={onNew}>
           Новый снимок
         </Button>
       </div>

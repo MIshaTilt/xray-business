@@ -17,8 +17,26 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from .views import chat_stream
+from engine.views_api import (
+    UploadView,
+    SaveMappingView,
+    SnapshotCreateView,
+    SnapshotPollView,
+    SnapshotDiagnosisView,
+    SnapshotMetricDetailView,
+    SnapshotsListView,
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/chat/stream/', chat_stream, name='chat_stream'),
+
+    # X-Ray Core API endpoints
+    path('api/uploads', UploadView.as_view(), name='api_uploads'),
+    path('api/uploads/<uuid:upload_id>/mapping', SaveMappingView.as_view(), name='api_upload_mapping'),
+    path('api/snapshots', SnapshotCreateView.as_view(), name='api_snapshots_create'),
+    path('api/snapshots/<uuid:snapshot_id>', SnapshotPollView.as_view(), name='api_snapshot_poll'),
+    path('api/snapshots/<uuid:snapshot_id>/diagnosis', SnapshotDiagnosisView.as_view(), name='api_snapshot_diagnosis'),
+    path('api/snapshots/<uuid:snapshot_id>/metrics/<str:metric_id>', SnapshotMetricDetailView.as_view(), name='api_snapshot_metric_detail'),
+    path('api/snapshots', SnapshotsListView.as_view(), name='api_snapshots_list'),
 ]

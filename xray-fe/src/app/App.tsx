@@ -9,6 +9,8 @@ import { MappingScreen } from '../screens/Mapping.tsx'
 import { MetricDetail } from '../screens/MetricDetail.tsx'
 import { MissingData } from '../screens/MissingData.tsx'
 import { Processing } from '../screens/Processing.tsx'
+import { ChatScreen } from '../screens/ChatScreen.tsx'
+import type { Diagnosis as DiagnosisData } from '../api/types.ts'
 
 type Screen =
   | { name: 'home' }
@@ -17,6 +19,7 @@ type Screen =
   | { name: 'diagnosis'; snapshotId: string }
   | { name: 'metric'; snapshotId: string; metricId: MetricId }
   | { name: 'missing'; snapshotId: string }
+  | { name: 'chat'; snapshotId: string; diagnosis: DiagnosisData }
 
 export function App() {
   const [stack, setStack] = useState<Screen[]>([{ name: 'home' }])
@@ -94,12 +97,22 @@ export function App() {
             onMetric={(metricId) => push({ name: 'metric', snapshotId: current.snapshotId, metricId })}
             onMissing={() => push({ name: 'missing', snapshotId: current.snapshotId })}
             onNew={reset}
+            onOpenChat={(diagnosisData) =>
+              push({ name: 'chat', snapshotId: current.snapshotId, diagnosis: diagnosisData })
+            }
           />
         ) : null}
         {current.name === 'metric' ? (
           <MetricDetail snapshotId={current.snapshotId} metricId={current.metricId} wide={wide} />
         ) : null}
         {current.name === 'missing' ? <MissingData snapshotId={current.snapshotId} /> : null}
+        {current.name === 'chat' ? (
+          <ChatScreen
+            snapshotId={current.snapshotId}
+            diagnosis={current.diagnosis}
+            onBack={pop}
+          />
+        ) : null}
       </main>
     </Panel>
   )
