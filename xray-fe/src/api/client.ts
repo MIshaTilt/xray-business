@@ -1,5 +1,5 @@
 import { downloadBlob, downloadByBridge, getInitData } from '../bridge/index.ts'
-import type { Mapping, MetricId } from './types.ts'
+import type { Mapping, MetricId, SnapshotListItem } from './types.ts'
 import { ApiError } from './errors.ts'
 import { fixtures } from './fixtures.ts'
 
@@ -115,9 +115,17 @@ export const api = {
     )
   },
 
-  list() {
+  async list(): Promise<SnapshotListItem[]> {
     if (usesFixtures()) return fixtures.list()
-    return request<Awaited<ReturnType<typeof fixtures.list>>>('/api/snapshots', { method: 'GET' }, false)
+    const res = await request<{ items: SnapshotListItem[]; next_cursor: string | null }>(
+      '/api/snapshots',
+      { method: 'GET' },
+      false,
+    )
+    return (res?.items || []).map((item) => ({
+      ...item,
+      coverage_label: item.coverage_label || `${(item as any).coverage_ready ?? 0} из ${(item as any).coverage_total ?? 7}`,
+    }))
   },
 
   remove(snapshotId: string) {

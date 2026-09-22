@@ -1,6 +1,13 @@
 import { Button, Typography } from '@maxhub/max-ui'
 import { useState, useRef, useEffect } from 'react'
+import { marked } from 'marked'
 import type { Diagnosis as DiagnosisData } from '../api/types.ts'
+
+// Configure marked for clean inline rendering with breaks
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+})
 
 export type ChatMessage = {
   role: 'user' | 'assistant'
@@ -16,13 +23,35 @@ export function ChatScreen({
   diagnosis: DiagnosisData | null
   onBack: () => void
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: 'assistant',
-      content:
-        'Здравствуйте! Я проанализировал ваш бизнес-рентген и готов ответить на любые вопросы по найденным угрозам, зависшим сделкам или рекомендациям.',
-    },
-  ])
+  const storageKey = `xray_chat_history_${snapshotId}`
+
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    try {
+      const saved = localStorage.getItem(storageKey)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch {
+      // fallback
+    }
+    return [
+      {
+        role: 'assistant',
+        content:
+          'Здравствуйте! Я проанализировал ваш бизнес-рентген и готов ответить на любые вопросы по найденным угрозам, зависшим сделкам или рекомендациям.',
+      },
+    ]
+  })
+
+  // Save chat history to localStorage on change
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(messages))
+    } catch {
+      // ignore storage full
+    }
+  }, [messages, storageKey])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
   const [currentStreamText, setCurrentStreamText] = useState('')
@@ -155,9 +184,29 @@ export function ChatScreen({
     <div className="stack chat-screen">
       <div className="chat-header">
         <Typography.Title variant="medium-strong">AI-консультант X-Ray</Typography.Title>
-        <Typography.Body variant="small" className="chat-subtitle">
-          Контекст: снимок {snapshotId.slice(0, 8)}…
-        </Typography.Body>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography.Body variant="small" className="chat-subtitle">
+            Контекст: снимок {snapshotId.slice(0, 8)}…
+          </Typography.Body>
+          {messages.length > 1 && (
+            <button
+              type="button"
+              className="chat-clear-btn"
+              onClick={() => {
+                const initMsg: ChatMessage[] = [
+                  {
+                    role: 'assistant',
+                    content: 'История очищена. О чем хотите спросить по данному отчету?',
+                  },
+                ]
+                setMessages(initMsg)
+                localStorage.removeItem(storageKey)
+              }}
+            >
+              Очистить историю
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="chat-messages-container">
@@ -166,15 +215,26 @@ export function ChatScreen({
             <div className="chat-bubble-author">
               {m.role === 'user' ? 'Вы' : 'AI Аналитик'}
             </div>
-            <div className="chat-bubble-content">{m.content}</div>
+            {m.role === 'assistant' ? (
+              <div
+                className="chat-bubble-content markdown-body"
+                dangerouslySetInnerHTML={{ __html: marked.parse(m.content) as string }}
+              />
+            ) : (
+              <div className="chat-bubble-content">{m.content}</div>
+            )}
           </div>
         ))}
 
         {streaming && (
           <div className="chat-bubble assistant">
             <div className="chat-bubble-author">AI Аналитик</div>
-            <div className="chat-bubble-content">
-              {currentStreamText}
+            <div className="chat-bubble-content markdown-body">
+              <span
+                dangerouslySetInnerHTML={{
+                  __html: marked.parse(currentStreamText) as string,
+                }}
+              />
               <span className="cursor" />
             </div>
           </div>

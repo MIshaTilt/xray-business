@@ -2,6 +2,7 @@ import os
 import io
 import json
 import uuid
+import datetime
 from decimal import Decimal
 from django.conf import settings
 from django.http import JsonResponse, HttpResponse
@@ -11,13 +12,37 @@ from rest_framework import status
 
 from engine.parsers import read_table_file
 from engine.mapping import guess_column_mapping, CANONICAL_FIELDS
+from pathlib import Path
 from engine.normalizer import normalize_records
 from engine.analyzer import calculate_metrics_and_findings
 from engine.narrator import generate_llm_narrative
+from engine.models import Upload, Snapshot, ChatMessage
 
-# In-memory session storage for MVP uploads and snapshots
+# Persistent storage for MVP snapshots on disk
+DATA_DIR = Path(__file__).resolve().parent.parent.parent / 'data'
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+STORE_FILE = DATA_DIR / 'snapshots_store.json'
+
 UPLOADS_STORE = {}
 SNAPSHOTS_STORE = {}
+
+def load_disk_store():
+    global SNAPSHOTS_STORE
+    if STORE_FILE.exists():
+        try:
+            with open(STORE_FILE, 'r', encoding='utf-8') as f:
+                SNAPSHOTS_STORE = json.load(f)
+        except Exception:
+            SNAPSHOTS_STORE = {}
+
+def save_disk_store():
+    try:
+        with open(STORE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(SNAPSHOTS_STORE, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[STORE ERROR] Не удалось сохранить на диск: {e}")
+
+load_disk_store()
 
 
 def get_coverage(mapping: dict) -> dict:
@@ -73,6 +98,19 @@ class UploadView(APIView):
             'mapping': suggested_mapping,
             'status_map': {},
         }
+
+        try:
+            Upload.objects.create(
+                id=upload_id,
+                filename=filename,
+                columns=cols,
+                sample_rows=sample_rows,
+                all_rows=all_rows,
+                suggested_mapping=suggested_mapping,
+                mapping=suggested_mapping,
+            )
+        except Exception as e:
+            print(f"[DB ERROR] Не удалось сохранить Upload: {e}")
 
         return Response({
             'upload_id': upload_id,
@@ -167,7 +205,7 @@ class SnapshotCreateView(APIView):
             'status': 'ready',
             'progress': 100,
             'error': '',
-            'created_at': '2026-03-31T12:00:00Z',
+            'created_at': datetime.datetime.now().isoformat(),
             'filename': upload['filename'],
             'source': 'miniapp',
             'diagnosis': {
@@ -189,6 +227,29 @@ class SnapshotCreateView(APIView):
             'all_metrics': all_metrics,
         }
 
+        save_disk_store()
+
+        try:
+            Snapshot.objects.create(
+                id=snapshot_id,
+                filename=upload['filename'],
+                headline=headline,
+                body=body,
+                findings=findings,
+                coverage=coverage,
+                totals={
+                    'deals': len(deals) + len(rejected),
+                    'amount': f"{total_amount:.2f}",
+                    'accepted': len(deals),
+                    'rejected': len(rejected),
+                },
+                all_metrics=all_metrics,
+                ok_list=ok_list,
+                low_sample=low_sample,
+            )
+        except Exception as e:
+            print(f"[DB ERROR] Не удалось сохранить Snapshot: {e}")
+
         return Response({
             'snapshot_id': snapshot_id,
             'status': 'ready',
@@ -207,6 +268,14 @@ class SnapshotPollView(APIView):
             'progress': snap['progress'],
             'error': snap['error']
         })
+
+    def delete(self, request, snapshot_id):
+        s_id = str(snapshot_id)
+        if s_id in SNAPSHOTS_STORE:
+            del SNAPSHOTS_STORE[s_id]
+            save_disk_store()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({'code': 'not_found', 'message': 'Снимок не найден'}, status=status.HTTP_404_NOT_FOUND)
 
 
 class SnapshotDiagnosisView(APIView):
