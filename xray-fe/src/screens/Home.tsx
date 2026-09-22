@@ -1,6 +1,6 @@
 import { Button } from '@maxhub/max-ui'
 import { useEffect, useState } from 'react'
-import { api, downloadTemplate, usesFixtures } from '../api/client.ts'
+import { api, usesFixtures } from '../api/client.ts'
 import { errorText } from '../api/errors.ts'
 import type { SnapshotListItem, UploadResponse } from '../api/types.ts'
 import { formatWhen } from '../domain/metrics.ts'
@@ -23,10 +23,14 @@ export function Home({
   onProcessing: (snapshotId: string) => void
 }) {
   const [file, setFile] = useState<File | null>(null)
-  const [busy, setBusy] = useState<'upload' | 'demo' | 'template' | null>(null)
+  const [busy, setBusy] = useState<'upload' | 'template' | null>(null)
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
+  const [notice] = useState('')
   const [snapshots, setSnapshots] = useState<SnapshotListItem[]>([])
+
+  // Template dropdown state
+  const [templates, setTemplates] = useState<{ id: string; name: string; label: string; size_bytes: number }[]>([])
+  const [showTemplatesDropdown, setShowTemplatesDropdown] = useState(false)
 
   async function refresh() {
     try {
@@ -36,8 +40,18 @@ export function Home({
     }
   }
 
+  async function loadTemplatesList() {
+    try {
+      const items = await api.listTemplates()
+      setTemplates(items)
+    } catch {
+      // fallback
+    }
+  }
+
   useEffect(() => {
     void refresh()
+    void loadTemplatesList()
   }, [])
 
   async function sendFile() {
@@ -53,25 +67,13 @@ export function Home({
     }
   }
 
-  async function openDemo() {
-    setBusy('demo')
-    setError('')
-    try {
-      const diagnosis = await api.demo()
-      onDiagnosis(diagnosis.snapshot_id)
-    } catch (reason) {
-      setError(errorText(reason))
-    } finally {
-      setBusy(null)
-    }
-  }
-
-  async function saveTemplate() {
+  async function selectTemplate(templateId: string) {
+    setShowTemplatesDropdown(false)
     setBusy('template')
     setError('')
     try {
-      await downloadTemplate()
-      setNotice('Шаблон сохранён как xray-template.xlsx')
+      const uploadResp = await api.loadTemplate(templateId)
+      onUploaded(uploadResp)
     } catch (reason) {
       setError(errorText(reason))
     } finally {
@@ -119,12 +121,36 @@ export function Home({
       {notice ? <Notice tone="ok">{notice}</Notice> : null}
       <div className="home-actions">
         <FileDrop file={file} busy={busy === 'upload'} onPick={setFile} onSend={() => void sendFile()} />
-        <Button className="action action-secondary" type="button" size="large" stretched variant="secondary" loading={busy === 'demo'} onClick={() => void openDemo()}>
-          Демо
-        </Button>
-        <Button className="action action-quiet" type="button" size="large" stretched variant="ghost" loading={busy === 'template'} onClick={() => void saveTemplate()}>
-          Шаблон
-        </Button>
+        <div className="template-dropdown-wrapper">
+          <Button
+            className="action action-secondary"
+            type="button"
+            size="large"
+            stretched
+            variant="secondary"
+            loading={busy === 'template'}
+            onClick={() => setShowTemplatesDropdown((val) => !val)}
+          >
+            Шаблон ▼
+          </Button>
+
+          {showTemplatesDropdown && (
+            <div className="template-dropdown-menu">
+              <div className="template-dropdown-header">Выберите готовый CSV:</div>
+              {templates.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  className="template-item-btn"
+                  onClick={() => void selectTemplate(t.id)}
+                >
+                  <span className="template-item-label">{t.label}</span>
+                  <span className="template-item-filename">{t.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       {snapshots.length > 0 ? (
         <section className="history">

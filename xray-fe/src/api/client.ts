@@ -1,5 +1,5 @@
 import { downloadBlob, downloadByBridge, getInitData } from '../bridge/index.ts'
-import type { Mapping, MetricId, SnapshotListItem } from './types.ts'
+import type { Mapping, MetricId, SnapshotListItem, UploadResponse } from './types.ts'
 import { ApiError } from './errors.ts'
 import { fixtures } from './fixtures.ts'
 
@@ -111,6 +111,23 @@ export const api = {
     return request<Awaited<ReturnType<typeof fixtures.metric>>>(
       `/api/snapshots/${snapshotId}/metrics/${metricId}`,
       { method: 'GET' },
+      false,
+    )
+  },
+
+  async listTemplates(): Promise<{ id: string; name: string; label: string; size_bytes: number }[]> {
+    const res = await request<{ items: { id: string; name: string; label: string; size_bytes: number }[] }>(
+      '/api/templates',
+      { method: 'GET' },
+      false,
+    )
+    return res?.items || []
+  },
+
+  async loadTemplate(templateId: string): Promise<UploadResponse> {
+    return request<UploadResponse>(
+      `/api/templates/${templateId}/load`,
+      { method: 'POST' },
       false,
     )
   },

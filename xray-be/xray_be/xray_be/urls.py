@@ -25,6 +25,8 @@ from engine.views_api import (
     SnapshotDiagnosisView,
     SnapshotMetricDetailView,
     SnapshotsListView,
+    TemplatesListView,
+    LoadTemplateView,
 )
 
 urlpatterns = [
@@ -39,4 +41,8 @@ urlpatterns = [
     path('api/snapshots/<uuid:snapshot_id>/diagnosis', SnapshotDiagnosisView.as_view(), name='api_snapshot_diagnosis'),
     path('api/snapshots/<uuid:snapshot_id>/metrics/<str:metric_id>', SnapshotMetricDetailView.as_view(), name='api_snapshot_metric_detail'),
     path('api/snapshots', SnapshotsListView.as_view(), name='api_snapshots_list'),
+
+    # Templates endpoints
+    path('api/templates', TemplatesListView.as_view(), name='api_templates_list'),
+    path('api/templates/<str:template_id>/load', LoadTemplateView.as_view(), name='api_template_load'),
 ]

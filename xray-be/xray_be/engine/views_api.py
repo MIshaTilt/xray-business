@@ -328,3 +328,86 @@ class SnapshotsListView(APIView):
                 'coverage_total': 7,
             })
         return Response({'items': items, 'next_cursor': None})
+
+
+class TemplatesListView(APIView):
+    """
+    Returns list of available pre-made template CSV files from 'templates' folder.
+    """
+    def get(self, request):
+        tmpl_dir = Path(__file__).resolve().parent.parent.parent.parent / 'templates'
+        if not tmpl_dir.exists():
+            return Response({'items': []})
+
+        files = []
+        labels = {
+            'ecommerce_canonical.csv': 'Стандартный E-commerce (Канонический)',
+            'ecommerce_moysklad_1c.csv': 'Выгрузка 1С / МойСклад (Товары и розница)',
+            'ecommerce_marketplace.csv': 'Маркетплейсы (Wildberries / Ozon)',
+            'ecommerce_messy_user_table.csv': 'Реальная таблица бизнеса (Смешанные форматы)'
+        }
+        for p in tmpl_dir.glob('*.csv'):
+            files.append({
+                'id': p.name,
+                'name': p.name,
+                'label': labels.get(p.name, p.name),
+                'size_bytes': p.stat().st_size
+            })
+        return Response({'items': files})
+
+
+class LoadTemplateView(APIView):
+    """
+    Loads and runs an upload session for a chosen template CSV directly.
+    """
+    def post(self, request, template_id):
+        tmpl_dir = Path(__file__).resolve().parent.parent.parent.parent / 'templates'
+        target_file = tmpl_dir / template_id
+
+        # Security check: ensure path stays inside templates
+        if not target_file.exists() or not target_file.is_file():
+            return Response({'code': 'not_found', 'message': 'Шаблон не найден'}, status=status.HTTP_404_NOT_FOUND)
+
+        with open(target_file, 'rb') as f:
+            try:
+                cols, sample_rows, all_rows = read_table_file(f, target_file.name)
+            except Exception as e:
+                return Response({'code': 'read_error', 'message': f'Ошибка чтения шаблона: {e}'}, status=status.HTTP_400_BAD_REQUEST)
+
+        suggested_mapping = guess_column_mapping(cols, sample_rows)
+        coverage = get_coverage(suggested_mapping)
+        upload_id = str(uuid.uuid4())
+
+        UPLOADS_STORE[upload_id] = {
+            'upload_id': upload_id,
+            'filename': target_file.name,
+            'columns': cols,
+            'sample_rows': sample_rows,
+            'all_rows': all_rows,
+            'mapping': suggested_mapping,
+            'status_map': {},
+        }
+
+        try:
+            Upload.objects.create(
+                id=upload_id,
+                filename=target_file.name,
+                columns=cols,
+                sample_rows=sample_rows,
+                all_rows=all_rows,
+                suggested_mapping=suggested_mapping,
+                mapping=suggested_mapping,
+                source=Upload.Source.DEMO,
+            )
+        except Exception as e:
+            print(f"[DB ERROR] Не удалось сохранить Upload шаблона: {e}")
+
+        return Response({
+            'upload_id': upload_id,
+            'filename': target_file.name,
+            'columns': cols,
+            'sample_rows': sample_rows,
+            'suggested_mapping': suggested_mapping,
+            'coverage': coverage
+        }, status=status.HTTP_201_CREATED)
+
