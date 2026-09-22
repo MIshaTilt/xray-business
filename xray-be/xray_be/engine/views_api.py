@@ -17,6 +17,7 @@ from engine.normalizer import normalize_records
 from engine.analyzer import calculate_metrics_and_findings
 from engine.narrator import generate_llm_narrative
 from engine.models import Upload, Snapshot, ChatMessage, Deal
+from engine.ai_mapper import ai_smart_column_mapping
 
 # Persistent storage for MVP snapshots on disk
 DATA_DIR = Path(__file__).resolve().parent.parent.parent / 'data'
@@ -86,6 +87,11 @@ class UploadView(APIView):
             return Response({'code': 'read_error', 'message': f'Ошибка при чтении файла: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 
         suggested_mapping = guess_column_mapping(cols, sample_rows)
+
+        # AI-Fallback: if key fields or status/manager/deal_id are unmapped, let LLM resolve unmapped columns
+        if not suggested_mapping.get('amount') or not suggested_mapping.get('status') or not suggested_mapping.get('manager') or not suggested_mapping.get('deal_id'):
+            suggested_mapping = ai_smart_column_mapping(cols, sample_rows, suggested_mapping)
+
         coverage = get_coverage(suggested_mapping)
         upload_id = str(uuid.uuid4())
 
@@ -367,7 +373,8 @@ class TemplatesListView(APIView):
             'ecommerce_canonical.csv': 'Стандартный E-commerce (Канонический)',
             'ecommerce_moysklad_1c.csv': 'Выгрузка 1С / МойСклад (Товары и розница)',
             'ecommerce_marketplace.csv': 'Маркетплейсы (Wildberries / Ozon)',
-            'ecommerce_messy_user_table.csv': 'Реальная таблица бизнеса (Смешанные форматы)'
+            'ecommerce_messy_user_table.csv': 'Реальная таблица бизнеса (Смешанные форматы)',
+            'custom_messy_slang_crm.csv': '🔥 Стресс-тест для AI-нормализатора («Баблос», «Кто тащит»)'
         }
         for p in tmpl_dir.glob('*.csv'):
             files.append({
@@ -398,6 +405,11 @@ class LoadTemplateView(APIView):
                 return Response({'code': 'read_error', 'message': f'Ошибка чтения шаблона: {e}'}, status=status.HTTP_400_BAD_REQUEST)
 
         suggested_mapping = guess_column_mapping(cols, sample_rows)
+
+        # AI-Fallback: if key fields or status/manager/deal_id are unmapped, let LLM resolve unmapped columns
+        if not suggested_mapping.get('amount') or not suggested_mapping.get('status') or not suggested_mapping.get('manager') or not suggested_mapping.get('deal_id'):
+            suggested_mapping = ai_smart_column_mapping(cols, sample_rows, suggested_mapping)
+
         coverage = get_coverage(suggested_mapping)
         upload_id = str(uuid.uuid4())
 

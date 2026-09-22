@@ -56,6 +56,11 @@ def parse_money(raw: Any) -> Optional[Decimal]:
     if raw is None or raw == '':
         return None
     s = str(raw).strip().lower().replace('\xa0', '').replace(' ', '')
+    # If it contains letters other than руб / млн / тыс / ₽, it is not a pure money field (e.g. order id 'ORD-8801')
+    cleaned_test = re.sub(r'(руб|рублей|р|млн|тыс|₽)', '', s)
+    if re.search(r'[a-zA-Zа-яА-Я]', cleaned_test):
+        return None
+
     s = re.sub(r'[₽руб\.]+$', '', s).strip()
     multiplier = Decimal(1)
     if 'млн' in s:

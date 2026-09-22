@@ -1,6 +1,6 @@
 import json
 from decimal import Decimal
-from django.db.models import Sum, Count, Avg
+from django.db.models import Sum, Count, Avg, Q
 from engine.models import Deal, Snapshot
 
 
@@ -46,7 +46,7 @@ AI_TOOLS_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "get_manager_stats",
-            "description": "Получить статистику по менеджерам: сколько сделок закрыли, сколько зависло, средний чек и сумма потерь.",
+            "description": "Получить детальную статистику по конкретным менеджерам команды: кто ведет сделки, сколько сделок зависло (stagnant_deals), сколько проиграно (lost_deals), общая сумма и средний чек. Вызывай эту функцию ВСЕГДА, когда пользователь спрашивает про менеджеров, сотрудников, кто косячит, кто лучше или хуже всех работает.",
             "parameters": {
                 "type": "object",
                 "properties": {}
@@ -127,17 +127,21 @@ def execute_tool_call(tool_name: str, arguments: dict, snapshot_id: str) -> str:
         stats = qs.exclude(manager="").values("manager").annotate(
             total_deals=Count("id"),
             total_amount=Sum("amount"),
-            won_deals=Count("id", filter=Deal.objects.filter(status="won")),
+            won_deals=Count("id", filter=Q(status="won")),
+            lost_deals=Count("id", filter=Q(status="lost")),
+            stagnant_deals=Count("id", filter=Q(status__in=["new", "in_progress", "proposal", "negotiation", "other"])),
             avg_check=Avg("amount")
         ).order_by("-total_amount")
 
         results = []
-        for s in stats[:10]:
+        for s in stats[:15]:
             results.append({
                 "manager": s["manager"],
                 "total_deals": s["total_deals"],
                 "total_amount": float(s["total_amount"] or 0),
                 "won_deals": s["won_deals"],
+                "lost_deals": s["lost_deals"],
+                "stagnant_deals": s["stagnant_deals"],
                 "avg_check": round(float(s["avg_check"] or 0), 2)
             })
 
