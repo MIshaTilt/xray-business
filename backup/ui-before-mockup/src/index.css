@@ -1,0 +1,669 @@
+body {
+  margin: 0;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-panel {
+  min-height: 100vh;
+}
+
+.app-shell {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  width: min(720px, 100%);
+  margin: 0 auto;
+  padding: 40px 16px 36px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  min-width: 0;
+  width: 100%;
+}
+
+.stack > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.lead {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+}
+
+.lead > * {
+  display: block;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.back {
+  position: fixed;
+  top: 16px;
+  left: max(16px, calc((100vw - 720px) / 2 + 16px));
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: inherit;
+  background: color-mix(in srgb, #123b38 78%, #2ad4c6);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, #2ad4c6 55%, transparent),
+    0 8px 20px rgb(0 0 0 / 28%);
+  cursor: pointer;
+}
+
+.app-shell.with-back {
+  padding-top: 24px;
+}
+
+.back-spacer {
+  height: 68px;
+  flex: none;
+}
+
+.back svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.section-title {
+  margin: 22px 0 0;
+  font-size: 1.2rem;
+  font-weight: 750;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.lead .section-title {
+  margin-top: 0;
+}
+
+.section-body,
+.explain .section-body {
+  margin: 10px 0 18px;
+  line-height: 1.65;
+}
+
+.explain {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.explain .section-title {
+  margin-top: 22px;
+}
+
+.explain .section-title:first-child {
+  margin-top: 0;
+}
+
+.file-input {
+  display: none;
+}
+
+.file-drop,
+.file-card,
+.field,
+.deal-card,
+.finding {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-card,
+.field,
+.deal-card {
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.fields,
+.deal-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.field-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 8px;
+  align-items: baseline;
+}
+
+.badge {
+  flex: none;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.field select,
+.copy-fallback {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.copy-fallback {
+  min-height: 140px;
+  resize: vertical;
+}
+
+.coverage {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.segments {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.segments span {
+  height: 8px;
+  border-radius: 99px;
+  background: color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.segments span.on {
+  background: linear-gradient(90deg, #0e7c86, #5ff2e4);
+  transform-origin: left center;
+  animation: fill-segment 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.data-table {
+  overflow-x: auto;
+  border: 1px solid color-mix(in srgb, #2ad4c6 45%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, #0e7c86 8%, transparent);
+}
+
+.data-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+  white-space: nowrap;
+}
+
+.data-table th {
+  background: color-mix(in srgb, #0e7c86 28%, transparent);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.data-table td:nth-child(2) {
+  font-weight: 650;
+  color: color-mix(in srgb, #2ad4c6 72%, currentColor);
+}
+
+.finding {
+  cursor: pointer;
+  box-sizing: border-box;
+  text-align: left;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  color: inherit;
+  border: 1px solid color-mix(in srgb, var(--verdict) 42%, transparent);
+  border-radius: 20px;
+  padding: 16px;
+  background:
+    linear-gradient(165deg, color-mix(in srgb, var(--verdict) 18%, transparent), transparent 46%),
+    color-mix(in srgb, currentColor 5%, transparent);
+  box-shadow: 0 16px 40px color-mix(in srgb, var(--verdict) 14%, transparent);
+}
+
+.finding.critical { --verdict: #c2410c; }
+.finding.watch { --verdict: #b45309; }
+.finding.ok { --verdict: #1f7a4d; }
+.finding.skipped { --verdict: #5c6b7a; }
+
+.findings {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (min-width: 800px) {
+  .wide .findings {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.notice {
+  padding: 12px 14px;
+  border-radius: 14px;
+}
+
+.notice.error {
+  background: color-mix(in srgb, #c2410c 12%, transparent);
+}
+
+.notice.ok {
+  background: color-mix(in srgb, #0e7c86 12%, transparent);
+}
+
+.progress-track {
+  height: 10px;
+  border-radius: 99px;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  overflow: hidden;
+}
+
+.progress-bar {
+  position: relative;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0e7c86, #5ff2e4);
+  transition: width 0.45s ease;
+  overflow: hidden;
+}
+
+.progress-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 55%), transparent);
+  animation: sweep 1.3s linear infinite;
+}
+
+.app-panel {
+  position: relative;
+  overflow-x: hidden;
+}
+
+.app-panel::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(90% 42% at 100% -8%, color-mix(in srgb, #2ad4c6 30%, transparent), transparent 58%),
+    radial-gradient(70% 36% at -12% 8%, color-mix(in srgb, #5b7cff 18%, transparent), transparent 60%);
+}
+
+.app-shell {
+  position: relative;
+  z-index: 1;
+}
+
+.stack {
+  animation: rise 0.46s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.hero .lead {
+  width: auto;
+  flex: 1;
+}
+
+.mark {
+  position: relative;
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 22px;
+  overflow: hidden;
+  background:
+    linear-gradient(160deg, color-mix(in srgb, #5ff2e4 70%, white), #0e7c86);
+  box-shadow: 0 12px 30px color-mix(in srgb, #0e7c86 35%, transparent);
+}
+
+.mark-line,
+.scan-line {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  border-radius: 99px;
+  background: rgb(255 255 255 / 90%);
+  box-shadow: 0 0 16px rgb(255 255 255 / 80%);
+  animation: scan 1.8s ease-in-out infinite;
+}
+
+.file-card,
+.field,
+.deal-card,
+.notice {
+  background: color-mix(in srgb, currentColor 4%, transparent);
+}
+
+.file-card {
+  animation: rise 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.finding-open,
+.finding-more,
+.history-main,
+.history-delete {
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+}
+
+.finding-open {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.finding-text {
+  margin: 0;
+  line-height: 1.55;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.finding-text.clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.finding-extra {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-top: 0;
+  transition: grid-template-rows 0.38s cubic-bezier(0.16, 1, 0.3, 1), margin-top 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.finding-extra.open {
+  grid-template-rows: 1fr;
+  margin-top: 12px;
+}
+
+.finding-extra > div {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.finding-note {
+  margin: 0;
+  line-height: 1.55;
+  opacity: 0.9;
+}
+
+.finding-more {
+  align-self: flex-start;
+  margin-top: 14px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #2ad4c6 70%, transparent);
+  background: color-mix(in srgb, #2ad4c6 24%, transparent);
+  color: color-mix(in srgb, #e8fffb 78%, currentColor);
+  font-weight: 700;
+}
+
+.finding:active {
+  transform: scale(0.985);
+}
+
+.history ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 0;
+  border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.history-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.history-title {
+  display: block;
+  line-height: 1.35;
+}
+
+.history-meta {
+  opacity: 0.7;
+  font-size: 13px;
+}
+
+.history-delete {
+  flex: none;
+  opacity: 0.7;
+  padding-top: 2px;
+}
+
+.pill,
+.status {
+  display: inline-block;
+  border-radius: 99px;
+  padding: 2px 8px;
+  font-size: 12px;
+  background: color-mix(in srgb, #2ad4c6 22%, transparent);
+}
+
+.pill.processing {
+  background: color-mix(in srgb, #e0a100 28%, transparent);
+}
+
+.pill.failed {
+  background: color-mix(in srgb, #e05a3a 28%, transparent);
+}
+
+.deal-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.money {
+  flex: none;
+  font-weight: 700;
+  color: color-mix(in srgb, #2ad4c6 72%, currentColor);
+}
+
+.findings .finding {
+  animation: rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.findings .finding:nth-child(2) {
+  animation-delay: 0.08s;
+}
+
+.findings .finding:nth-child(3) {
+  animation-delay: 0.16s;
+}
+
+.verdict-line {
+  animation: rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.scan {
+  position: relative;
+  align-self: center;
+  width: 148px;
+  height: 148px;
+}
+
+.scan-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, #2ad4c6 55%, transparent);
+  box-shadow: inset 0 0 40px color-mix(in srgb, #2ad4c6 25%, transparent);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+.scan .scan-line {
+  top: 50%;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes scan {
+  0%,
+  100% {
+    top: 22%;
+  }
+  50% {
+    top: 72%;
+  }
+}
+
+@keyframes sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fill-segment {
+  from {
+    transform: scaleX(0.2);
+    opacity: 0.3;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(0.96);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stack,
+  .file-card,
+  .findings .finding,
+  .verdict-line,
+  .segments span.on,
+  .mark-line,
+  .scan-line,
+  .scan-ring,
+  .progress-bar,
+  .progress-bar::after,
+  .finding-extra {
+    animation: none;
+    transition: none;
+  }
+}
+
+.app-shell .action {
+  border-radius: 18px;
+  font-weight: 700;
+  box-shadow: none;
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.app-shell .action:active {
+  transform: scale(0.985);
+}
+
+.app-shell .action-primary {
+  background: linear-gradient(180deg, #63f3e6, #129e93);
+  color: #04221f;
+  box-shadow: 0 12px 28px color-mix(in srgb, #2ad4c6 32%, transparent);
+}
+
+.app-shell .action-secondary {
+  background: color-mix(in srgb, #2ad4c6 14%, transparent);
+  color: color-mix(in srgb, #e8fffb 82%, currentColor);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #2ad4c6 55%, transparent);
+}
+
+.app-shell .action-quiet {
+  background: transparent;
+  color: color-mix(in srgb, #2ad4c6 78%, currentColor);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 16%, transparent);
+}
