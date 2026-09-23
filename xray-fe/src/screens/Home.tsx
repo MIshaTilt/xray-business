@@ -1,11 +1,13 @@
 import { Button } from '@maxhub/max-ui'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, usesFixtures } from '../api/client.ts'
 import { errorText } from '../api/errors.ts'
 import type { SnapshotListItem, UploadResponse } from '../api/types.ts'
 import { formatWhen } from '../domain/metrics.ts'
 import { FileDrop } from '../widgets/FileDrop.tsx'
 import { Notice } from '../widgets/Notice.tsx'
+import { SwipeScan } from '../widgets/SwipeScan.tsx'
+import { XRayLogo } from '../widgets/XRayLogo.tsx'
 
 const STATUS: Record<SnapshotListItem['status'], string> = {
   processing: 'Считаем',
@@ -23,20 +25,29 @@ export function Home({
   onProcessing: (snapshotId: string) => void
 }) {
   const [file, setFile] = useState<File | null>(null)
-  const [busy, setBusy] = useState<'upload' | 'template' | null>(null)
+  const [busy, setBusy] = useState<'upload' | 'template' | 'seed' | null>(null)
   const [error, setError] = useState('')
-  const [notice] = useState('')
+  const [notice, setNotice] = useState('')
   const [snapshots, setSnapshots] = useState<SnapshotListItem[]>([])
+  const [scansLoaded, setScansLoaded] = useState(false)
 
   // Template dropdown state
   const [templates, setTemplates] = useState<{ id: string; name: string; label: string; size_bytes: number }[]>([])
   const [showTemplatesDropdown, setShowTemplatesDropdown] = useState(false)
+  const [templatesClosing, setTemplatesClosing] = useState(false)
+  const [openSwipeId, setOpenSwipeId] = useState<string | null>(null)
+  const [leavingId, setLeavingId] = useState<string | null>(null)
+  const [emptyLeaving, setEmptyLeaving] = useState(false)
+  const emptyTimer = useRef(0)
+  const templatesTimer = useRef(0)
 
   async function refresh() {
     try {
       setSnapshots(await api.list())
     } catch (reason) {
       setError(errorText(reason))
+    } finally {
+      setScansLoaded(true)
     }
   }
 
@@ -52,6 +63,10 @@ export function Home({
   useEffect(() => {
     void refresh()
     void loadTemplatesList()
+    return () => {
+      window.clearTimeout(emptyTimer.current)
+      window.clearTimeout(templatesTimer.current)
+    }
   }, [])
 
   async function sendFile() {
@@ -67,8 +82,41 @@ export function Home({
     }
   }
 
+  function seedScan() {
+    const id = `stub-${Date.now()}`
+    const item: SnapshotListItem = {
+      snapshot_id: id,
+      status: 'ready',
+      created_at: new Date().toISOString(),
+      headline: 'Пустая заглушка для проверки списка',
+      source: 'тест',
+      verdict: 'watch',
+      coverage_label: '0 из 7',
+    }
+    if (snapshots.length === 0) {
+      setEmptyLeaving(true)
+      window.clearTimeout(emptyTimer.current)
+      emptyTimer.current = window.setTimeout(() => setEmptyLeaving(false), 420)
+    }
+    setSnapshots((current) => [item, ...current])
+  }
+
+  function closeTemplates() {
+    if (!showTemplatesDropdown || templatesClosing) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setShowTemplatesDropdown(false)
+      return
+    }
+    setTemplatesClosing(true)
+    window.clearTimeout(templatesTimer.current)
+    templatesTimer.current = window.setTimeout(() => {
+      setShowTemplatesDropdown(false)
+      setTemplatesClosing(false)
+    }, 420)
+  }
+
   async function selectTemplate(templateId: string) {
-    setShowTemplatesDropdown(false)
+    closeTemplates()
     setBusy('template')
     setError('')
     try {
@@ -83,6 +131,10 @@ export function Home({
 
   async function openSnapshot(item: SnapshotListItem) {
     setError('')
+    if (item.snapshot_id.startsWith('stub-')) {
+      setNotice('Это пустая заглушка, снимка в базе нет.')
+      return
+    }
     if (item.status === 'ready') {
       onDiagnosis(item.snapshot_id)
       return
@@ -100,19 +152,43 @@ export function Home({
   }
 
   async function removeSnapshot(id: string) {
+    if (leavingId) return
     setError('')
+    const row = document.querySelector<HTMLElement>(`[data-scan-id="${id}"]`)
+    if (row) {
+      const across = getComputedStyle(row.parentElement!).flexDirection === 'row'
+      const size = across ? row.getBoundingClientRect().width : row.getBoundingClientRect().height
+      if (across) row.style.width = `${size}px`
+      else row.style.height = `${size}px`
+      row.getBoundingClientRect()
+      row.classList.add('is-leaving')
+      if (across) row.style.width = '0px'
+      else row.style.height = '0px'
+      row.style.margin = '0px'
+    }
+    setLeavingId(id)
+    window.setTimeout(() => {
+      setSnapshots((current) => current.filter((item) => item.snapshot_id !== id))
+      setLeavingId(null)
+      setOpenSwipeId(null)
+    }, 500)
+    if (id.startsWith('stub-')) return
     try {
       await api.remove(id)
-      setSnapshots((current) => current.filter((item) => item.snapshot_id !== id))
     } catch (reason) {
+      setLeavingId(null)
       setError(errorText(reason))
+      void refresh()
     }
   }
 
   return (
     <div className="stack home">
       <header className="home-head">
-        <h1>X-Ray</h1>
+        <div className="home-brand">
+          <XRayLogo />
+          <h1>X-Ray</h1>
+        </div>
         <p className="home-sub">Где теряются деньги</p>
         <p className="home-hint">Таблица сделок за 30–90 дней</p>
       </header>
@@ -129,13 +205,24 @@ export function Home({
             stretched
             variant="secondary"
             loading={busy === 'template'}
-            onClick={() => setShowTemplatesDropdown((val) => !val)}
+            onClick={() => {
+              if (templatesClosing) return
+              if (showTemplatesDropdown) closeTemplates()
+              else setShowTemplatesDropdown(true)
+            }}
           >
-            Шаблон ▼
+            <span className="template-label">
+              Шаблон
+              <span className={`template-caret${showTemplatesDropdown && !templatesClosing ? ' open' : ''}`} aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M6 9.5 12 15.5 18 9.5" />
+                </svg>
+              </span>
+            </span>
           </Button>
 
           {showTemplatesDropdown && (
-            <div className="template-dropdown-menu">
+            <div className={`template-dropdown-menu${templatesClosing ? ' is-closing' : ''}`}>
               <div className="template-dropdown-header">Выберите готовый CSV:</div>
               {templates.map((t) => (
                 <button
@@ -151,14 +238,54 @@ export function Home({
             </div>
           )}
         </div>
+        <Button
+          className="action action-quiet"
+          type="button"
+          size="large"
+          stretched
+          variant="ghost"
+          loading={busy === 'seed'}
+          onClick={() => void seedScan()}
+        >
+          Случайный скан
+        </Button>
       </div>
-      {snapshots.length > 0 ? (
+      {!scansLoaded ? (
+        <div className="scans-empty" aria-hidden="true">
+          <span className="scans-empty-icon">
+            <XRayLogo scanning />
+          </span>
+        </div>
+      ) : (
         <section className="history">
           <p className="eyebrow">История сканов</p>
-          <ul className="scans">
+          <div className="history-stage">
+          {snapshots.length === 0 || emptyLeaving ? (
+            <div className={`scans-empty${emptyLeaving ? ' is-leaving' : ''}`}>
+              <span className="scans-empty-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M8 3.5h5.2L19 9.2V20a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 7 20V5A1.5 1.5 0 0 1 8.5 3.5H8z" />
+                  <path d="M13 3.8V9h5" />
+                </svg>
+              </span>
+              <p className="scans-empty-title">Сканов пока нет</p>
+              <p className="scans-empty-hint">Загрузите таблицу или откройте демо</p>
+            </div>
+          ) : null}
+          {snapshots.length > 0 ? (
+          <ul className={`scans${emptyLeaving ? ' is-arriving' : ''}`}>
             {snapshots.map((item) => (
-              <li key={item.snapshot_id}>
-                <button type="button" className="scan-card" onClick={() => void openSnapshot(item)}>
+              <li
+                key={item.snapshot_id}
+                data-scan-id={item.snapshot_id}
+                className={leavingId === item.snapshot_id ? 'is-leaving' : undefined}
+              >
+                <SwipeScan
+                  open={openSwipeId === item.snapshot_id}
+                  onOpenChange={(next) => setOpenSwipeId(next ? item.snapshot_id : null)}
+                  onActivate={() => void openSnapshot(item)}
+                  onDelete={() => void removeSnapshot(item.snapshot_id)}
+                >
                   <span className="scan-top">
                     <span className="scan-meta">{shortWhen(item.created_at)} · {item.source || STATUS[item.status]}</span>
                     {item.verdict ? (
@@ -168,15 +295,14 @@ export function Home({
                     )}
                   </span>
                   <span className="scan-title">{item.headline || 'Снимок без заключения'}</span>
-                </button>
-                <button type="button" className="history-delete" onClick={() => void removeSnapshot(item.snapshot_id)}>
-                  Удалить
-                </button>
+                </SwipeScan>
               </li>
             ))}
           </ul>
+          ) : null}
+          </div>
         </section>
-      ) : null}
+      )}
     </div>
   )
 }

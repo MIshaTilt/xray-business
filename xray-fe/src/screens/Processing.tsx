@@ -8,10 +8,12 @@ export function Processing({
   snapshotId,
   onReady,
   onBack,
+  onFailed,
 }: {
   snapshotId: string
   onReady: () => void
   onBack: () => void
+  onFailed: () => void
 }) {
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState('')
@@ -30,7 +32,11 @@ export function Processing({
           finished.current = true
           onReadyRef.current()
         }
-        if (poll.status === 'failed') setError(poll.error || 'Снимок не посчитался')
+        if (poll.status === 'failed') {
+          if (!finished.current) onFailed()
+          finished.current = true
+          setError(poll.error || 'Снимок не посчитался')
+        }
       } catch (reason) {
         if (!stopped) setError(errorText(reason))
       }

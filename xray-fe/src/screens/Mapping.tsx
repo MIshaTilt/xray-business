@@ -8,7 +8,17 @@ import { setClosingConfirmation } from '../bridge/index.ts'
 import { CoverageBar } from '../widgets/CoverageBar.tsx'
 import { Notice } from '../widgets/Notice.tsx'
 
-export function MappingScreen({ upload, onStart }: { upload: UploadResponse; onStart: (snapshotId: string) => void }) {
+export function MappingScreen({
+  upload,
+  onStart,
+  onAnalyze,
+  onAnalyzeStop,
+}: {
+  upload: UploadResponse
+  onStart: (snapshotId: string) => void
+  onAnalyze: () => void
+  onAnalyzeStop: () => void
+}) {
   const [mapping, setMapping] = useState<MappingValue>(upload.suggested_mapping)
   const [coverage, setCoverage] = useState<Coverage>(upload.coverage)
   const [warnings, setWarnings] = useState<string[]>([])
@@ -43,12 +53,14 @@ export function MappingScreen({ upload, onStart }: { upload: UploadResponse; onS
   async function enlighten() {
     setBusy(true)
     setError('')
+    onAnalyze()
     try {
       const compact = compactMapping(mapping)
       await api.saveMapping(upload.upload_id, compact)
       const created = await api.createSnapshot(upload.upload_id, compact)
       onStart(created.snapshot_id)
     } catch (reason) {
+      onAnalyzeStop()
       setError(errorText(reason))
     } finally {
       setBusy(false)

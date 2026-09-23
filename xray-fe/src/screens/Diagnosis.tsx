@@ -1,4 +1,4 @@
-import { Button, Typography } from '@maxhub/max-ui'
+import { Button } from '@maxhub/max-ui'
 import { useEffect, useState } from 'react'
 import { api } from '../api/client.ts'
 import { errorText } from '../api/errors.ts'
@@ -16,6 +16,7 @@ export function Diagnosis({
   onMissing,
   onNew,
   onOpenChat,
+  onLoaded,
 }: {
   snapshotId: string
   wide: boolean
@@ -23,12 +24,12 @@ export function Diagnosis({
   onMissing: () => void
   onNew: () => void
   onOpenChat: (diagnosis: DiagnosisData) => void
+  onLoaded: () => void
 }) {
   const [diagnosis, setDiagnosis] = useState<DiagnosisData | null>(null)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
   const [fallback, setFallback] = useState('')
-
   useEffect(() => {
     let alive = true
     void api
@@ -37,14 +38,17 @@ export function Diagnosis({
         if (!alive) return
         setDiagnosis(result)
         hapticSuccess()
+        onLoaded()
       })
       .catch((reason: unknown) => {
-        if (alive) setError(errorText(reason))
+        if (!alive) return
+        setError(errorText(reason))
+        onLoaded()
       })
     return () => {
       alive = false
     }
-  }, [snapshotId])
+  }, [onLoaded, snapshotId])
 
   async function copy() {
     if (!diagnosis) return
@@ -60,7 +64,7 @@ export function Diagnosis({
   }
 
   if (error) return <Notice tone="error">{error}</Notice>
-  if (!diagnosis) return <Typography.Body variant="medium">Собираем заключение…</Typography.Body>
+  if (!diagnosis) return null
 
   const period = diagnosis.period.from && diagnosis.period.to
     ? `${formatWhen(diagnosis.period.from)} — ${formatWhen(diagnosis.period.to)}`
@@ -74,7 +78,7 @@ export function Diagnosis({
           <strong>{period}</strong>
           <span>период</span>
         </article>
-        <article>
+        <article className="stat-accent">
           <strong>{diagnosis.totals.deals} · {shortMoney(diagnosis.totals.amount)}</strong>
           <span>сделки</span>
         </article>
@@ -94,51 +98,42 @@ export function Diagnosis({
         </label>
       ) : null}
       <div className="diagnosis-actions">
+        <Button className="action action-accent" type="button" size="large" stretched variant="primary" onClick={() => diagnosis && onOpenChat(diagnosis)}>
+          Задать вопрос ИИ
+        </Button>
         <Button
-          className="action action-accent"
+          className="action action-secondary"
           type="button"
           size="large"
           stretched
-          variant="primary"
-          onClick={() => diagnosis && onOpenChat(diagnosis)}
+          variant="secondary"
+          onClick={() => {
+            const base = (import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '')
+            window.open(`${base}/api/snapshots/${snapshotId}/export-pdf`, '_blank')
+          }}
         >
-          💬 Задать вопрос AI по отчету
+          Скачать PDF
         </Button>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', width: '100%' }}>
-          <Button
-            className="action action-secondary"
-            type="button"
-            size="large"
-            stretched
-            variant="secondary"
-            onClick={() => {
-              const base = (import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '')
-              window.open(`${base}/api/snapshots/${snapshotId}/export-pdf`, '_blank')
-            }}
-          >
-            📄 Скачать PDF
-          </Button>
-          <Button
-            className="action action-secondary"
-            type="button"
-            size="large"
-            stretched
-            variant="secondary"
-            onClick={() => {
-              const base = (import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '')
-              window.open(`${base}/api/snapshots/${snapshotId}/export-excel`, '_blank')
-            }}
-          >
-            📊 Скачать Excel
-          </Button>
-        </div>
+        <Button
+          className="action action-secondary"
+          type="button"
+          size="large"
+          stretched
+          variant="secondary"
+          onClick={() => {
+            const base = (import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '')
+            window.open(`${base}/api/snapshots/${snapshotId}/export-excel`, '_blank')
+          }}
+        >
+          Скачать Excel
+        </Button>
         <Button className="action action-secondary" type="button" size="large" stretched variant="secondary" onClick={() => void copy()}>
           {copied ? 'Скопировано' : 'Скопировать заключение'}
         </Button>
         <Button className="action action-quiet" type="button" size="large" stretched variant="ghost" onClick={onMissing}>
           Чтобы увидеть больше
         </Button>
-        <Button className="action action-primary" type="button" size="large" stretched variant="ghost" onClick={onNew}>
+        <Button className="action action-neutral" type="button" size="large" stretched variant="ghost" onClick={onNew}>
           Новый снимок
         </Button>
       </div>

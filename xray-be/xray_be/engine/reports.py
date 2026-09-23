@@ -9,16 +9,21 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib import colors
 import os
 
-# Register Cyrillic TTF font for PDF
+# Helvetica не содержит кириллицу: без TTF русские буквы рисуются квадратами.
 FONT_NAME = 'Helvetica'
-font_paths = [
+REGULAR_FONTS = [
     'C:/Windows/Fonts/arial.ttf',
-    'C:/Windows/Fonts/arialbd.ttf',
+    '/System/Library/Fonts/Supplemental/Arial.ttf',
+    '/Library/Fonts/Arial Unicode.ttf',
     '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-    '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
+]
+BOLD_FONTS = [
+    'C:/Windows/Fonts/arialbd.ttf',
+    '/System/Library/Fonts/Supplemental/Arial Bold.ttf',
+    '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
 ]
 
-for fp in ['C:/Windows/Fonts/arial.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf']:
+for fp in REGULAR_FONTS:
     if os.path.exists(fp):
         try:
             pdfmetrics.registerFont(TTFont('CyrillicFont', fp))
@@ -27,13 +32,25 @@ for fp in ['C:/Windows/Fonts/arial.ttf', '/usr/share/fonts/truetype/dejavu/DejaV
         except Exception:
             pass
 
-for fp in ['C:/Windows/Fonts/arialbd.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf']:
+bold_registered = False
+for fp in BOLD_FONTS:
     if os.path.exists(fp):
         try:
             pdfmetrics.registerFont(TTFont('CyrillicFontBold', fp))
+            bold_registered = True
             break
         except Exception:
             pass
+
+if FONT_NAME == 'CyrillicFont':
+    bold_face = 'CyrillicFontBold' if bold_registered else 'CyrillicFont'
+    pdfmetrics.registerFontFamily(
+        'CyrillicFont',
+        normal='CyrillicFont',
+        bold=bold_face,
+        italic='CyrillicFont',
+        boldItalic=bold_face,
+    )
 
 
 def generate_excel_report(snapshot, deals_qs) -> io.BytesIO:
@@ -90,8 +107,8 @@ def generate_excel_report(snapshot, deals_qs) -> io.BytesIO:
         ("Файл выгрузки", snapshot.filename or "ecommerce.csv"),
         ("Балл здоровья воронки", f"{score} / 100"),
         ("Всего сделок в базе", f"{total_deals} шт."),
-        ("Совокупный объем сделок", f"{float(total_amount):,.2f} ₽".replace(",", " ")),
-        ("ДЕНЕГ ПОД УГРОЗОЙ", f"{money_at_risk:,.2f} ₽".replace(",", " ")),
+        ("Совокупный объем сделок", f"{float(total_amount):,.2f} руб.".replace(",", " ")),
+        ("ДЕНЕГ ПОД УГРОЗОЙ", f"{money_at_risk:,.2f} руб.".replace(",", " ")),
     ]
 
     ws_summary.cell(row=3, column=1, value="КЛЮЧЕВЫЕ ПОКАЗАТЕЛИ").font = Font(bold=True, size=12, color=BLUE)
@@ -133,7 +150,7 @@ def generate_excel_report(snapshot, deals_qs) -> io.BytesIO:
     for f in findings:
         r += 1
         v = (f.get("verdict") or "ok").upper()
-        impact = f"{float(f.get('money_impact') or 0):,.2f} ₽".replace(",", " ")
+        impact = f"{float(f.get('money_impact') or 0):,.2f} руб.".replace(",", " ")
         ws_summary.cell(row=r, column=1, value=f.get("metric_id", ""))
         c_risk = ws_summary.cell(row=r, column=2, value=v)
         c_risk.font = Font(bold=True, color=(RED if v == "CRITICAL" else "D97706"))
@@ -154,7 +171,7 @@ def generate_excel_report(snapshot, deals_qs) -> io.BytesIO:
     ws_deals = wb.create_sheet(title="Зависшие сделки")
     ws_deals.views.sheetView[0].showGridLines = True
 
-    deal_headers = ["ID сделки", "Клиент / Контрагент", "Сумма сделки (₽)", "Статус", "Менеджер", "Телефон / Контакт", "Дата создания"]
+    deal_headers = ["ID сделки", "Клиент / Контрагент", "Сумма сделки (руб.)", "Статус", "Менеджер", "Телефон / Контакт", "Дата создания"]
     for col_idx, h in enumerate(deal_headers, 1):
         c = ws_deals.cell(row=1, column=col_idx, value=h)
         c.font = Font(bold=True, color=WHITE)
@@ -281,8 +298,8 @@ def generate_pdf_report(snapshot, deals_qs) -> io.BytesIO:
             Paragraph(f"<b>Сделок в отчете:</b> {total_deals} шт.", bold_body),
         ],
         [
-            Paragraph(f"<b>Выручка в воронке:</b> {total_amount:,.2f} ₽".replace(",", " "), bold_body),
-            Paragraph(f"<b>ДЕНЕГ ПОД УГРОЗОЙ:</b> <font color='#DC2626'>{money_at_risk:,.2f} ₽</font>".replace(",", " "), bold_body)
+            Paragraph(f"<b>Выручка в воронке:</b> {total_amount:,.2f} руб.".replace(",", " "), bold_body),
+            Paragraph(f"<b>ДЕНЕГ ПОД УГРОЗОЙ:</b> <font color='#DC2626'>{money_at_risk:,.2f} руб.</font>".replace(",", " "), bold_body)
         ]
     ]
 
@@ -323,7 +340,7 @@ def generate_pdf_report(snapshot, deals_qs) -> io.BytesIO:
     for f in findings:
         v = (f.get("verdict") or "ok").upper()
         v_color = "#DC2626" if v == "CRITICAL" else "#D97706"
-        impact = f"{float(f.get('money_impact') or 0):,.2f} ₽".replace(",", " ")
+        impact = f"{float(f.get('money_impact') or 0):,.2f} руб.".replace(",", " ")
         findings_table_data.append([
             Paragraph(f.get("metric_id", ""), body_style),
             Paragraph(f"<font color='{v_color}'><b>{v}</b></font>", body_style),
@@ -357,7 +374,7 @@ def generate_pdf_report(snapshot, deals_qs) -> io.BytesIO:
     for d in stagnant_sample:
         deals_table_data.append([
             Paragraph(d.client or "—", body_style),
-            Paragraph(f"{float(d.amount):,.2f} ₽".replace(",", " "), bold_body),
+            Paragraph(f"{float(d.amount):,.2f} руб.".replace(",", " "), bold_body),
             Paragraph(d.manager or "—", body_style),
             Paragraph(d.contact or "—", body_style),
         ])
