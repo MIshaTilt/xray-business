@@ -69,6 +69,9 @@ export function MappingScreen({
   }
 
   const ready = canEnlighten(mapping)
+  const taken = new Set(
+    Object.values(mapping).filter((column): column is string => Boolean(column)),
+  )
 
   return (
     <div className="stack">
@@ -113,11 +116,13 @@ export function MappingScreen({
               onChange={(event) => change(field.id, event.target.value)}
             >
               <option value="">Не выбрано</option>
-              {upload.columns.map((column) => (
-                <option key={column} value={column}>
-                  {column}
-                </option>
-              ))}
+              {upload.columns
+                .filter((column) => mapping[field.id] === column || !taken.has(column))
+                .map((column) => (
+                  <option key={column} value={column}>
+                    {column}
+                  </option>
+                ))}
             </select>
             <Typography.Label variant="small">Пример: {exampleValue(upload.sample_rows, mapping[field.id])}</Typography.Label>
           </label>

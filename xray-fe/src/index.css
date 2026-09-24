@@ -659,6 +659,86 @@ html[data-scene="chat"] .app-panel {
   gap: 8px;
 }
 
+.file-drop {
+  gap: 0;
+}
+
+.file-card-slot {
+  overflow: hidden;
+  margin-top: 12px;
+  margin-left: -14px;
+  margin-right: -14px;
+  opacity: 0;
+  transition: height 0.48s ease, margin-top 0.48s ease, opacity 0.4s ease;
+}
+
+.file-card-slot.is-leaving {
+  margin-top: 0;
+}
+
+.file-card-pad {
+  padding: 0 14px;
+}
+
+.file-card-meta {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.file-card-meta-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-shell .file-card-remove,
+.file-card-remove {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: -4px -4px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: inherit;
+  opacity: 0.45;
+  cursor: pointer;
+  appearance: none;
+}
+
+.app-shell .file-card-remove:hover,
+html[data-theme="dark"] .app-shell .file-card-remove,
+html[data-theme="dark"] .app-shell .file-card-remove:hover {
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.app-shell .file-card-remove:hover,
+html[data-theme="dark"] .app-shell .file-card-remove:hover {
+  opacity: 1;
+  color: #e11d48;
+}
+
+.file-card-remove svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
 .file-card,
 .field,
 .deal-card {
@@ -1065,8 +1145,9 @@ html[data-scene="chat"] .app-panel {
   background: color-mix(in srgb, currentColor 4%, transparent);
 }
 
-.file-card {
-  animation: rise 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+.file-card-slot.is-leaving .file-card,
+.file-card-slot.is-leaving .file-card-remove {
+  pointer-events: none;
 }
 
 .finding-open,
@@ -2801,6 +2882,26 @@ html[data-theme="dark"] .history-delete.is-sealed .is-done {
     display: grid;
     grid-template-columns: 1.4fr 1fr;
     align-items: stretch;
+  }
+
+  .home-actions .file-drop {
+    display: contents;
+  }
+
+  .home-actions .file-drop > .action-primary {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .home-actions .template-dropdown-wrapper {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .home-actions .file-card-slot {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin-top: 0;
   }
 
   .home-actions .action-quiet {

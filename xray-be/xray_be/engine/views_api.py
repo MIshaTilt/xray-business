@@ -92,6 +92,15 @@ class UploadView(APIView):
             return Response({'code': 'no_file', 'message': 'Файл не прикреплен'}, status=status.HTTP_400_BAD_REQUEST)
 
         filename = file_obj.name
+        ext = os.path.splitext(filename)[1].lower()
+        if ext != '.csv':
+            return Response(
+                {
+                    'code': 'bad_format',
+                    'message': 'Нужен CSV — выгрузка из 1С, Битрикс24, МойСклад, amoCRM и похожих систем.',
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         try:
             cols, sample_rows, all_rows = read_table_file(file_obj, filename)
         except ValueError as e:

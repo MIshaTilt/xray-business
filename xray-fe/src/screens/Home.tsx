@@ -228,12 +228,18 @@ export function Home({
           <h1>X-Ray</h1>
         </div>
         <p className="home-sub">Где теряются деньги</p>
-        <p className="home-hint">Таблица сделок за 30–90 дней</p>
+        <p className="home-hint">Таблица сделок в CSV за 30–90 дней</p>
       </header>
       {usesFixtures() ? <p className="home-hint">Сейчас ответы локальные: сервер для проверки экранов не нужен.</p> : null}
       {error ? <Notice tone="error">{error}</Notice> : null}
       <div className="home-actions">
-        <FileDrop file={file} busy={busy === 'upload'} onPick={setFile} onSend={() => void sendFile()} />
+        <FileDrop
+          file={file}
+          busy={busy === 'upload'}
+          onPick={setFile}
+          onClear={() => setFile(null)}
+          onSend={() => void sendFile()}
+        />
         <div className="template-dropdown-wrapper">
           <Button
             className="action action-secondary"

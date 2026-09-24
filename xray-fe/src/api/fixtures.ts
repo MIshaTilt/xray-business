@@ -113,8 +113,8 @@ function pollOf(snapshot: StoredSnapshot): SnapshotPoll {
 export const fixtures = {
   async upload(file: File): Promise<UploadResponse> {
     const ext = file.name.split('.').pop()?.toLowerCase()
-    if (!ext || !['csv', 'xlsx', 'xls'].includes(ext)) {
-      throw new ApiError(400, 'Это не таблица. Нужен CSV или Excel.')
+    if (ext !== 'csv') {
+      throw new ApiError(400, 'Нужен CSV — выгрузка из 1С, Битрикс24, МойСклад, amoCRM.')
     }
     if (file.size === 0 || /empty/i.test(file.name)) {
       throw new ApiError(400, 'В файле 0 строк с данными.')

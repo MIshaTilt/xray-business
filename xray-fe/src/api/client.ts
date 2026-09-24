@@ -31,8 +31,9 @@ function authHeaders(json: boolean): Headers {
 async function detailOf(response: Response): Promise<string> {
   try {
     const body: unknown = await response.json()
-    if (body && typeof body === 'object' && 'detail' in body) {
-      const detail = (body as { detail: unknown }).detail
+    if (body && typeof body === 'object') {
+      const payload = body as { detail?: unknown; message?: unknown }
+      const detail = payload.message ?? payload.detail
       if (typeof detail === 'string') return detail
       if (Array.isArray(detail)) {
         return detail
