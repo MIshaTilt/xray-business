@@ -14,7 +14,6 @@ export function Diagnosis({
   wide,
   onMetric,
   onMissing,
-  onNew,
   onOpenChat,
   onLoaded,
 }: {
@@ -22,7 +21,6 @@ export function Diagnosis({
   wide: boolean
   onMetric: (metricId: MetricId) => void
   onMissing: () => void
-  onNew: () => void
   onOpenChat: (diagnosis: DiagnosisData) => void
   onLoaded: () => void
 }) {
@@ -144,12 +142,11 @@ export function Diagnosis({
         <Button className="action action-secondary" type="button" size="large" stretched variant="secondary" onClick={() => void copy()}>
           {copied ? 'Скопировано' : 'Скопировать заключение'}
         </Button>
-        <Button className="action action-quiet" type="button" size="large" stretched variant="ghost" onClick={onMissing}>
-          Чтобы увидеть больше
-        </Button>
-        <Button className="action action-neutral" type="button" size="large" stretched variant="ghost" onClick={onNew}>
-          Новый снимок
-        </Button>
+        {diagnosis.coverage?.skipped?.length ? (
+          <Button className="action action-missing" type="button" size="large" stretched variant="secondary" onClick={onMissing}>
+            Чего не хватило
+          </Button>
+        ) : null}
       </div>
     </div>
   )

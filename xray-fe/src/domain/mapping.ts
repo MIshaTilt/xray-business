@@ -8,20 +8,20 @@ export type FieldSpec = {
 }
 
 export const MAPPING_FIELDS: FieldSpec[] = [
-  { id: 'amount', label: 'Сумма сделки', badge: 'нужно, чтобы просветить' },
-  { id: 'status', label: 'Статус', badge: 'нужно для воронки и зависших' },
-  { id: 'created_at', label: 'Дата создания', badge: 'нужно для цикла и скорости' },
-  { id: 'client', label: 'Клиент', badge: 'нужно для крупных и забытых' },
-  { id: 'manager', label: 'Менеджер', badge: 'видно в списке сделок' },
-  { id: 'contact', label: 'Контакт', badge: 'телефон или почта' },
-  { id: 'discount_pct', label: 'Скидка, %', badge: 'нужно для утечки скидок' },
-  { id: 'list_price', label: 'Прайс до скидки', badge: 'нужно для утечки скидок' },
-  { id: 'first_contact_at', label: 'Первый контакт', badge: 'нужно для скорости ответа' },
-  { id: 'closed_at', label: 'Дата закрытия', badge: 'нужно для цикла сделки' },
-  { id: 'status_changed_at', label: 'Дата смены статуса', badge: 'точнее считает зависшие' },
-  { id: 'last_activity_at', label: 'Последняя активность', badge: 'нужно для забытых' },
-  { id: 'source', label: 'Источник', badge: 'канал лида' },
-  { id: 'deal_id', label: 'Номер сделки', badge: 'если есть свой id' },
+  { id: 'amount', label: 'Сумма сделки', badge: 'без суммы снимок не построить' },
+  { id: 'status', label: 'Статус', badge: 'считает воронку и зависшие сделки' },
+  { id: 'created_at', label: 'Дата создания', badge: 'считает цикл и скорость ответа' },
+  { id: 'client', label: 'Клиент', badge: 'считает крупных и забытых клиентов' },
+  { id: 'manager', label: 'Менеджер', badge: 'показывает, кто ведёт сделку' },
+  { id: 'contact', label: 'Контакт', badge: 'телефон или почта клиента' },
+  { id: 'discount_pct', label: 'Скидка, %', badge: 'считает утечку скидок' },
+  { id: 'list_price', label: 'Прайс до скидки', badge: 'считает утечку скидок' },
+  { id: 'first_contact_at', label: 'Первый контакт', badge: 'считает скорость первого ответа' },
+  { id: 'closed_at', label: 'Дата закрытия', badge: 'считает длительность цикла' },
+  { id: 'status_changed_at', label: 'Дата смены статуса', badge: 'точнее находит зависшие сделки' },
+  { id: 'last_activity_at', label: 'Последняя активность', badge: 'считает забытых клиентов' },
+  { id: 'source', label: 'Источник', badge: 'откуда пришла заявка' },
+  { id: 'deal_id', label: 'Номер сделки', badge: 'свой id из файла, если есть' },
 ]
 
 const NONE = ''

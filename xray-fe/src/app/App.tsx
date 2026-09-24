@@ -232,7 +232,6 @@ export function App() {
             wide={wide}
             onMetric={(metricId) => push({ name: 'metric', snapshotId: current.snapshotId, metricId })}
             onMissing={() => push({ name: 'missing', snapshotId: current.snapshotId })}
-            onNew={reset}
             onLoaded={finishVeil}
             onOpenChat={(diagnosisData) =>
               push({ name: 'chat', snapshotId: current.snapshotId, diagnosis: diagnosisData })
@@ -240,7 +239,7 @@ export function App() {
           />
         ) : null}
         {current.name === 'metric' ? (
-          <MetricDetail snapshotId={current.snapshotId} metricId={current.metricId} wide={wide} />
+          <MetricDetail snapshotId={current.snapshotId} metricId={current.metricId} />
         ) : null}
         {current.name === 'missing' ? <MissingData snapshotId={current.snapshotId} /> : null}
         {current.name === 'chat' ? (

@@ -112,7 +112,7 @@ export function MappingScreen({
               value={mapping[field.id] ?? ''}
               onChange={(event) => change(field.id, event.target.value)}
             >
-              <option value="">нет такой</option>
+              <option value="">Не выбрано</option>
               {upload.columns.map((column) => (
                 <option key={column} value={column}>
                   {column}
@@ -127,7 +127,7 @@ export function MappingScreen({
         <Typography.Body variant="medium">Подтвердите сумму и дату или статус.</Typography.Body>
       )}
       <Button className="action action-primary" type="button" size="large" stretched variant="primary" disabled={!ready} loading={busy} onClick={() => void enlighten()}>
-        Просветить
+        Сделать снимок
       </Button>
     </div>
   )

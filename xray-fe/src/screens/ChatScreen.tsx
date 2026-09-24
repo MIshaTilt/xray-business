@@ -92,9 +92,11 @@ export function ChatScreen({
   const [currentStreamText, setCurrentStreamText] = useState('')
   const [activeToolCalls, setActiveToolCalls] = useState<ToolCallData[]>([])
   const [clearing, setClearing] = useState(false)
+  const [sweeping, setSweeping] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
   const areaRef = useRef<HTMLTextAreaElement>(null)
   const clearTimer = useRef(0)
+  const sweepTimer = useRef(0)
   const [navSlot, setNavSlot] = useState<HTMLElement | null>(null)
 
   useLayoutEffect(() => {
@@ -151,7 +153,13 @@ export function ChatScreen({
     node.style.overflowY = node.scrollHeight > cap ? 'auto' : 'hidden'
   }, [input])
 
-  useEffect(() => () => window.clearTimeout(clearTimer.current), [])
+  useEffect(
+    () => () => {
+      window.clearTimeout(clearTimer.current)
+      window.clearTimeout(sweepTimer.current)
+    },
+    [],
+  )
 
   // Build rich system prompt with diagnosis context
   function buildSystemPrompt(): string {
@@ -295,6 +303,7 @@ export function ChatScreen({
   }
 
   const canClear = messages.length > 1 && !clearing
+  const showClear = canClear || sweeping
 
   function handleClear() {
     if (!canClear) return
@@ -308,28 +317,32 @@ export function ChatScreen({
       reset()
       return
     }
+    setSweeping(true)
     setClearing(true)
     window.clearTimeout(clearTimer.current)
+    window.clearTimeout(sweepTimer.current)
     clearTimer.current = window.setTimeout(reset, 420)
+    sweepTimer.current = window.setTimeout(() => setSweeping(false), 780)
   }
 
   const clearIcon = (
     <button
       type="button"
-      className={`chat-clear-nav${canClear ? ' is-on' : ''}`}
+      className={`chat-clear-nav${showClear ? ' is-on' : ''}${sweeping ? ' is-sweeping' : ''}`}
       aria-label="Очистить историю"
       tabIndex={canClear ? 0 : -1}
       onClick={handleClear}
     >
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M8 3.8h8" />
-        <path d="M12 3.8v9.4" />
-        <path d="M5.2 13.2h13.6v3.4H5.2z" />
-        <path d="M6.4 16.6v4.2" />
-        <path d="M9.2 16.6v4.2" />
-        <path d="M12 16.6v4.2" />
-        <path d="M14.8 16.6v4.2" />
-        <path d="M17.6 16.6v4.2" />
+        <g transform="rotate(-20 12 14)">
+          <path d="M12 3.4v9.8" />
+          <path d="M5.2 13.2h13.6v3.4H5.2z" />
+          <path d="M6.4 16.6v4.2" />
+          <path d="M9.2 16.6v4.2" />
+          <path d="M12 16.6v4.2" />
+          <path d="M14.8 16.6v4.2" />
+          <path d="M17.6 16.6v4.2" />
+        </g>
       </svg>
     </button>
   )

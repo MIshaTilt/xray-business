@@ -1,6 +1,5 @@
-import { Button, Typography } from '@maxhub/max-ui'
 import { useEffect, useState } from 'react'
-import { api, downloadTemplate } from '../api/client.ts'
+import { api } from '../api/client.ts'
 import { errorText } from '../api/errors.ts'
 import type { MetricId } from '../api/types.ts'
 import { METRICS } from '../domain/metrics.ts'
@@ -8,16 +7,17 @@ import { Notice } from '../widgets/Notice.tsx'
 
 export function MissingData({ snapshotId }: { snapshotId: string }) {
   const [skipped, setSkipped] = useState<MetricId[]>([])
+  const [scanNo, setScanNo] = useState<number | undefined>()
   const [error, setError] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [saved, setSaved] = useState(false)
 
   useEffect(() => {
     let alive = true
     void api
       .diagnosis(snapshotId)
       .then((result) => {
-        if (alive) setSkipped(result.coverage.skipped)
+        if (!alive) return
+        setSkipped(result.coverage.skipped)
+        setScanNo(result.scan_no)
       })
       .catch((reason: unknown) => {
         if (alive) setError(errorText(reason))
@@ -27,43 +27,31 @@ export function MissingData({ snapshotId }: { snapshotId: string }) {
     }
   }, [snapshotId])
 
-  async function saveTemplate() {
-    setBusy(true)
-    setError('')
-    try {
-      await downloadTemplate()
-      setSaved(true)
-    } catch (reason) {
-      setError(errorText(reason))
-    } finally {
-      setBusy(false)
-    }
-  }
-
   return (
     <div className="stack">
       <div className="lead">
-        <Typography.Title variant="medium-strong">Чего не хватило</Typography.Title>
-        <Typography.Body variant="medium">Диагноз уже построен по тем колонкам, что есть. Ниже — что откроет остальные метрики.</Typography.Body>
+        <h1>
+          {scanNo ? `Чего не хватило по снимку №${scanNo}` : 'Чего не хватило'}
+        </h1>
+        <p className="home-hint">Показатели, которые не посчитались: в таблице нет нужных колонок.</p>
       </div>
       {error ? <Notice tone="error">{error}</Notice> : null}
-      {saved ? <Notice tone="ok">Шаблон сохранён как xray-template.xlsx</Notice> : null}
       {skipped.length === 0 ? (
-        <Typography.Body variant="medium">Все семь метрик посчитаны. Добавлять колонки не нужно.</Typography.Body>
+        <p className="home-hint">Все семь показателей посчитаны.</p>
       ) : (
-        <div className="fields">
+        <div className="findings missing-list">
           {skipped.map((id) => (
-            <article key={id} className="field">
-              <Typography.Body variant="medium-strong">{METRICS[id].title}</Typography.Body>
-              <Typography.Label variant="small">Нужно: {METRICS[id].needs}</Typography.Label>
-              <Typography.Body variant="medium">{METRICS[id].hint}</Typography.Body>
+            <article key={id} className="finding skipped">
+              <div className="finding-open">
+                <span className="pill skipped">не посчитано</span>
+                <strong className="finding-fact">{METRICS[id].title}</strong>
+                <p className="finding-text">{METRICS[id].hint}</p>
+                <span className="finding-title">Нужно: {METRICS[id].needs}</span>
+              </div>
             </article>
           ))}
         </div>
       )}
-      <Button className="action action-primary" type="button" size="large" stretched variant="primary" loading={busy} onClick={() => void saveTemplate()}>
-        Скачать шаблон
-      </Button>
     </div>
   )
 }
