@@ -82,7 +82,7 @@ const UNIT_LABEL: Record<string, string> = {
   hours: 'ч',
   days: 'дн.',
   pct: '%',
-  rub: '₽',
+  rub: 'руб.',
   deals: 'сделок',
 }
 
@@ -103,11 +103,7 @@ export function formatRub(value: string | number | null | undefined): string {
   if (value == null || value === '') return '—'
   const amount = typeof value === 'number' ? value : Number(value)
   if (!Number.isFinite(amount)) return String(value)
-  return new Intl.NumberFormat('ru-RU', {
-    style: 'currency',
-    currency: 'RUB',
-    maximumFractionDigits: 0,
-  }).format(amount)
+  return `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(amount)} руб.`
 }
 
 export function formatImpact(finding: { money_impact: string | null; value: number | null; unit: string }): string {

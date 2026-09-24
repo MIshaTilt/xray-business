@@ -71,6 +71,7 @@ export type Finding = {
 }
 
 export type Diagnosis = {
+  scan_no?: number
   headline: string
   body: string
   findings: Finding[]
@@ -85,6 +86,7 @@ export type DiagnosisResponse = Diagnosis & {
 
 export type SnapshotListItem = {
   snapshot_id: string
+  scan_no?: number
   status: SnapshotStatus
   created_at: string
   headline?: string

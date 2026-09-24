@@ -48,6 +48,23 @@ def save_disk_store():
 load_disk_store()
 
 
+def ensure_scan_numbers():
+    missing = [snap for snap in SNAPSHOTS_STORE.values() if not snap.get('scan_no')]
+    if not missing:
+        return
+    current = max((int(snap.get('scan_no') or 0) for snap in SNAPSHOTS_STORE.values()), default=0)
+    for snap in sorted(missing, key=lambda item: item.get('created_at') or ''):
+        current += 1
+        snap['scan_no'] = current
+    save_disk_store()
+
+
+def next_scan_no() -> int:
+    ensure_scan_numbers()
+    nums = [int(snap.get('scan_no') or 0) for snap in SNAPSHOTS_STORE.values()]
+    return max(nums, default=0) + 1
+
+
 def get_coverage(mapping: dict) -> dict:
     has_f = lambda f: bool(mapping.get(f))
     checks = {
@@ -155,6 +172,7 @@ class SaveMappingView(APIView):
 
 class SnapshotCreateView(APIView):
     def get(self, request):
+        ensure_scan_numbers()
         items = []
         for snap in reversed(list(SNAPSHOTS_STORE.values())):
             diag = snap.get('diagnosis')
@@ -168,6 +186,7 @@ class SnapshotCreateView(APIView):
 
             items.append({
                 'snapshot_id': snap['snapshot_id'],
+                'scan_no': snap.get('scan_no'),
                 'status': snap['status'],
                 'created_at': snap['created_at'],
                 'filename': snap['filename'],
@@ -190,6 +209,7 @@ class SnapshotCreateView(APIView):
         status_map = upload.get('status_map', {})
 
         snapshot_id = str(uuid.uuid4())
+        scan_no = next_scan_no()
 
         # Normalize and compute immediately
         deals, rejected = normalize_records(upload['all_rows'], mapping, status_map)
@@ -210,6 +230,7 @@ class SnapshotCreateView(APIView):
 
         SNAPSHOTS_STORE[snapshot_id] = {
             'snapshot_id': snapshot_id,
+            'scan_no': scan_no,
             'status': 'ready',
             'progress': 100,
             'error': '',
@@ -314,7 +335,11 @@ class SnapshotDiagnosisView(APIView):
         snap = SNAPSHOTS_STORE.get(str(snapshot_id))
         if not snap:
             return Response({'code': 'not_found', 'message': 'Снимок не найден'}, status=status.HTTP_404_NOT_FOUND)
-        return Response(snap['diagnosis'])
+        ensure_scan_numbers()
+        payload = dict(snap.get('diagnosis') or {})
+        payload['scan_no'] = snap.get('scan_no')
+        payload['snapshot_id'] = snap.get('snapshot_id', snapshot_id)
+        return Response(payload)
 
 
 class SnapshotMetricDetailView(APIView):
@@ -335,6 +360,7 @@ class SnapshotMetricDetailView(APIView):
 
 class SnapshotsListView(APIView):
     def get(self, request):
+        ensure_scan_numbers()
         items = []
         for snap in reversed(list(SNAPSHOTS_STORE.values())):
             diag = snap.get('diagnosis')
@@ -348,6 +374,7 @@ class SnapshotsListView(APIView):
 
             items.append({
                 'snapshot_id': snap['snapshot_id'],
+                'scan_no': snap.get('scan_no'),
                 'status': snap['status'],
                 'created_at': snap['created_at'],
                 'filename': snap['filename'],

@@ -17,7 +17,7 @@ function shortRub(value: string): string {
     return `${text} млн`
   }
   if (amount >= 1000) return `${Math.round(amount / 1000)} тыс.`
-  return `${Math.round(amount)} ₽`
+  return `${Math.round(amount)} руб.`
 }
 
 function factLine(finding: Finding): string {

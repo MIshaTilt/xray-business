@@ -48,9 +48,9 @@ export function SwipeScan({
   const pressingDelete = useRef(false)
   const finishRef = useRef<(event: PointerEvent<HTMLDivElement>) => void>(() => {})
 
-  const shown = drag ?? (open ? BASE : 0)
+  const shown = full ? BASE : drag ?? (open ? BASE : 0)
   const progress = Math.min(1, Math.max(0, shown / BASE))
-  const translate = (1 - progress) * (BASE + HIDDEN_PAD)
+  const translate = full ? 0 : (1 - progress) * (BASE + HIDDEN_PAD)
   const restLeft = cardWidth > 0 ? cardWidth - 12 - BASE : null
 
   useLayoutEffect(() => {
@@ -305,8 +305,8 @@ export function SwipeScan({
         role="button"
         className={`history-delete${full ? ' is-full' : ''}${sealed ? ' is-sealed' : ''}${twitch ? ' is-twitch' : ''}`}
         style={{
-          left: restLeft == null ? undefined : full ? 12 : restLeft,
-          width: restLeft == null ? BASE : 'auto',
+          left: full ? 12 : restLeft == null ? undefined : restLeft,
+          width: full || restLeft != null ? 'auto' : BASE,
           transform: `translateX(${translate}px)`,
           transformOrigin: 'right center',
           opacity: full || closing || progress > 0 ? 1 : 0,

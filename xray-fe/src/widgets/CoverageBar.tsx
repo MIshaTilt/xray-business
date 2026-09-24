@@ -6,7 +6,7 @@ export function CoverageBar({ coverage }: { coverage: Coverage }) {
   const counted = coverage.available.length
   return (
     <div className="coverage">
-      <Typography.Headline variant="small">Можем посчитать {counted} из 7</Typography.Headline>
+      <Typography.Headline variant="small">Показателей: {counted} из 7</Typography.Headline>
       <div className="segments" aria-hidden="true">
         {METRIC_ORDER.map((id, index) => (
           <span

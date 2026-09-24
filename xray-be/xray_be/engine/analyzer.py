@@ -163,7 +163,7 @@ def calculate_metrics_and_findings(deals: List[NormalizedDeal], mapping: Dict[st
                 'unit': 'deals',
                 'money_impact': f"{total_stale_amount:.2f}",
                 'threshold_label': f"Зависшей считаем сделку старше {int(stagnation_thresh)} дней",
-                'action': f"Разморозьте {len(stale_deals)} сделок старше {int(stagnation_thresh)} дней на {int(total_stale_amount):,} ₽".replace(',', ' '),
+                'action': f"Разморозьте {len(stale_deals)} сделок старше {int(stagnation_thresh)} дней на {int(total_stale_amount):,} руб.".replace(',', ' '),
                 'evidence': stale_deals[:50]
             }
             candidates.append(res)
@@ -558,7 +558,7 @@ def calculate_metrics_and_findings(deals: List[NormalizedDeal], mapping: Dict[st
             'unit': 'pct',
             'money_impact': f"{max_loss:.2f}" if max_loss > 0 else None,
             'threshold_label': 'этап теряет больше 40% суммы',
-            'action': f"На этапе «{max_stage}» теряется {int(max_loss):,} ₽".replace(',', ' '),
+            'action': f"На этапе «{max_stage}» теряется {int(max_loss):,} руб.".replace(',', ' '),
             'evidence': evidence
         }
         if verdict in ['critical', 'watch'] and 'funnel_dropoff' not in low_sample_list:

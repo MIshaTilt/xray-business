@@ -8,16 +8,16 @@ export function LiveWallpaper() {
   const field = useMemo(() => {
     const grays = ['255,255,255', '214,232,226', '186,214,204', '156,196,184']
     return {
-      shimmer: between(14, 26),
+      shimmer: between(8, 12),
       clouds: Array.from({ length: 5 }, (_, id) => ({
         id,
         x: between(-12, 78),
         y: between(-18, 72),
         w: between(34, 68),
         h: between(24, 52),
-        duration: between(16, 36),
-        delay: between(-28, 0),
-        opacity: between(0.28, 0.55),
+        duration: between(9, 16),
+        delay: between(-12, 0),
+        opacity: between(0.32, 0.58),
         tone: grays[id % grays.length],
       })),
     }

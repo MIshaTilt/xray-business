@@ -1,5 +1,5 @@
 import { Button } from '@maxhub/max-ui'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { api, usesFixtures } from '../api/client.ts'
 import { errorText } from '../api/errors.ts'
 import type { SnapshotListItem, UploadResponse } from '../api/types.ts'
@@ -27,7 +27,6 @@ export function Home({
   const [file, setFile] = useState<File | null>(null)
   const [busy, setBusy] = useState<'upload' | 'template' | 'seed' | null>(null)
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
   const [snapshots, setSnapshots] = useState<SnapshotListItem[]>([])
   const [scansLoaded, setScansLoaded] = useState(false)
 
@@ -36,10 +35,13 @@ export function Home({
   const [showTemplatesDropdown, setShowTemplatesDropdown] = useState(false)
   const [templatesClosing, setTemplatesClosing] = useState(false)
   const [openSwipeId, setOpenSwipeId] = useState<string | null>(null)
-  const [leavingId, setLeavingId] = useState<string | null>(null)
+  const [leavingIds, setLeavingIds] = useState<string[]>([])
   const [emptyLeaving, setEmptyLeaving] = useState(false)
+  const [enteringIds, setEnteringIds] = useState<string[]>([])
   const emptyTimer = useRef(0)
   const templatesTimer = useRef(0)
+  const leavingIdsRef = useRef<string[]>([])
+  const enterTimerRef = useRef<Record<string, number>>({})
 
   async function refresh() {
     try {
@@ -66,8 +68,30 @@ export function Home({
     return () => {
       window.clearTimeout(emptyTimer.current)
       window.clearTimeout(templatesTimer.current)
+      Object.values(enterTimerRef.current).forEach((timer) => window.clearTimeout(timer))
     }
   }, [])
+
+  useLayoutEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    for (const id of enteringIds) {
+      const row = document.querySelector<HTMLElement>(`[data-scan-id="${id}"]`)
+      if (!row || row.dataset.enterLock) continue
+      row.dataset.enterLock = '1'
+      const across = getComputedStyle(row.parentElement!).flexDirection === 'row'
+      const size = across ? row.getBoundingClientRect().width : row.getBoundingClientRect().height
+      const prop = across ? 'width' : 'height'
+      row.style.transition = 'none'
+      row.style[prop] = '0px'
+      row.style.margin = '0px'
+      row.getBoundingClientRect()
+      window.requestAnimationFrame(() => {
+        row.style.removeProperty('transition')
+        row.style[prop] = `${size}px`
+        row.style.margin = across ? '0 8px 0 0' : '0 0 8px'
+      })
+    }
+  }, [enteringIds])
 
   async function sendFile() {
     if (!file) return
@@ -83,11 +107,12 @@ export function Home({
   }
 
   function seedScan() {
-    const id = `stub-${Date.now()}`
+    const id = `stub-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
     const item: SnapshotListItem = {
       snapshot_id: id,
       status: 'ready',
       created_at: new Date().toISOString(),
+      scan_no: Math.max(0, ...snapshots.map((item) => item.scan_no ?? 0)) + 1,
       headline: 'Пустая заглушка для проверки списка',
       source: 'тест',
       verdict: 'watch',
@@ -99,6 +124,19 @@ export function Home({
       emptyTimer.current = window.setTimeout(() => setEmptyLeaving(false), 420)
     }
     setSnapshots((current) => [item, ...current])
+    setEnteringIds((ids) => [...ids, id])
+    window.clearTimeout(enterTimerRef.current[id])
+    enterTimerRef.current[id] = window.setTimeout(() => {
+      setEnteringIds((ids) => ids.filter((item) => item !== id))
+      const row = document.querySelector<HTMLElement>(`[data-scan-id="${id}"]`)
+      if (row) {
+        row.style.height = ''
+        row.style.width = ''
+        row.style.margin = ''
+        delete row.dataset.enterLock
+      }
+      delete enterTimerRef.current[id]
+    }, 520)
   }
 
   function closeTemplates() {
@@ -131,10 +169,7 @@ export function Home({
 
   async function openSnapshot(item: SnapshotListItem) {
     setError('')
-    if (item.snapshot_id.startsWith('stub-')) {
-      setNotice('Это пустая заглушка, снимка в базе нет.')
-      return
-    }
+    if (item.snapshot_id.startsWith('stub-')) return
     if (item.status === 'ready') {
       onDiagnosis(item.snapshot_id)
       return
@@ -152,7 +187,7 @@ export function Home({
   }
 
   async function removeSnapshot(id: string) {
-    if (leavingId) return
+    if (leavingIdsRef.current.includes(id)) return
     setError('')
     const row = document.querySelector<HTMLElement>(`[data-scan-id="${id}"]`)
     if (row) {
@@ -166,17 +201,20 @@ export function Home({
       else row.style.height = '0px'
       row.style.margin = '0px'
     }
-    setLeavingId(id)
+    leavingIdsRef.current = [...leavingIdsRef.current, id]
+    setLeavingIds(leavingIdsRef.current)
     window.setTimeout(() => {
       setSnapshots((current) => current.filter((item) => item.snapshot_id !== id))
-      setLeavingId(null)
-      setOpenSwipeId(null)
+      leavingIdsRef.current = leavingIdsRef.current.filter((item) => item !== id)
+      setLeavingIds(leavingIdsRef.current)
+      setOpenSwipeId((current) => (current === id ? null : current))
     }, 500)
     if (id.startsWith('stub-')) return
     try {
       await api.remove(id)
     } catch (reason) {
-      setLeavingId(null)
+      leavingIdsRef.current = leavingIdsRef.current.filter((item) => item !== id)
+      setLeavingIds(leavingIdsRef.current)
       setError(errorText(reason))
       void refresh()
     }
@@ -194,7 +232,6 @@ export function Home({
       </header>
       {usesFixtures() ? <p className="home-hint">Сейчас ответы локальные: сервер для проверки экранов не нужен.</p> : null}
       {error ? <Notice tone="error">{error}</Notice> : null}
-      {notice ? <Notice tone="ok">{notice}</Notice> : null}
       <div className="home-actions">
         <FileDrop file={file} busy={busy === 'upload'} onPick={setFile} onSend={() => void sendFile()} />
         <div className="template-dropdown-wrapper">
@@ -273,21 +310,32 @@ export function Home({
             </div>
           ) : null}
           {snapshots.length > 0 ? (
-          <ul className={`scans${emptyLeaving ? ' is-arriving' : ''}`}>
+          <ul className="scans">
             {snapshots.map((item) => (
               <li
                 key={item.snapshot_id}
                 data-scan-id={item.snapshot_id}
-                className={leavingId === item.snapshot_id ? 'is-leaving' : undefined}
+                className={
+                  leavingIds.includes(item.snapshot_id)
+                    ? 'is-leaving'
+                    : enteringIds.includes(item.snapshot_id)
+                      ? 'is-entering'
+                      : undefined
+                }
               >
                 <SwipeScan
                   open={openSwipeId === item.snapshot_id}
-                  onOpenChange={(next) => setOpenSwipeId(next ? item.snapshot_id : null)}
+                  onOpenChange={(next) =>
+                    setOpenSwipeId((current) => {
+                      if (next) return item.snapshot_id
+                      return current === item.snapshot_id ? null : current
+                    })
+                  }
                   onActivate={() => void openSnapshot(item)}
                   onDelete={() => void removeSnapshot(item.snapshot_id)}
                 >
                   <span className="scan-top">
-                    <span className="scan-meta">{shortWhen(item.created_at)} · {item.source || STATUS[item.status]}</span>
+                    <span className="scan-meta">{item.scan_no ? `№${item.scan_no} · ` : ''}{shortWhen(item.created_at)} · {item.source || STATUS[item.status]}</span>
                     {item.verdict ? (
                       <span className={`pill ${item.verdict}`}>{verdictName(item.verdict)} · {item.coverage_label}</span>
                     ) : (

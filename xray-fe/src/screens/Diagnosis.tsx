@@ -66,16 +66,30 @@ export function Diagnosis({
   if (error) return <Notice tone="error">{error}</Notice>
   if (!diagnosis) return null
 
-  const period = diagnosis.period.from && diagnosis.period.to
-    ? `${formatWhen(diagnosis.period.from)} — ${formatWhen(diagnosis.period.to)}`
-    : 'Период по датам в файле'
   const counted = diagnosis.coverage.available.length
+  const periodFrom = diagnosis.period.from ? formatWhen(diagnosis.period.from) : ''
+  const periodTo = diagnosis.period.to ? formatWhen(diagnosis.period.to) : ''
 
   return (
     <div className="stack diagnosis">
+      <div className="lead">
+        <h1>
+          {diagnosis.scan_no
+            ? `Сводка по снимку №${diagnosis.scan_no}`
+            : 'Сводка'}
+        </h1>
+      </div>
       <div className="stat-row">
         <article>
-          <strong>{period}</strong>
+          {periodFrom && periodTo ? (
+            <strong className="stat-period">
+              <span>{periodFrom}</span>
+              <span className="stat-period-sep">—</span>
+              <span>{periodTo}</span>
+            </strong>
+          ) : (
+            <strong>Период по датам в файле</strong>
+          )}
           <span>период</span>
         </article>
         <article className="stat-accent">

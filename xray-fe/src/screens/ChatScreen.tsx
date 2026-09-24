@@ -1,5 +1,5 @@
-import { Button, Typography } from '@maxhub/max-ui'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { marked } from 'marked'
 import type { Diagnosis as DiagnosisData } from '../api/types.ts'
 import { ToolCallBadge } from './ToolCallBadge.tsx'
@@ -91,15 +91,67 @@ export function ChatScreen({
   const [streaming, setStreaming] = useState(false)
   const [currentStreamText, setCurrentStreamText] = useState('')
   const [activeToolCalls, setActiveToolCalls] = useState<ToolCallData[]>([])
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [clearing, setClearing] = useState(false)
+  const listRef = useRef<HTMLDivElement>(null)
+  const areaRef = useRef<HTMLTextAreaElement>(null)
+  const clearTimer = useRef(0)
+  const [navSlot, setNavSlot] = useState<HTMLElement | null>(null)
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  useLayoutEffect(() => {
+    setNavSlot(document.getElementById('chat-nav-actions'))
+  }, [])
+
+  const syncListOverflow = () => {
+    const box = listRef.current
+    if (!box) return
+    const canScroll = box.scrollHeight > box.clientHeight + 1
+    box.classList.toggle('is-scrollable', canScroll)
+    if (canScroll) box.scrollTop = box.scrollHeight
   }
 
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+    syncListOverflow()
+  }, [messages, currentStreamText, clearing])
+
   useEffect(() => {
-    scrollToBottom()
-  }, [messages, currentStreamText])
+    const box = listRef.current
+    const ro = box ? new ResizeObserver(syncListOverflow) : null
+    if (box && ro) ro.observe(box)
+
+    const allowInnerScroll = (target: EventTarget | null, node: HTMLElement | null) => {
+      if (!node || !target || !(target instanceof Node) || !node.contains(target)) return false
+      return node.scrollHeight > node.clientHeight + 1
+    }
+
+    const blockPageScroll = (event: Event) => {
+      if (allowInnerScroll(event.target, listRef.current)) return
+      if (allowInnerScroll(event.target, areaRef.current)) return
+      event.preventDefault()
+    }
+
+    document.addEventListener('touchmove', blockPageScroll, { passive: false })
+    document.addEventListener('wheel', blockPageScroll, { passive: false })
+    return () => {
+      ro?.disconnect()
+      document.removeEventListener('touchmove', blockPageScroll)
+      document.removeEventListener('wheel', blockPageScroll)
+    }
+  }, [])
+
+  useLayoutEffect(() => {
+    const node = areaRef.current
+    if (!node) return
+    node.style.height = 'auto'
+    const cap = window.matchMedia('(min-width: 960px)').matches ? 160 : 200
+    const next = Math.min(node.scrollHeight, cap)
+    node.style.height = `${next}px`
+    node.style.overflowY = node.scrollHeight > cap ? 'auto' : 'hidden'
+  }, [input])
+
+  useEffect(() => () => window.clearTimeout(clearTimer.current), [])
 
   // Build rich system prompt with diagnosis context
   function buildSystemPrompt(): string {
@@ -114,7 +166,7 @@ export function ChatScreen({
       .map(
         (f, idx) =>
           `${idx + 1}. [${f.verdict.toUpperCase()}] ${f.metric_id}: ${f.action} ` +
-          `(Деньги под угрозой: ${f.money_impact ? f.money_impact + ' ₽' : 'не применимо'}, ` +
+          `(Деньги под угрозой: ${f.money_impact ? f.money_impact + ' руб.' : 'не применимо'}, ` +
           `порог: ${f.threshold_label})`
       )
       .join('\n')
@@ -125,7 +177,7 @@ export function ChatScreen({
       `Главный вывод диагноза: "${diagnosis.headline}"\n\n` +
       `Общая статистика:\n` +
       `- Всего сделок: ${diagnosis.totals.deals}\n` +
-      `- Общая сумма: ${diagnosis.totals.amount} ₽\n` +
+      `- Общая сумма: ${diagnosis.totals.amount} руб.\n` +
       `- Период: с ${diagnosis.period.from || 'начала'} по ${diagnosis.period.to || 'конец'}\n\n` +
       `Ключевые найденные угрозы и утечки:\n${threatsText}\n\n` +
       'ВАЖНО О ДОСТУПЕ К ДАННЫМ:\n' +
@@ -242,42 +294,89 @@ export function ChatScreen({
     }
   }
 
+  const canClear = messages.length > 1 && !clearing
+
+  function handleClear() {
+    if (!canClear) return
+    const reset = () => {
+      setMessages([])
+      setClearing(false)
+      localStorage.removeItem(storageKey)
+      void api.clearChatHistory(snapshotId)
+    }
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      reset()
+      return
+    }
+    setClearing(true)
+    window.clearTimeout(clearTimer.current)
+    clearTimer.current = window.setTimeout(reset, 420)
+  }
+
+  const clearIcon = (
+    <button
+      type="button"
+      className={`chat-clear-nav${canClear ? ' is-on' : ''}`}
+      aria-label="Очистить историю"
+      tabIndex={canClear ? 0 : -1}
+      onClick={handleClear}
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M8 3.8h8" />
+        <path d="M12 3.8v9.4" />
+        <path d="M5.2 13.2h13.6v3.4H5.2z" />
+        <path d="M6.4 16.6v4.2" />
+        <path d="M9.2 16.6v4.2" />
+        <path d="M12 16.6v4.2" />
+        <path d="M14.8 16.6v4.2" />
+        <path d="M17.6 16.6v4.2" />
+      </svg>
+    </button>
+  )
+
   return (
     <div className="stack chat-screen">
+      {navSlot ? createPortal(clearIcon, navSlot) : null}
+      {streaming ? <span className="chat-scan" aria-hidden="true" /> : null}
       <div className="chat-header">
-        <Typography.Title variant="medium-strong">AI-консультант X-Ray</Typography.Title>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography.Body variant="small" className="chat-subtitle">
-            Контекст: снимок {snapshotId.slice(0, 8)}…
-          </Typography.Body>
-          {messages.length > 1 && (
-            <button
-              type="button"
-              className="chat-clear-btn"
-              onClick={() => {
-                const initMsg: ChatMessage[] = [
-                  {
-                    role: 'assistant',
-                    content: 'История очищена. О чем хотите спросить по данному отчету?',
-                  },
-                ]
-                setMessages(initMsg)
-                localStorage.removeItem(storageKey)
-                void api.clearChatHistory(snapshotId)
-              }}
-            >
-              Очистить историю
-            </button>
-          )}
+        <div className="lead">
+          <h1>Консультант</h1>
+          <p className="home-hint chat-scan-label">
+            {diagnosis?.scan_no
+              ? `Снимок №${diagnosis.scan_no}`
+              : 'Снимок'}
+          </p>
+        </div>
+        <div className="chat-clear-slot">
+          <button
+            type="button"
+            className={`chat-clear-btn${canClear ? ' is-on' : ''}`}
+            tabIndex={canClear ? 0 : -1}
+            onClick={handleClear}
+          >
+            Очистить историю
+          </button>
         </div>
       </div>
 
-      <div className="chat-messages-container">
+      <div ref={listRef} className={`chat-messages-container${clearing ? ' is-clearing' : ''}`}>
+        {messages.length === 0 && !streaming && !clearing ? (
+          <div className="chat-empty">
+            <span className="chat-empty-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z" />
+                <path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1" />
+              </svg>
+            </span>
+            <p className="chat-empty-title">История очищена</p>
+            <p className="chat-empty-hint">Напишите сообщение, чтобы начать консультацию</p>
+          </div>
+        ) : null}
         {messages.map((m, idx) => (
-          <div key={idx} className={`chat-bubble ${m.role}`}>
-            <div className="chat-bubble-author">
-              {m.role === 'user' ? 'Вы' : 'AI Аналитик'}
-            </div>
+          <div key={`${m.role}-${idx}-${m.content.slice(0, 24)}`} className={`chat-bubble ${m.role}`}>
+            {m.role === 'assistant' ? (
+              <div className="chat-bubble-author">Консультант</div>
+            ) : null}
 
             {m.toolCalls && m.toolCalls.length > 0 && (
               <div className="chat-tool-calls-list">
@@ -299,8 +398,8 @@ export function ChatScreen({
         ))}
 
         {streaming && (
-          <div className="chat-bubble assistant">
-            <div className="chat-bubble-author">AI Аналитик</div>
+          <div className="chat-bubble assistant chat-bubble-live">
+            <div className="chat-bubble-author">Консультант</div>
 
             {activeToolCalls.length > 0 && (
               <div className="chat-tool-calls-list">
@@ -320,33 +419,38 @@ export function ChatScreen({
             </div>
           </div>
         )}
-        <div ref={messagesEndRef} />
       </div>
 
-      <div className="chat-input-row">
-        <textarea
-          className="chat-textarea"
-          rows={2}
-          placeholder="Спросите о зависших сделках, скидках или что делать первым..."
-          value={input}
-          disabled={streaming}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault()
-              void handleSend()
-            }
-          }}
-        />
-        <Button
-          type="button"
-          variant="primary"
-          size="medium"
-          disabled={!input.trim() || streaming}
-          onClick={() => void handleSend()}
-        >
-          {streaming ? '...' : 'Отправить'}
-        </Button>
+      <div className={`chat-input-row${input.trim() ? ' has-text' : ''}`}>
+        <div className="chat-composer">
+          <textarea
+            ref={areaRef}
+            className="chat-textarea"
+            rows={1}
+            placeholder="Напишите вопрос"
+            value={input}
+            disabled={streaming}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                void handleSend()
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="chat-send"
+            aria-label="Отправить"
+            disabled={!input.trim() || streaming}
+            onClick={() => void handleSend()}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M22 2 11 13" />
+              <path d="M22 2 15 22 11 13 2 9 22 2Z" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   )

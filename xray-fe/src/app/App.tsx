@@ -1,5 +1,5 @@
 import { Panel } from '@maxhub/max-ui'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { MetricId, UploadResponse } from '../api/types.ts'
 import { bindBack, getPlatform, initBridge, showBack } from '../bridge/index.ts'
 import { dealsAsTable } from '../domain/platform.ts'
@@ -29,11 +29,9 @@ export function App() {
   const [homeKey, setHomeKey] = useState(0)
   const [hostBack, setHostBack] = useState(false)
   const [veil, setVeil] = useState(false)
-  const [veilStep, setVeilStep] = useState(0)
   const [homeSplash, setHomeSplash] = useState(false)
   const [dark, setDark] = useState(() => window.localStorage.getItem('xray-theme') === 'dark')
   const [themePlayed, setThemePlayed] = useState(false)
-  const veilStarted = useRef(0)
   const current = stack[stack.length - 1] ?? { name: 'home' }
   const wide = dealsAsTable(getPlatform())
 
@@ -41,6 +39,10 @@ export function App() {
     document.documentElement.dataset.theme = dark ? 'dark' : 'light'
     window.localStorage.setItem('xray-theme', dark ? 'dark' : 'light')
   }, [dark])
+
+  useEffect(() => {
+    document.documentElement.dataset.scene = !homeSplash && current.name === 'chat' ? 'chat' : 'home'
+  }, [current.name, homeSplash])
 
   const pop = useCallback(() => {
     setStack((currentStack) => (currentStack.length > 1 ? currentStack.slice(0, -1) : currentStack))
@@ -60,8 +62,6 @@ export function App() {
   }, [])
 
   const beginVeil = useCallback(() => {
-    veilStarted.current = Date.now()
-    setVeilStep(0)
     setVeil(true)
   }, [])
 
@@ -80,14 +80,20 @@ export function App() {
   }, [homeSplash, reset])
 
   const finishVeil = useCallback(() => {
-    const wait = Math.max(0, 1800 - (Date.now() - veilStarted.current))
-    window.setTimeout(() => setVeil(false), wait)
+    window.setTimeout(() => setVeil(false), 280)
   }, [])
 
   useEffect(() => {
     if (!veil) return
-    const tick = window.setInterval(() => setVeilStep((step) => step + 1), 700)
-    return () => window.clearInterval(tick)
+    const block = (event: Event) => event.preventDefault()
+    document.documentElement.classList.add('veil-lock')
+    document.addEventListener('touchmove', block, { passive: false })
+    document.addEventListener('wheel', block, { passive: false })
+    return () => {
+      document.documentElement.classList.remove('veil-lock')
+      document.removeEventListener('touchmove', block)
+      document.removeEventListener('wheel', block)
+    }
   }, [veil])
 
   useEffect(() => {
@@ -102,12 +108,17 @@ export function App() {
   ].join(':')
 
   useEffect(() => {
-    window.scrollTo(0, 0)
-    document.documentElement.scrollTop = 0
-    document.body.scrollTop = 0
-    document.querySelectorAll('.app-panel, #root').forEach((node) => {
-      node.scrollTop = 0
-    })
+    const reset = () => {
+      window.scrollTo(0, 0)
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+      document.querySelectorAll('.app-panel, #root').forEach((node) => {
+        node.scrollTop = 0
+      })
+    }
+    reset()
+    const frame = window.requestAnimationFrame(reset)
+    return () => window.cancelAnimationFrame(frame)
   }, [scrollKey])
 
   useEffect(() => {
@@ -122,7 +133,7 @@ export function App() {
   return (
     <Panel mode="secondary" className="app-panel">
       <LiveWallpaper />
-      <main className={`${wide ? 'app-shell wide' : 'app-shell'}${stack.length > 1 && !hostBack ? ' with-back' : ''}`}>
+      <main className={`${wide ? 'app-shell wide' : 'app-shell'}${stack.length > 1 && !hostBack ? ' with-back' : ''}${current.name === 'chat' ? ' is-chat' : ''}`}>
         <div className="nav-bar">
           {stack.length > 1 && !hostBack ? (
             <>
@@ -140,6 +151,7 @@ export function App() {
               </button>
             </>
           ) : null}
+          {current.name === 'chat' ? <div className="chat-nav-actions" id="chat-nav-actions" /> : null}
           <button
             type="button"
             className={`theme-btn${dark ? ' is-dark' : ''}${themePlayed ? ' is-played' : ''}`}
@@ -187,7 +199,17 @@ export function App() {
             </div>
           </div>
         ) : null}
-        {veil ? <AnalyzeVeil step={veilStep} /> : null}
+        {veil ? (
+          <AnalyzeVeil
+            phase={
+              current.name === 'processing'
+                ? 'processing'
+                : current.name === 'diagnosis'
+                  ? 'diagnosis'
+                  : 'mapping'
+            }
+          />
+        ) : null}
         {current.name === 'mapping' ? (
           <MappingScreen
             upload={current.upload}

@@ -1,6 +1,7 @@
 import { Typography } from '@maxhub/max-ui'
 import type { EvidenceDeal } from '../api/types.ts'
 import { formatRub } from '../domain/metrics.ts'
+import { DataTable } from './DataTable.tsx'
 
 const STATUS: Record<string, string> = {
   new: 'Новая',
@@ -40,7 +41,7 @@ export function DealTable({ rows, wide }: { rows: EvidenceDeal[]; wide: boolean 
     )
   }
   return (
-    <div className="data-table">
+    <DataTable>
       <table>
         <thead>
           <tr>
@@ -63,6 +64,6 @@ export function DealTable({ rows, wide }: { rows: EvidenceDeal[]; wide: boolean 
           ))}
         </tbody>
       </table>
-    </div>
+    </DataTable>
   )
 }

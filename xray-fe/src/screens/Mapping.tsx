@@ -6,6 +6,7 @@ import type { Coverage, Mapping as MappingValue, UploadResponse } from '../api/t
 import { canEnlighten, compactMapping, exampleValue, MAPPING_FIELDS } from '../domain/mapping.ts'
 import { setClosingConfirmation } from '../bridge/index.ts'
 import { CoverageBar } from '../widgets/CoverageBar.tsx'
+import { DataTable } from '../widgets/DataTable.tsx'
 import { Notice } from '../widgets/Notice.tsx'
 
 export function MappingScreen({
@@ -72,15 +73,15 @@ export function MappingScreen({
   return (
     <div className="stack">
       <div className="lead">
-        <Typography.Title variant="medium-strong">Мы посмотрели ваш файл. Так?</Typography.Title>
-        <Typography.Body variant="medium">{upload.filename}. Поправьте колонки, если что-то узнали неверно.</Typography.Body>
+        <h1>Проверьте колонки</h1>
+        <Typography.Body variant="medium">Если поле назначено неверно — выберите другую колонку.</Typography.Body>
       </div>
       <CoverageBar coverage={coverage} />
       {error ? <Notice tone="error">{error}</Notice> : null}
       {warnings.map((warning) => (
         <Notice key={warning} tone="ok">{warning}</Notice>
       ))}
-      <div className="data-table">
+      <DataTable>
         <table>
           <thead>
             <tr>
@@ -99,7 +100,7 @@ export function MappingScreen({
             ))}
           </tbody>
         </table>
-      </div>
+      </DataTable>
       <div className="fields">
         {MAPPING_FIELDS.map((field) => (
           <label key={field.id} className="field">
