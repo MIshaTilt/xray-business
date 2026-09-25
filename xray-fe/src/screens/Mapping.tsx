@@ -1,12 +1,13 @@
 import { Button, Typography } from '@maxhub/max-ui'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../api/client.ts'
 import { errorText } from '../api/errors.ts'
-import type { Coverage, Mapping as MappingValue, UploadResponse } from '../api/types.ts'
+import type { CanonicalField, Coverage, Mapping as MappingValue, UploadResponse } from '../api/types.ts'
 import { canEnlighten, compactMapping, exampleValue, MAPPING_FIELDS } from '../domain/mapping.ts'
 import { setClosingConfirmation } from '../bridge/index.ts'
 import { CoverageBar } from '../widgets/CoverageBar.tsx'
 import { DataTable } from '../widgets/DataTable.tsx'
+import { FlyoutSelect } from '../widgets/FlyoutSelect.tsx'
 import { Notice } from '../widgets/Notice.tsx'
 
 export function MappingScreen({
@@ -26,6 +27,10 @@ export function MappingScreen({
   const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [openField, setOpenField] = useState<CanonicalField | null>(null)
+  const [closingFields, setClosingFields] = useState<ReadonlySet<CanonicalField>>(() => new Set())
+  const closeTimers = useRef<Partial<Record<CanonicalField, number>>>({})
+  const fieldsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setClosingConfirmation(dirty)
@@ -49,7 +54,82 @@ export function MappingScreen({
   function change(field: keyof MappingValue, column: string) {
     setDirty(true)
     setMapping((current) => ({ ...current, [field]: column || undefined }))
+    closeFlyout()
   }
+
+  function beginClose(id: CanonicalField) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    setClosingFields((current) => {
+      if (current.has(id)) return current
+      const next = new Set(current)
+      next.add(id)
+      return next
+    })
+    window.clearTimeout(closeTimers.current[id])
+    closeTimers.current[id] = window.setTimeout(() => {
+      setClosingFields((current) => {
+        if (!current.has(id)) return current
+        const next = new Set(current)
+        next.delete(id)
+        return next
+      })
+      delete closeTimers.current[id]
+    }, 420)
+  }
+
+  function cancelClose(id: CanonicalField) {
+    window.clearTimeout(closeTimers.current[id])
+    delete closeTimers.current[id]
+    setClosingFields((current) => {
+      if (!current.has(id)) return current
+      const next = new Set(current)
+      next.delete(id)
+      return next
+    })
+  }
+
+  function closeFlyout() {
+    if (!openField) return
+    const id = openField
+    setOpenField(null)
+    beginClose(id)
+  }
+
+  function toggleFlyout(field: CanonicalField) {
+    if (openField === field) {
+      closeFlyout()
+      return
+    }
+    if (openField) beginClose(openField)
+    cancelClose(field)
+    setOpenField(field)
+  }
+
+  useEffect(
+    () => () => {
+      Object.values(closeTimers.current).forEach((timer) => window.clearTimeout(timer))
+    },
+    [],
+  )
+
+  useEffect(() => {
+    if (!openField) return
+    function onPointer(event: PointerEvent) {
+      const target = event.target as Node | null
+      if (fieldsRef.current?.contains(target)) return
+      if (target instanceof Element && target.closest('.template-dropdown-menu')) return
+      closeFlyout()
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') closeFlyout()
+    }
+    document.addEventListener('pointerdown', onPointer)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onPointer)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [openField])
 
   async function enlighten() {
     setBusy(true)
@@ -104,28 +184,25 @@ export function MappingScreen({
           </tbody>
         </table>
       </DataTable>
-      <div className="fields">
+      <div className="fields" ref={fieldsRef}>
         {MAPPING_FIELDS.map((field) => (
-          <label key={field.id} className="field">
+          <div key={field.id} className="field">
             <span className="field-head">
               <Typography.Body variant="medium-strong">{field.label}</Typography.Body>
               <span className="badge">{field.badge}</span>
             </span>
-            <select
+            <FlyoutSelect
               value={mapping[field.id] ?? ''}
-              onChange={(event) => change(field.id, event.target.value)}
-            >
-              <option value="">Не выбрано</option>
-              {upload.columns
+              options={upload.columns
                 .filter((column) => mapping[field.id] === column || !taken.has(column))
-                .map((column) => (
-                  <option key={column} value={column}>
-                    {column}
-                  </option>
-                ))}
-            </select>
+                .map((column) => ({ value: column, label: column }))}
+              open={openField === field.id}
+              closing={closingFields.has(field.id)}
+              onToggle={() => toggleFlyout(field.id)}
+              onChange={(column) => change(field.id, column)}
+            />
             <Typography.Label variant="small">Пример: {exampleValue(upload.sample_rows, mapping[field.id])}</Typography.Label>
-          </label>
+          </div>
         ))}
       </div>
       {ready ? null : (

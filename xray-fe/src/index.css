@@ -790,6 +790,142 @@ html[data-theme="dark"] .app-shell .file-card-remove:hover {
   background-size: 18px;
 }
 
+.field-dropdown {
+  position: relative;
+  z-index: 1;
+}
+
+.template-dropdown-menu.is-portal {
+  position: absolute;
+  right: auto;
+  z-index: 80;
+  box-sizing: border-box;
+  overflow: hidden;
+  max-height: min(280px, 50vh);
+  font-family: inherit;
+}
+
+.template-dropdown-menu.is-portal.is-closing {
+  z-index: 79;
+}
+
+.flyout-scroll {
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: min(264px, calc(50vh - 16px));
+  scrollbar-width: none;
+}
+
+.flyout-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.flyout-vscroll {
+  position: absolute;
+  top: 28px;
+  bottom: 28px;
+  right: 0;
+  z-index: 2;
+  width: 14px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.flyout-vscroll::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 8px;
+  width: 4px;
+  border-radius: 99px;
+  background: rgb(15 118 110 / 12%);
+  pointer-events: none;
+}
+
+.flyout-vthumb {
+  position: absolute;
+  left: 8px;
+  width: 4px;
+  border-radius: 99px;
+  background: rgb(45 168 158 / 60%);
+  cursor: grab;
+}
+
+.flyout-vscroll:active .flyout-vthumb {
+  cursor: grabbing;
+}
+
+html[data-theme="dark"] .flyout-vscroll::before {
+  background: rgb(255 255 255 / 8%);
+}
+
+html[data-theme="dark"] .flyout-vthumb {
+  background: rgb(45 212 191 / 48%);
+}
+
+.template-dropdown-menu.is-portal .template-item-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #172033;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 650;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+  animation: item-drop 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.template-dropdown-menu.is-portal .template-item-btn:hover {
+  background: rgb(243 251 249 / 42%);
+}
+
+.template-dropdown-menu.is-portal .template-item-btn.is-current {
+  background: rgb(15 118 110 / 14%);
+}
+
+html[data-theme="dark"] .template-dropdown-menu.is-portal .template-item-btn {
+  color: #fff;
+}
+
+html[data-theme="dark"] .template-dropdown-menu.is-portal .template-item-btn:hover,
+html[data-theme="dark"] .template-dropdown-menu.is-portal .template-item-btn.is-current {
+  background: rgb(45 212 191 / 16%);
+}
+
+.app-shell .field-select-btn {
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+}
+
+.field-dropdown .template-label {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.field-select-placeholder {
+  opacity: 0.55;
+}
+
+.app-shell .template-item-btn.is-current {
+  background: rgb(15 118 110 / 14%);
+}
+
+html[data-theme="dark"] .app-shell .template-item-btn.is-current {
+  background: rgb(45 212 191 / 16%);
+}
+
 .copy-fallback {
   min-height: 140px;
   resize: vertical;
@@ -2816,6 +2952,94 @@ html[data-theme="dark"] .history-delete.is-sealed .is-done {
   line-height: 1;
 }
 
+.app-shell .copy-action {
+  overflow: hidden;
+  font: inherit;
+  cursor: pointer;
+}
+
+.copy-action-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  min-width: 0;
+}
+
+.copy-action-check {
+  width: 0;
+  height: 20px;
+  flex: none;
+  overflow: visible;
+  opacity: 0;
+  fill: none;
+  stroke: #0f766e;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.copy-action-check path {
+  stroke-dasharray: 22;
+  stroke-dashoffset: 22;
+}
+
+.copy-action-words {
+  display: grid;
+  justify-items: center;
+}
+
+.copy-action-words span {
+  grid-area: 1 / 1;
+  transition: opacity 0.4s ease, color 0.5s ease;
+}
+
+.app-shell .copy-action-words .is-done,
+.copy-action-words .is-done {
+  opacity: 0;
+  color: #0f766e;
+}
+
+.copy-action.is-copied .copy-action-status {
+  gap: 8px;
+}
+
+.copy-action.is-copied .copy-action-check {
+  width: 20px;
+  opacity: 1;
+  transition: width 0.35s ease, opacity 0.25s ease;
+}
+
+.copy-action.is-copied .copy-action-check path {
+  animation: check-draw 0.48s ease 0.12s forwards;
+}
+
+.copy-action.is-copied .is-idle {
+  opacity: 0;
+}
+
+.copy-action.is-copied .is-done {
+  opacity: 1;
+  color: #0f766e;
+}
+
+.app-shell .copy-action-words span {
+  transition: opacity 0.4s ease, color 0.5s ease;
+}
+
+.app-shell .copy-action-check {
+  transition: width 0.35s ease, opacity 0.25s ease;
+}
+
+html[data-theme="dark"] .copy-action-check {
+  stroke: #5eead4;
+}
+
+html[data-theme="dark"] .app-shell .copy-action-words .is-done,
+html[data-theme="dark"] .copy-action.is-copied .is-done {
+  color: #5eead4;
+}
+
 .data-table {
   background: linear-gradient(180deg, rgb(255 255 255 / 78%), rgb(255 255 255 / 50%));
   backdrop-filter: blur(18px) saturate(160%);
@@ -3744,6 +3968,8 @@ html[data-theme="dark"] .chat-clear-btn.is-on:hover {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  max-height: min(280px, 50vh);
+  overflow: hidden;
   padding: 8px;
   border: 1px solid rgb(255 255 255 / 48%);
   border-radius: 16px;
@@ -3841,6 +4067,13 @@ html[data-theme="dark"] .chat-clear-btn.is-on:hover {
 .app-shell .template-item-btn:nth-child(6) { animation-delay: 0.21s; }
 .app-shell .template-item-btn:nth-child(7) { animation-delay: 0.25s; }
 .app-shell .template-item-btn:nth-child(8) { animation-delay: 0.29s; }
+.app-shell .template-item-btn:nth-child(9) { animation-delay: 0.33s; }
+.app-shell .template-item-btn:nth-child(10) { animation-delay: 0.37s; }
+.app-shell .template-item-btn:nth-child(11) { animation-delay: 0.41s; }
+.app-shell .template-item-btn:nth-child(12) { animation-delay: 0.45s; }
+.app-shell .template-item-btn:nth-child(13) { animation-delay: 0.49s; }
+.app-shell .template-item-btn:nth-child(14) { animation-delay: 0.53s; }
+.app-shell .template-item-btn:nth-child(15) { animation-delay: 0.57s; }
 
 .tool-call-body {
   transform-origin: top center;

@@ -5,6 +5,7 @@ import { errorText } from '../api/errors.ts'
 import type { SnapshotListItem, UploadResponse } from '../api/types.ts'
 import { formatWhen } from '../domain/metrics.ts'
 import { FileDrop } from '../widgets/FileDrop.tsx'
+import { InsetVScroll } from '../widgets/InsetVScroll.tsx'
 import { Notice } from '../widgets/Notice.tsx'
 import { SwipeScan } from '../widgets/SwipeScan.tsx'
 import { XRayLogo } from '../widgets/XRayLogo.tsx'
@@ -266,6 +267,7 @@ export function Home({
 
           {showTemplatesDropdown && (
             <div className={`template-dropdown-menu${templatesClosing ? ' is-closing' : ''}`}>
+              <InsetVScroll watch={templates.length}>
               <div className="template-dropdown-header">Выберите готовый CSV:</div>
               {templates.map((t) => (
                 <button
@@ -278,6 +280,7 @@ export function Home({
                   <span className="template-item-filename">{t.name}</span>
                 </button>
               ))}
+              </InsetVScroll>
             </div>
           )}
         </div>

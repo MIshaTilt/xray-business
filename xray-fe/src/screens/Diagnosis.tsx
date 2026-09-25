@@ -1,5 +1,5 @@
 import { Button } from '@maxhub/max-ui'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../api/client.ts'
 import { errorText } from '../api/errors.ts'
 import type { Diagnosis as DiagnosisData, MetricId } from '../api/types.ts'
@@ -28,6 +28,7 @@ export function Diagnosis({
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
   const [fallback, setFallback] = useState('')
+  const copiedTimer = useRef(0)
   useEffect(() => {
     let alive = true
     void api
@@ -45,6 +46,7 @@ export function Diagnosis({
       })
     return () => {
       alive = false
+      window.clearTimeout(copiedTimer.current)
     }
   }, [onLoaded, snapshotId])
 
@@ -55,6 +57,8 @@ export function Diagnosis({
       await navigator.clipboard.writeText(text)
       setCopied(true)
       setFallback('')
+      window.clearTimeout(copiedTimer.current)
+      copiedTimer.current = window.setTimeout(() => setCopied(false), 1800)
     } catch {
       setCopied(false)
       setFallback(text)
@@ -102,7 +106,6 @@ export function Diagnosis({
         ))}
       </div>
       <p className="coverage-line">Посчитано {counted} из 7</p>
-      {copied ? <Notice tone="ok">Заключение в буфере. Его можно переслать самому.</Notice> : null}
       {fallback ? (
         <label className="stack">
           <span className="home-hint">Буфер недоступен. Выделите текст и скопируйте его сами.</span>
@@ -139,9 +142,21 @@ export function Diagnosis({
         >
           Скачать Excel
         </Button>
-        <Button className="action action-secondary" type="button" size="large" stretched variant="secondary" onClick={() => void copy()}>
-          {copied ? 'Скопировано' : 'Скопировать заключение'}
-        </Button>
+        <button
+          type="button"
+          className={`action action-secondary copy-action${copied ? ' is-copied' : ''}`}
+          onClick={() => void copy()}
+        >
+          <span className="copy-action-status">
+            <svg className="copy-action-check" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 12.6 9.2 16.8 19 7.2" />
+            </svg>
+            <span className="copy-action-words">
+              <span className="is-idle" aria-hidden={copied}>Скопировать</span>
+              <span className="is-done" aria-hidden={!copied}>Скопировано в буфер обмена</span>
+            </span>
+          </span>
+        </button>
         {diagnosis.coverage?.skipped?.length ? (
           <Button className="action action-missing" type="button" size="large" stretched variant="secondary" onClick={onMissing}>
             Чего не хватило
