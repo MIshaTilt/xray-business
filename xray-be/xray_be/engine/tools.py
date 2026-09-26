@@ -53,17 +53,18 @@ AI_TOOLS_DEFINITIONS = [
             "description": (
                 "Построить интерактивный график или диаграмму прямо в чате для наглядной визуализации данных. "
                 "Вызывай этот инструмент ВСЕГДА, когда пользователь просит 'построй график', 'нарисуй диаграмму', "
-                "'покажи распределение', 'воронку', 'график выручки по времени/датам/динамику', 'сравни менеджеров' или 'сделай чарт'. "
+                "'покажи распределение', 'динамику выручки по времени/датам/тренд', 'сравни менеджеров' или 'сделай чарт'. "
                 "Для графиков выручки по времени или датам ОБЯЗАТЕЛЬНО используй chart_type='line' и dimension='date' (или 'month'). "
-                "Инструмент возвращает рассчитанные структурированные данные, а интерфейс чата мгновенно рендерит красивый интерактивный график."
+                "Инструмент возвращает рассчитанные структурированные данные, а интерфейс чата мгновенно рендерит красивый интерактивный график.\n"
+                "ВАЖНО: Для воронок продаж и этапов сделок НЕ вызывай render_chart — используй execute_sql_query и строй понятную Markdown-таблицу стадий с конверсиями!"
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "chart_type": {
                         "type": "string",
-                        "enum": ["line", "bar", "donut", "funnel"],
-                        "description": "Тип графика: 'line' (линейный тренд / динамика по времени/датам), 'bar' (столбчатая диаграмма), 'donut' (круговая диаграмма долей), 'funnel' (воронка продаж)"
+                        "enum": ["line", "bar", "donut"],
+                        "description": "Тип графика: 'line' (линейный тренд / динамика по времени/датам), 'bar' (столбчатая диаграмма), 'donut' (круговая диаграмма долей)"
                     },
                     "title": {
                         "type": "string",
@@ -330,8 +331,10 @@ def _run_sql_query(query: str, snapshot_id: str) -> str:
             "query": query
         }, ensure_ascii=False)
 
-    s_id = str(snapshot_id)
-    clean_id = s_id.replace('-', '')
+    clean_s_id = re.sub(r"[^a-zA-Z0-9\-]", "", str(snapshot_id))
+    if not clean_s_id:
+        return json.dumps({"error": "snapshot_id не указан или некорректен"}, ensure_ascii=False)
+    clean_no_hyphen = clean_s_id.replace('-', '')
 
     raw_cols = get_snapshot_extra_columns(snapshot_id)
     standard_cols = {
@@ -355,7 +358,7 @@ def _run_sql_query(query: str, snapshot_id: str) -> str:
         "status_raw, status, created_at, first_contact_at, status_changed_at, "
         f"last_activity_at, closed_at, source, raw_data{extra_str} "
         "FROM engine_deal "
-        "WHERE snapshot_id = %s OR snapshot_id = %s"
+        f"WHERE snapshot_id = '{clean_s_id}' OR snapshot_id = '{clean_no_hyphen}'"
         ")"
     )
 
@@ -367,7 +370,7 @@ def _run_sql_query(query: str, snapshot_id: str) -> str:
 
     try:
         with connection.cursor() as cur:
-            cur.execute(full_sql, [s_id, clean_id])
+            cur.execute(full_sql)
             cols = [col[0] for col in cur.description] if cur.description else []
             raw_rows = cur.fetchmany(51)
             truncated = len(raw_rows) > 50
@@ -500,7 +503,7 @@ def execute_tool_call(tool_name: str, arguments: dict, snapshot_id: str) -> str:
         chart_type = arguments.get("chart_type", "bar")
         if chart_type == "pie":
             chart_type = "donut"
-        if chart_type not in ("bar", "donut", "funnel", "line"):
+        if chart_type not in ("bar", "donut", "line"):
             chart_type = "bar"
 
         title = arguments.get("title", "Аналитический график")
@@ -538,14 +541,12 @@ def execute_tool_call(tool_name: str, arguments: dict, snapshot_id: str) -> str:
         if not dimension or dimension not in ("date", "month", "manager", "status", "client", "source", "custom"):
             if chart_type == "line" or any(w in title.lower() for w in time_keywords):
                 dimension = "date"
-            elif chart_type == "funnel":
-                dimension = "status"
-            elif any(w in title.lower() for w in ["статус", "этап", "стади", "воронк"]):
-                dimension = "status"
             elif any(w in title.lower() for w in ["клиент", "заказчик", "покупател"]):
                 dimension = "client"
             elif any(w in title.lower() for w in ["источник", "канал"]):
                 dimension = "source"
+            elif any(w in title.lower() for w in ["статус", "этап", "стади"]):
+                dimension = "status"
             else:
                 dimension = "manager"
 
@@ -574,7 +575,7 @@ def execute_tool_call(tool_name: str, arguments: dict, snapshot_id: str) -> str:
                     "hint": d.get("hint", "")
                 })
 
-        elif dimension == "status" or chart_type == "funnel":
+        elif dimension == "status":
             has_canonical = qs.exclude(status="other").exists()
             use_raw = not has_canonical and qs.exclude(status_raw="").exists()
 
@@ -585,26 +586,7 @@ def execute_tool_call(tool_name: str, arguments: dict, snapshot_id: str) -> str:
                     avg_check=Avg("amount")
                 ))
 
-                def stage_order(lbl):
-                    l = lbl.lower()
-                    if any(w in l for w in ["нов", "вход", "лид"]):
-                        return 1
-                    if any(w in l for w in ["работ"]):
-                        return 2
-                    if any(w in l for w in ["кп", "предложен", "переговор"]):
-                        return 3
-                    if any(w in l for w in ["застря", "дум", "пауз"]):
-                        return 4
-                    if any(w in l for w in ["успеш", "выигр", "оплач", "завершен"]):
-                        return 5
-                    if any(w in l for w in ["слив", "отказ", "проигр", "отмен"]):
-                        return 6
-                    return 7
-
-                if chart_type == "funnel":
-                    raw_stats.sort(key=lambda r: stage_order(r["status_raw"]))
-                else:
-                    raw_stats.sort(key=lambda r: float(r["total_amount"] or 0) if metric == "amount" else int(r["deals_count"] or 0), reverse=True)
+                raw_stats.sort(key=lambda r: float(r["total_amount"] or 0) if metric == "amount" else int(r["deals_count"] or 0), reverse=True)
 
                 for idx, r in enumerate(raw_stats):
                     lbl = r["status_raw"]
@@ -644,58 +626,22 @@ def execute_tool_call(tool_name: str, arguments: dict, snapshot_id: str) -> str:
                 ))
                 stat_by_status = {s["status"]: s for s in status_stats}
 
-                if chart_type == "funnel":
-                    funnel_stages = ["new", "in_progress", "proposal", "negotiation", "won"]
-                    for st_key in funnel_stages:
-                        row = stat_by_status.get(st_key, {"total_amount": 0, "deals_count": 0, "avg_check": 0})
+                for idx, (st_key, meta) in enumerate(status_meta.items()):
+                    if st_key in stat_by_status:
+                        row = stat_by_status[st_key]
                         amt = float(row.get("total_amount") or 0)
                         cnt = int(row.get("deals_count") or 0)
-                        avg = float(row.get("avg_check") or 0)
-                        val = amt if metric == "amount" else cnt
-                        meta = status_meta.get(st_key, {"label": st_key, "color": "#94A3B8"})
+                        val = amt if metric == "amount" else (cnt if metric == "count" else float(row.get("avg_check") or 0))
                         items.append({
                             "label": meta["label"],
-                            "stage_key": st_key,
                             "value": val,
                             "amount": amt,
                             "count": cnt,
-                            "avg_check": avg,
-                            "formatted_value": fmt_val(val, metric == "amount"),
+                            "formatted_value": fmt_val(val, metric in ("amount", "avg_check")),
                             "color": meta["color"],
-                            "hint": f"{cnt} сделок на сумму {fmt_val(amt, True)}"
+                            "hint": f"{cnt} сделок, средний чек {fmt_val(row.get('avg_check') or 0, True)}"
                         })
-                    if "lost" in stat_by_status:
-                        lost_row = stat_by_status["lost"]
-                        lost_amt = float(lost_row.get("total_amount") or 0)
-                        lost_cnt = int(lost_row.get("deals_count") or 0)
-                        items.append({
-                            "label": status_meta["lost"]["label"],
-                            "stage_key": "lost",
-                            "value": lost_amt if metric == "amount" else lost_cnt,
-                            "amount": lost_amt,
-                            "count": lost_cnt,
-                            "avg_check": float(lost_row.get("avg_check") or 0),
-                            "formatted_value": fmt_val(lost_amt if metric == "amount" else lost_cnt, metric == "amount"),
-                            "color": status_meta["lost"]["color"],
-                            "hint": f"Потеряно: {lost_cnt} сделок на {fmt_val(lost_amt, True)}"
-                        })
-                else:
-                    for idx, (st_key, meta) in enumerate(status_meta.items()):
-                        if st_key in stat_by_status:
-                            row = stat_by_status[st_key]
-                            amt = float(row.get("total_amount") or 0)
-                            cnt = int(row.get("deals_count") or 0)
-                            val = amt if metric == "amount" else (cnt if metric == "count" else float(row.get("avg_check") or 0))
-                            items.append({
-                                "label": meta["label"],
-                                "value": val,
-                                "amount": amt,
-                                "count": cnt,
-                                "formatted_value": fmt_val(val, metric in ("amount", "avg_check")),
-                                "color": meta["color"],
-                                "hint": f"{cnt} сделок, средний чек {fmt_val(row.get('avg_check') or 0, True)}"
-                            })
-                    items.sort(key=lambda x: x["value"], reverse=True)
+                items.sort(key=lambda x: x["value"], reverse=True)
 
         elif dimension == "manager":
             mgr_qs = qs.exclude(manager="").values("manager").annotate(

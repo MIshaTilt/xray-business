@@ -37230,5 +37230,3068 @@
       "low_sample": []
     },
     "all_metrics": {}
+  },
+  "8f2da922-3901-4c5d-9895-2f5a98b06907": {
+    "snapshot_id": "8f2da922-3901-4c5d-9895-2f5a98b06907",
+    "user_id": null,
+    "guest_session": "guest_cisfol0o2tomuie4rz2",
+    "is_guest": true,
+    "scan_no": 25,
+    "status": "ready",
+    "progress": 100,
+    "error": "",
+    "created_at": "2026-09-26T19:45:36.593783",
+    "filename": "custom_messy_slang_crm.csv",
+    "source": "miniapp",
+    "diagnosis": {
+      "snapshot_id": "8f2da922-3901-4c5d-9895-2f5a98b06907",
+      "headline": "Воронка теряет 1 329 000 руб. на этапе «В работе»: 64.5% денег сгорает из-за зависших сделок",
+      "body": "Срочно пересоберите работу на этапе «in_progress»: здесь срезается 64.5% конверсии, а бизнес теряет 1329000.00 руб. Введите жесткие дедлайны по переводу лида на следующий шаг. Лично проконтролируйте разбор 8 сделок на 1329000.00 руб., которые висят старше 21 дней: продавите решение по ЛПР или закройте неликвидные, чтобы менеджеры не тратили время впустую. Запустите реактивацию по 8 клиентам на сумму 1289500.00 руб., которые молчат дольше 45 дней: свяжитесь через контрольный оффер или запросите честную причину паузы.",
+      "findings": [
+        {
+          "metric_id": "funnel_dropoff",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "critical",
+          "value": 64.5,
+          "unit": "pct",
+          "money_impact": "1329000.00",
+          "threshold_label": "этап теряет больше 40% суммы",
+          "action": "Срочно пересоберите работу на этапе «in_progress»: здесь срезается 64.5% конверсии, а бизнес теряет 1329000.00 руб. Введите жесткие дедлайны по переводу лида на следующий шаг.",
+          "evidence": [
+            {
+              "deal_id": "ORD-8802",
+              "client": "ИП Васильев А.В.",
+              "amount": "45000.00",
+              "status": "in_progress",
+              "manager": "Мария Смирнова",
+              "contact": "+7 (916) 222-33-44"
+            },
+            {
+              "deal_id": "ORD-8803",
+              "client": "АО \"ТехноПром\"",
+              "amount": "340000.00",
+              "status": "in_progress",
+              "manager": "Алексей Громов",
+              "contact": "+7 (903) 333-44-55"
+            },
+            {
+              "deal_id": "ORD-8805",
+              "client": "ИП Кузнецова С.М.",
+              "amount": "98000.00",
+              "status": "in_progress",
+              "manager": "Мария Смирнова",
+              "contact": "+7 (925) 555-66-77"
+            },
+            {
+              "deal_id": "ORD-8808",
+              "client": "ООО \"ГлавСнаб\"",
+              "amount": "165000.00",
+              "status": "in_progress",
+              "manager": "Алексей Громов",
+              "contact": "+7 (926) 888-99-00"
+            },
+            {
+              "deal_id": "ORD-8809",
+              "client": "ИП Орлова Н.В.",
+              "amount": "52000.00",
+              "status": "in_progress",
+              "manager": "Мария Смирнова",
+              "contact": "+7 (916) 999-00-11"
+            },
+            {
+              "deal_id": "ORD-8810",
+              "client": "ООО \"ПромАльянс\"",
+              "amount": "420000.00",
+              "status": "in_progress",
+              "manager": "Алексей Громов",
+              "contact": "+7 (903) 000-11-22"
+            },
+            {
+              "deal_id": "ORD-8812",
+              "client": "ООО \"ИнтерЛогистик\"",
+              "amount": "135000.00",
+              "status": "in_progress",
+              "manager": "Мария Смирнова",
+              "contact": "+7 (925) 222-33-44"
+            },
+            {
+              "deal_id": "ORD-8815",
+              "client": "ИП Морозов Д.А.",
+              "amount": "74000.00",
+              "status": "in_progress",
+              "manager": "Мария Смирнова",
+              "contact": "+7 (926) 555-66-77"
+            }
+          ]
+        },
+        {
+          "metric_id": "stagnation",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "critical",
+          "value": 8,
+          "unit": "deals",
+          "money_impact": "1329000.00",
+          "threshold_label": "Зависшей считаем сделку старше 21 дней",
+          "action": "Лично проконтролируйте разбор 8 сделок на 1329000.00 руб., которые висят старше 21 дней: продавите решение по ЛПР или закройте неликвидные, чтобы менеджеры не тратили время впустую.",
+          "evidence": [
+            {
+              "deal_id": "ORD-8802",
+              "client": "ИП Васильев А.В.",
+              "amount": "45000.00",
+              "status": "in_progress",
+              "days_stale": 56,
+              "manager": "Мария Смирнова",
+              "contact": "+7 (916) 222-33-44"
+            },
+            {
+              "deal_id": "ORD-8803",
+              "client": "АО \"ТехноПром\"",
+              "amount": "340000.00",
+              "status": "in_progress",
+              "days_stale": 73,
+              "manager": "Алексей Громов",
+              "contact": "+7 (903) 333-44-55"
+            },
+            {
+              "deal_id": "ORD-8805",
+              "client": "ИП Кузнецова С.М.",
+              "amount": "98000.00",
+              "status": "in_progress",
+              "days_stale": 63,
+              "manager": "Мария Смирнова",
+              "contact": "+7 (925) 555-66-77"
+            },
+            {
+              "deal_id": "ORD-8808",
+              "client": "ООО \"ГлавСнаб\"",
+              "amount": "165000.00",
+              "status": "in_progress",
+              "days_stale": 70,
+              "manager": "Алексей Громов",
+              "contact": "+7 (926) 888-99-00"
+            },
+            {
+              "deal_id": "ORD-8809",
+              "client": "ИП Орлова Н.В.",
+              "amount": "52000.00",
+              "status": "in_progress",
+              "days_stale": 25,
+              "manager": "Мария Смирнова",
+              "contact": "+7 (916) 999-00-11"
+            },
+            {
+              "deal_id": "ORD-8810",
+              "client": "ООО \"ПромАльянс\"",
+              "amount": "420000.00",
+              "status": "in_progress",
+              "days_stale": 78,
+              "manager": "Алексей Громов",
+              "contact": "+7 (903) 000-11-22"
+            },
+            {
+              "deal_id": "ORD-8812",
+              "client": "ООО \"ИнтерЛогистик\"",
+              "amount": "135000.00",
+              "status": "in_progress",
+              "days_stale": 66,
+              "manager": "Мария Смирнова",
+              "contact": "+7 (925) 222-33-44"
+            },
+            {
+              "deal_id": "ORD-8815",
+              "client": "ИП Морозов Д.А.",
+              "amount": "74000.00",
+              "status": "in_progress",
+              "days_stale": 58,
+              "manager": "Мария Смирнова",
+              "contact": "+7 (926) 555-66-77"
+            }
+          ]
+        },
+        {
+          "metric_id": "dormant",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "critical",
+          "value": 8,
+          "unit": "deals",
+          "money_impact": "1289500.00",
+          "threshold_label": "дольше 45 дней",
+          "action": "Запустите реактивацию по 8 клиентам на сумму 1289500.00 руб., которые молчат дольше 45 дней: свяжитесь через контрольный оффер или запросите честную причину паузы.",
+          "evidence": [
+            {
+              "deal_id": "ORD-8802",
+              "client": "ИП Васильев А.В.",
+              "amount": "45000.00",
+              "status": "in_progress",
+              "manager": "Мария Смирнова",
+              "contact": "+7 (916) 222-33-44"
+            },
+            {
+              "deal_id": "ORD-8803",
+              "client": "АО \"ТехноПром\"",
+              "amount": "340000.00",
+              "status": "in_progress",
+              "manager": "Алексей Громов",
+              "contact": "+7 (903) 333-44-55"
+            },
+            {
+              "deal_id": "ORD-8804",
+              "client": "ООО \"АвтоЛайн\"",
+              "amount": "12500.00",
+              "status": "lost",
+              "manager": "Дмитрий Ковалев",
+              "contact": "+7 (985) 444-55-66"
+            },
+            {
+              "deal_id": "ORD-8805",
+              "client": "ИП Кузнецова С.М.",
+              "amount": "98000.00",
+              "status": "in_progress",
+              "manager": "Мария Смирнова",
+              "contact": "+7 (925) 555-66-77"
+            },
+            {
+              "deal_id": "ORD-8808",
+              "client": "ООО \"ГлавСнаб\"",
+              "amount": "165000.00",
+              "status": "in_progress",
+              "manager": "Алексей Громов",
+              "contact": "+7 (926) 888-99-00"
+            },
+            {
+              "deal_id": "ORD-8810",
+              "client": "ООО \"ПромАльянс\"",
+              "amount": "420000.00",
+              "status": "in_progress",
+              "manager": "Алексей Громов",
+              "contact": "+7 (903) 000-11-22"
+            },
+            {
+              "deal_id": "ORD-8812",
+              "client": "ООО \"ИнтерЛогистик\"",
+              "amount": "135000.00",
+              "status": "in_progress",
+              "manager": "Мария Смирнова",
+              "contact": "+7 (925) 222-33-44"
+            },
+            {
+              "deal_id": "ORD-8815",
+              "client": "ИП Морозов Д.А.",
+              "amount": "74000.00",
+              "status": "in_progress",
+              "manager": "Мария Смирнова",
+              "contact": "+7 (926) 555-66-77"
+            }
+          ]
+        }
+      ],
+      "coverage": {
+        "available": [
+          "speed_to_lead",
+          "stagnation",
+          "discount_leakage",
+          "sales_cycle",
+          "key_account_risk",
+          "dormant",
+          "funnel_dropoff"
+        ],
+        "skipped": []
+      },
+      "period": {
+        "from": "2026-07-05",
+        "to": "2026-09-01"
+      },
+      "totals": {
+        "deals": 15,
+        "amount": "2108500.00",
+        "accepted": 15,
+        "rejected": 0
+      },
+      "ok": [],
+      "low_sample": [
+        "discount_leakage",
+        "sales_cycle",
+        "key_account_risk"
+      ]
+    },
+    "all_metrics": {
+      "speed_to_lead": {
+        "metric_id": "speed_to_lead",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "watch",
+        "value": 0.67,
+        "unit": "hours",
+        "money_impact": null,
+        "threshold_label": "быстрее 30 минут",
+        "action": "Медиана первого контакта 0.67 ч. Ответьте новым заявкам быстрее 30 минут",
+        "evidence": [
+          {
+            "deal_id": "ORD-8801",
+            "client": "ООО \"СтройКомплект\"",
+            "amount": "185000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": "+7 (926) 111-22-33"
+          },
+          {
+            "deal_id": "ORD-8802",
+            "client": "ИП Васильев А.В.",
+            "amount": "45000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (916) 222-33-44"
+          },
+          {
+            "deal_id": "ORD-8803",
+            "client": "АО \"ТехноПром\"",
+            "amount": "340000.00",
+            "status": "in_progress",
+            "manager": "Алексей Громов",
+            "contact": "+7 (903) 333-44-55"
+          },
+          {
+            "deal_id": "ORD-8804",
+            "client": "ООО \"АвтоЛайн\"",
+            "amount": "12500.00",
+            "status": "lost",
+            "manager": "Дмитрий Ковалев",
+            "contact": "+7 (985) 444-55-66"
+          },
+          {
+            "deal_id": "ORD-8805",
+            "client": "ИП Кузнецова С.М.",
+            "amount": "98000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (925) 555-66-77"
+          },
+          {
+            "deal_id": "ORD-8806",
+            "client": "ООО \"Северный Ветер\"",
+            "amount": "210000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": "+7 (915) 666-77-88"
+          },
+          {
+            "deal_id": "ORD-8807",
+            "client": "ИП Пономарев К.Е.",
+            "amount": "15000.00",
+            "status": "lost",
+            "manager": "Дмитрий Ковалев",
+            "contact": "+7 (909) 777-88-99"
+          },
+          {
+            "deal_id": "ORD-8808",
+            "client": "ООО \"ГлавСнаб\"",
+            "amount": "165000.00",
+            "status": "in_progress",
+            "manager": "Алексей Громов",
+            "contact": "+7 (926) 888-99-00"
+          },
+          {
+            "deal_id": "ORD-8809",
+            "client": "ИП Орлова Н.В.",
+            "amount": "52000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (916) 999-00-11"
+          },
+          {
+            "deal_id": "ORD-8810",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "420000.00",
+            "status": "in_progress",
+            "manager": "Алексей Громов",
+            "contact": "+7 (903) 000-11-22"
+          },
+          {
+            "deal_id": "ORD-8811",
+            "client": "ИП Савельев В.Д.",
+            "amount": "28000.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": "+7 (985) 111-22-33"
+          },
+          {
+            "deal_id": "ORD-8812",
+            "client": "ООО \"ИнтерЛогистик\"",
+            "amount": "135000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (925) 222-33-44"
+          },
+          {
+            "deal_id": "ORD-8813",
+            "client": "ИП Григорьева Т.П.",
+            "amount": "19000.00",
+            "status": "lost",
+            "manager": "Дмитрий Ковалев",
+            "contact": "+7 (915) 333-44-55"
+          },
+          {
+            "deal_id": "ORD-8814",
+            "client": "ООО \"МегаТрейд\"",
+            "amount": "310000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": "+7 (909) 444-55-66"
+          },
+          {
+            "deal_id": "ORD-8815",
+            "client": "ИП Морозов Д.А.",
+            "amount": "74000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (926) 555-66-77"
+          }
+        ]
+      },
+      "stagnation": {
+        "metric_id": "stagnation",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "critical",
+        "value": 8,
+        "unit": "deals",
+        "money_impact": "1329000.00",
+        "threshold_label": "Зависшей считаем сделку старше 21 дней",
+        "action": "Разморозьте 8 сделок старше 21 дней на 1 329 000 руб.",
+        "evidence": [
+          {
+            "deal_id": "ORD-8802",
+            "client": "ИП Васильев А.В.",
+            "amount": "45000.00",
+            "status": "in_progress",
+            "days_stale": 56,
+            "manager": "Мария Смирнова",
+            "contact": "+7 (916) 222-33-44"
+          },
+          {
+            "deal_id": "ORD-8803",
+            "client": "АО \"ТехноПром\"",
+            "amount": "340000.00",
+            "status": "in_progress",
+            "days_stale": 73,
+            "manager": "Алексей Громов",
+            "contact": "+7 (903) 333-44-55"
+          },
+          {
+            "deal_id": "ORD-8805",
+            "client": "ИП Кузнецова С.М.",
+            "amount": "98000.00",
+            "status": "in_progress",
+            "days_stale": 63,
+            "manager": "Мария Смирнова",
+            "contact": "+7 (925) 555-66-77"
+          },
+          {
+            "deal_id": "ORD-8808",
+            "client": "ООО \"ГлавСнаб\"",
+            "amount": "165000.00",
+            "status": "in_progress",
+            "days_stale": 70,
+            "manager": "Алексей Громов",
+            "contact": "+7 (926) 888-99-00"
+          },
+          {
+            "deal_id": "ORD-8809",
+            "client": "ИП Орлова Н.В.",
+            "amount": "52000.00",
+            "status": "in_progress",
+            "days_stale": 25,
+            "manager": "Мария Смирнова",
+            "contact": "+7 (916) 999-00-11"
+          },
+          {
+            "deal_id": "ORD-8810",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "420000.00",
+            "status": "in_progress",
+            "days_stale": 78,
+            "manager": "Алексей Громов",
+            "contact": "+7 (903) 000-11-22"
+          },
+          {
+            "deal_id": "ORD-8812",
+            "client": "ООО \"ИнтерЛогистик\"",
+            "amount": "135000.00",
+            "status": "in_progress",
+            "days_stale": 66,
+            "manager": "Мария Смирнова",
+            "contact": "+7 (925) 222-33-44"
+          },
+          {
+            "deal_id": "ORD-8815",
+            "client": "ИП Морозов Д.А.",
+            "amount": "74000.00",
+            "status": "in_progress",
+            "days_stale": 58,
+            "manager": "Мария Смирнова",
+            "contact": "+7 (926) 555-66-77"
+          }
+        ]
+      },
+      "discount_leakage": {
+        "metric_id": "discount_leakage",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": null,
+        "unit": "pct",
+        "money_impact": null,
+        "threshold_label": "скидка больше 10%",
+        "action": "Слишком мало закрытых сделок для оценки скидок",
+        "evidence": []
+      },
+      "sales_cycle": {
+        "metric_id": "sales_cycle",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": null,
+        "unit": "days",
+        "money_impact": null,
+        "threshold_label": "цикл вырос",
+        "action": "Недостаточно данных для анализа цикла",
+        "evidence": []
+      },
+      "key_account_risk": {
+        "metric_id": "key_account_risk",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": null,
+        "unit": "pct",
+        "money_impact": null,
+        "threshold_label": "два клиента больше 50%",
+        "action": "Мало клиентов для анализа концентрации",
+        "evidence": []
+      },
+      "dormant": {
+        "metric_id": "dormant",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "critical",
+        "value": 8,
+        "unit": "deals",
+        "money_impact": "1289500.00",
+        "threshold_label": "дольше 45 дней",
+        "action": "8 клиентов молчат дольше 45 дней",
+        "evidence": [
+          {
+            "deal_id": "ORD-8802",
+            "client": "ИП Васильев А.В.",
+            "amount": "45000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (916) 222-33-44"
+          },
+          {
+            "deal_id": "ORD-8803",
+            "client": "АО \"ТехноПром\"",
+            "amount": "340000.00",
+            "status": "in_progress",
+            "manager": "Алексей Громов",
+            "contact": "+7 (903) 333-44-55"
+          },
+          {
+            "deal_id": "ORD-8804",
+            "client": "ООО \"АвтоЛайн\"",
+            "amount": "12500.00",
+            "status": "lost",
+            "manager": "Дмитрий Ковалев",
+            "contact": "+7 (985) 444-55-66"
+          },
+          {
+            "deal_id": "ORD-8805",
+            "client": "ИП Кузнецова С.М.",
+            "amount": "98000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (925) 555-66-77"
+          },
+          {
+            "deal_id": "ORD-8808",
+            "client": "ООО \"ГлавСнаб\"",
+            "amount": "165000.00",
+            "status": "in_progress",
+            "manager": "Алексей Громов",
+            "contact": "+7 (926) 888-99-00"
+          },
+          {
+            "deal_id": "ORD-8810",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "420000.00",
+            "status": "in_progress",
+            "manager": "Алексей Громов",
+            "contact": "+7 (903) 000-11-22"
+          },
+          {
+            "deal_id": "ORD-8812",
+            "client": "ООО \"ИнтерЛогистик\"",
+            "amount": "135000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (925) 222-33-44"
+          },
+          {
+            "deal_id": "ORD-8815",
+            "client": "ИП Морозов Д.А.",
+            "amount": "74000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (926) 555-66-77"
+          }
+        ]
+      },
+      "funnel_dropoff": {
+        "metric_id": "funnel_dropoff",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "critical",
+        "value": 64.5,
+        "unit": "pct",
+        "money_impact": "1329000.00",
+        "threshold_label": "этап теряет больше 40% суммы",
+        "action": "На этапе «in_progress» теряется 1 329 000 руб.",
+        "evidence": [
+          {
+            "deal_id": "ORD-8802",
+            "client": "ИП Васильев А.В.",
+            "amount": "45000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (916) 222-33-44"
+          },
+          {
+            "deal_id": "ORD-8803",
+            "client": "АО \"ТехноПром\"",
+            "amount": "340000.00",
+            "status": "in_progress",
+            "manager": "Алексей Громов",
+            "contact": "+7 (903) 333-44-55"
+          },
+          {
+            "deal_id": "ORD-8805",
+            "client": "ИП Кузнецова С.М.",
+            "amount": "98000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (925) 555-66-77"
+          },
+          {
+            "deal_id": "ORD-8808",
+            "client": "ООО \"ГлавСнаб\"",
+            "amount": "165000.00",
+            "status": "in_progress",
+            "manager": "Алексей Громов",
+            "contact": "+7 (926) 888-99-00"
+          },
+          {
+            "deal_id": "ORD-8809",
+            "client": "ИП Орлова Н.В.",
+            "amount": "52000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (916) 999-00-11"
+          },
+          {
+            "deal_id": "ORD-8810",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "420000.00",
+            "status": "in_progress",
+            "manager": "Алексей Громов",
+            "contact": "+7 (903) 000-11-22"
+          },
+          {
+            "deal_id": "ORD-8812",
+            "client": "ООО \"ИнтерЛогистик\"",
+            "amount": "135000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (925) 222-33-44"
+          },
+          {
+            "deal_id": "ORD-8815",
+            "client": "ИП Морозов Д.А.",
+            "amount": "74000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (926) 555-66-77"
+          }
+        ]
+      }
+    }
+  },
+  "a1620c43-fe3c-4c87-baaf-b06dc6e96aa6": {
+    "snapshot_id": "a1620c43-fe3c-4c87-baaf-b06dc6e96aa6",
+    "user_id": null,
+    "guest_session": "guest_cisfol0o2tomuie4rz2",
+    "is_guest": true,
+    "scan_no": 26,
+    "status": "ready",
+    "progress": 100,
+    "error": "",
+    "created_at": "2026-09-26T20:04:41.714633",
+    "filename": "ecommerce_messy_user_table.csv",
+    "source": "miniapp",
+    "diagnosis": {
+      "snapshot_id": "a1620c43-fe3c-4c87-baaf-b06dc6e96aa6",
+      "headline": "Разморозьте 254 984 руб.: верните в работу 60 сделок старше 21 дней",
+      "body": "Проведите аудит 60 сделок старше 21 дней на сумму 254984.00 руб.: потребуйте от менеджеров назначить конкретные следующие шаги либо отправьте зависшие лиды в отказ. Запустите реактивацию 53 клиентов, которые молчат дольше 45 дней: предложите спецусловия или смените ответственного менеджера, чтобы вернуть в воронку 237147.00 руб.",
+      "findings": [
+        {
+          "metric_id": "stagnation",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "critical",
+          "value": 60,
+          "unit": "deals",
+          "money_impact": "254984.00",
+          "threshold_label": "Зависшей считаем сделку старше 21 дней",
+          "action": "Проведите аудит 60 сделок старше 21 дней на сумму 254984.00 руб.: потребуйте от менеджеров назначить конкретные следующие шаги либо отправьте зависшие лиды в отказ.",
+          "evidence": [
+            {
+              "deal_id": "ORD-202606-0005",
+              "client": "Назар Феофанович Потапов",
+              "amount": "1300.00",
+              "status": "in_progress",
+              "days_stale": 92,
+              "manager": "",
+              "contact": "aleksandra2018@mail.ru"
+            },
+            {
+              "deal_id": "ORD-202606-0209",
+              "client": "Борисов Галактион Дорофеевич",
+              "amount": "5900.00",
+              "status": "proposal",
+              "days_stale": 91,
+              "manager": "",
+              "contact": "8 658 326 2572"
+            },
+            {
+              "deal_id": "ORD-202606-0100",
+              "client": "Полякова Элеонора Мироновна",
+              "amount": "4450.00",
+              "status": "in_progress",
+              "days_stale": 91,
+              "manager": "",
+              "contact": "8 (688) 130-6140"
+            },
+            {
+              "deal_id": "ORD-202606-0299",
+              "client": "Богданова Марфа Борисовна",
+              "amount": "750.00",
+              "status": "in_progress",
+              "days_stale": 88,
+              "manager": "",
+              "contact": "lorasoloveva@hotmail.com"
+            },
+            {
+              "deal_id": "ORD-202606-0054",
+              "client": "Доронин Емельян Феоктистович",
+              "amount": "1212.00",
+              "status": "proposal",
+              "days_stale": 88,
+              "manager": "",
+              "contact": "svetlanaefremova@gmail.com"
+            },
+            {
+              "deal_id": "ORD-202607-0278",
+              "client": "Крюкова София Викторовна",
+              "amount": "4200.00",
+              "status": "in_progress",
+              "days_stale": 85,
+              "manager": "",
+              "contact": "8 (400) 913-06-89"
+            },
+            {
+              "deal_id": "ORD-202607-0251",
+              "client": "Ираида Вениаминовна Логинова",
+              "amount": "760.00",
+              "status": "in_progress",
+              "days_stale": 85,
+              "manager": "",
+              "contact": "+7 (255) 898-8961"
+            },
+            {
+              "deal_id": "ORD-202607-0296",
+              "client": "Белоусов Гостомысл Марсович",
+              "amount": "5600.00",
+              "status": "in_progress",
+              "days_stale": 84,
+              "manager": "",
+              "contact": "8 (162) 433-08-23"
+            },
+            {
+              "deal_id": "ORD-202607-0167",
+              "client": "Евгения Кузьминична Гаврилова",
+              "amount": "3610.00",
+              "status": "in_progress",
+              "days_stale": 83,
+              "manager": "",
+              "contact": "kim69@mail.ru"
+            },
+            {
+              "deal_id": "ORD-202607-0055",
+              "client": "Кириллов Сидор Владленович",
+              "amount": "8250.00",
+              "status": "proposal",
+              "days_stale": 82,
+              "manager": "",
+              "contact": "alina_1995@mail.ru"
+            },
+            {
+              "deal_id": "ORD-202607-0013",
+              "client": "Арсений Ярославович Стрелков",
+              "amount": "2700.00",
+              "status": "proposal",
+              "days_stale": 81,
+              "manager": "",
+              "contact": "+7 275 740 44 20"
+            },
+            {
+              "deal_id": "ORD-202607-0181",
+              "client": "Евсей Фролович Шубин",
+              "amount": "1260.00",
+              "status": "proposal",
+              "days_stale": 80,
+              "manager": "",
+              "contact": "tknjazeva@yandex.ru"
+            },
+            {
+              "deal_id": "ORD-202607-0043",
+              "client": "г-жа Терентьева Таисия Захаровна",
+              "amount": "600.00",
+              "status": "in_progress",
+              "days_stale": 80,
+              "manager": "",
+              "contact": "+75940983225"
+            },
+            {
+              "deal_id": "ORD-202607-0132",
+              "client": "Матвей Ерофеевич Павлов",
+              "amount": "9600.00",
+              "status": "in_progress",
+              "days_stale": 80,
+              "manager": "",
+              "contact": "+7 (569) 044-68-77"
+            },
+            {
+              "deal_id": "ORD-202607-0216",
+              "client": "Моисеева Фаина Богдановна",
+              "amount": "3782.00",
+              "status": "in_progress",
+              "days_stale": 79,
+              "manager": "",
+              "contact": "fomaignatov@hotmail.com"
+            },
+            {
+              "deal_id": "ORD-202607-0182",
+              "client": "Будимир Аверьянович Стрелков",
+              "amount": "1300.00",
+              "status": "proposal",
+              "days_stale": 76,
+              "manager": "",
+              "contact": "8 367 037 12 32"
+            },
+            {
+              "deal_id": "ORD-202607-0148",
+              "client": "Петухов Касьян Демьянович",
+              "amount": "534.00",
+              "status": "in_progress",
+              "days_stale": 74,
+              "manager": "",
+              "contact": "86579290516"
+            },
+            {
+              "deal_id": "ORD-202607-0008",
+              "client": "Муравьева Нинель Рудольфовна",
+              "amount": "6460.00",
+              "status": "in_progress",
+              "days_stale": 74,
+              "manager": "",
+              "contact": "8 (290) 862-2559"
+            },
+            {
+              "deal_id": "ORD-202607-0135",
+              "client": "Никанор Елизарович Фокин",
+              "amount": "3510.00",
+              "status": "in_progress",
+              "days_stale": 73,
+              "manager": "",
+              "contact": "8 034 532 2900"
+            },
+            {
+              "deal_id": "ORD-202607-0298",
+              "client": "Ольга Макаровна Михеева",
+              "amount": "1710.00",
+              "status": "in_progress",
+              "days_stale": 73,
+              "manager": "",
+              "contact": "+76282827225"
+            },
+            {
+              "deal_id": "ORD-202607-0179",
+              "client": "Романов Станислав Еремеевич",
+              "amount": "1500.00",
+              "status": "in_progress",
+              "days_stale": 72,
+              "manager": "",
+              "contact": "pelageja2003@yandex.ru"
+            },
+            {
+              "deal_id": "ORD-202607-0071",
+              "client": "Александра Яковлевна Филатова",
+              "amount": "6745.00",
+              "status": "in_progress",
+              "days_stale": 71,
+              "manager": "",
+              "contact": "8 231 904 2666"
+            },
+            {
+              "deal_id": "ORD-202607-0214",
+              "client": "Ираида Вениаминовна Логинова",
+              "amount": "2880.00",
+              "status": "in_progress",
+              "days_stale": 71,
+              "manager": "",
+              "contact": "+7 (255) 898-8961"
+            },
+            {
+              "deal_id": "ORD-202607-0010",
+              "client": "Игнатий Игнатьевич Бирюков",
+              "amount": "990.00",
+              "status": "in_progress",
+              "days_stale": 71,
+              "manager": "",
+              "contact": "avgust_1988@gmail.com"
+            },
+            {
+              "deal_id": "ORD-202607-0117",
+              "client": "Евдоким Фёдорович Громов",
+              "amount": "5200.00",
+              "status": "in_progress",
+              "days_stale": 69,
+              "manager": "",
+              "contact": "arhipkomarov@gmail.com"
+            },
+            {
+              "deal_id": "ORD-202607-0259",
+              "client": "Максимов Анатолий Феликсович",
+              "amount": "1067.00",
+              "status": "in_progress",
+              "days_stale": 67,
+              "manager": "",
+              "contact": "hariton_1998@hotmail.com"
+            },
+            {
+              "deal_id": "ORD-202607-0064",
+              "client": "Надежда Вениаминовна Носова",
+              "amount": "8924.00",
+              "status": "in_progress",
+              "days_stale": 66,
+              "manager": "",
+              "contact": "knjazevazinaida@gmail.com"
+            },
+            {
+              "deal_id": "ORD-202607-0228",
+              "client": "Синклитикия Вячеславовна Карпова",
+              "amount": "2450.00",
+              "status": "in_progress",
+              "days_stale": 66,
+              "manager": "",
+              "contact": "80509028452"
+            },
+            {
+              "deal_id": "ORD-202607-0258",
+              "client": "Иванов Семен Елисеевич",
+              "amount": "1092.00",
+              "status": "in_progress",
+              "days_stale": 65,
+              "manager": "",
+              "contact": "+7 (118) 840-2034"
+            },
+            {
+              "deal_id": "ORD-202607-0102",
+              "client": "Моисеева Фаина Богдановна",
+              "amount": "2550.00",
+              "status": "in_progress",
+              "days_stale": 64,
+              "manager": "",
+              "contact": "+75540909016"
+            },
+            {
+              "deal_id": "ORD-202607-0037",
+              "client": "Агата Руслановна Турова",
+              "amount": "1425.00",
+              "status": "in_progress",
+              "days_stale": 63,
+              "manager": "",
+              "contact": "molchanovazhanna@hotmail.com"
+            },
+            {
+              "deal_id": "ORD-202607-0070",
+              "client": "Гурий Дорофеевич Киселев",
+              "amount": "3278.00",
+              "status": "in_progress",
+              "days_stale": 62,
+              "manager": "",
+              "contact": "8 (073) 564-3740"
+            },
+            {
+              "deal_id": "ORD-202607-0240",
+              "client": "Исаков Роман Денисович",
+              "amount": "10428.00",
+              "status": "in_progress",
+              "days_stale": 62,
+              "manager": "",
+              "contact": "+7 154 053 47 48"
+            },
+            {
+              "deal_id": "ORD-202607-0065",
+              "client": "Тарасов Феофан Валентинович",
+              "amount": "5600.00",
+              "status": "in_progress",
+              "days_stale": 60,
+              "manager": "",
+              "contact": "poljakovmakar@yandex.ru"
+            },
+            {
+              "deal_id": "ORD-202607-0067",
+              "client": "Олимпий Федотович Давыдов",
+              "amount": "2150.00",
+              "status": "in_progress",
+              "days_stale": 59,
+              "manager": "",
+              "contact": "8 075 573 6843"
+            },
+            {
+              "deal_id": "ORD-202608-0194",
+              "client": "Копылова Валентина Тарасовна",
+              "amount": "1100.00",
+              "status": "in_progress",
+              "days_stale": 55,
+              "manager": "",
+              "contact": "pahom46@mail.ru"
+            },
+            {
+              "deal_id": "ORD-202608-0052",
+              "client": "Марфа Львовна Шубина",
+              "amount": "1552.00",
+              "status": "in_progress",
+              "days_stale": 55,
+              "manager": "",
+              "contact": "82122033491"
+            },
+            {
+              "deal_id": "ORD-202608-0263",
+              "client": "Ипполит Жанович Филиппов",
+              "amount": "4400.00",
+              "status": "proposal",
+              "days_stale": 54,
+              "manager": "",
+              "contact": "samson_43@mail.ru"
+            },
+            {
+              "deal_id": "ORD-202608-0154",
+              "client": "Логинов Тихон Владленович",
+              "amount": "3650.00",
+              "status": "in_progress",
+              "days_stale": 54,
+              "manager": "",
+              "contact": "filaret85@hotmail.com"
+            },
+            {
+              "deal_id": "ORD-202608-0113",
+              "client": "Фаина Александровна Овчинникова",
+              "amount": "44250.00",
+              "status": "in_progress",
+              "days_stale": 53,
+              "manager": "",
+              "contact": "+7 079 776 93 19"
+            },
+            {
+              "deal_id": "ORD-202608-0145",
+              "client": "Мясников Селиверст Авдеевич",
+              "amount": "3550.00",
+              "status": "in_progress",
+              "days_stale": 52,
+              "manager": "",
+              "contact": "8 775 239 62 23"
+            },
+            {
+              "deal_id": "ORD-202608-0201",
+              "client": "Савельев Изот Ильясович",
+              "amount": "3150.00",
+              "status": "in_progress",
+              "days_stale": 46,
+              "manager": "",
+              "contact": "+7 535 553 89 54"
+            },
+            {
+              "deal_id": "ORD-202608-0241",
+              "client": "Горбачева Ксения Максимовна",
+              "amount": "4650.00",
+              "status": "in_progress",
+              "days_stale": 45,
+              "manager": "",
+              "contact": "8 (446) 286-19-79"
+            },
+            {
+              "deal_id": "ORD-202608-0012",
+              "client": "Лихачев Радим Дмитриевич",
+              "amount": "6032.00",
+              "status": "in_progress",
+              "days_stale": 45,
+              "manager": "",
+              "contact": "8 529 986 09 97"
+            },
+            {
+              "deal_id": "ORD-202608-0287",
+              "client": "Ксения Даниловна Турова",
+              "amount": "1116.00",
+              "status": "proposal",
+              "days_stale": 41,
+              "manager": "",
+              "contact": "8 433 937 6767"
+            },
+            {
+              "deal_id": "ORD-202608-0077",
+              "client": "Павлова Вероника Анатольевна",
+              "amount": "400.00",
+              "status": "in_progress",
+              "days_stale": 38,
+              "manager": "",
+              "contact": "alina_44@yahoo.com"
+            },
+            {
+              "deal_id": "ORD-202608-0283",
+              "client": "Панов Богдан Аксёнович",
+              "amount": "2300.00",
+              "status": "proposal",
+              "days_stale": 37,
+              "manager": "",
+              "contact": "+7 351 136 9155"
+            },
+            {
+              "deal_id": "ORD-202608-0268",
+              "client": "Наумов Спиридон Юлианович",
+              "amount": "8000.00",
+              "status": "in_progress",
+              "days_stale": 36,
+              "manager": "",
+              "contact": "+71809417848"
+            },
+            {
+              "deal_id": "ORD-202608-0211",
+              "client": "Алексей Алексеевич Хохлов",
+              "amount": "4462.00",
+              "status": "in_progress",
+              "days_stale": 30,
+              "manager": "",
+              "contact": "osip_79@hotmail.com"
+            },
+            {
+              "deal_id": "ORD-202608-0115",
+              "client": "Эмилия Тимофеевна Абрамова",
+              "amount": "3950.00",
+              "status": "proposal",
+              "days_stale": 29,
+              "manager": "",
+              "contact": "8 (780) 695-82-25"
+            }
+          ]
+        },
+        {
+          "metric_id": "dormant",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "critical",
+          "value": 53,
+          "unit": "deals",
+          "money_impact": "237147.00",
+          "threshold_label": "дольше 45 дней",
+          "action": "Запустите реактивацию 53 клиентов, которые молчат дольше 45 дней: предложите спецусловия или смените ответственного менеджера, чтобы вернуть в воронку 237147.00 руб.",
+          "evidence": [
+            {
+              "deal_id": "ORD-202606-0276",
+              "client": "Валентина Кузьминична Гаврилова",
+              "amount": "800.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "marfasavina@mail.ru"
+            },
+            {
+              "deal_id": "ORD-202606-0005",
+              "client": "Назар Феофанович Потапов",
+              "amount": "1300.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "aleksandra2018@mail.ru"
+            },
+            {
+              "deal_id": "ORD-202606-0209",
+              "client": "Борисов Галактион Дорофеевич",
+              "amount": "5900.00",
+              "status": "proposal",
+              "manager": "",
+              "contact": "8 658 326 2572"
+            },
+            {
+              "deal_id": "ORD-202606-0100",
+              "client": "Полякова Элеонора Мироновна",
+              "amount": "4450.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "8 (688) 130-6140"
+            },
+            {
+              "deal_id": "ORD-202606-0299",
+              "client": "Богданова Марфа Борисовна",
+              "amount": "750.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "lorasoloveva@hotmail.com"
+            },
+            {
+              "deal_id": "ORD-202606-0054",
+              "client": "Доронин Емельян Феоктистович",
+              "amount": "1212.00",
+              "status": "proposal",
+              "manager": "",
+              "contact": "svetlanaefremova@gmail.com"
+            },
+            {
+              "deal_id": "ORD-202607-0278",
+              "client": "Крюкова София Викторовна",
+              "amount": "4200.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "8 (400) 913-06-89"
+            },
+            {
+              "deal_id": "ORD-202607-0133",
+              "client": "Сысоева Елена Вадимовна",
+              "amount": "1116.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "+7 617 738 1470"
+            },
+            {
+              "deal_id": "ORD-202607-0296",
+              "client": "Белоусов Гостомысл Марсович",
+              "amount": "5600.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "8 (162) 433-08-23"
+            },
+            {
+              "deal_id": "ORD-202607-0167",
+              "client": "Евгения Кузьминична Гаврилова",
+              "amount": "3610.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "kim69@mail.ru"
+            },
+            {
+              "deal_id": "ORD-202607-0013",
+              "client": "Арсений Ярославович Стрелков",
+              "amount": "2700.00",
+              "status": "proposal",
+              "manager": "",
+              "contact": "+7 275 740 44 20"
+            },
+            {
+              "deal_id": "ORD-202607-0181",
+              "client": "Евсей Фролович Шубин",
+              "amount": "1260.00",
+              "status": "proposal",
+              "manager": "",
+              "contact": "tknjazeva@yandex.ru"
+            },
+            {
+              "deal_id": "ORD-202607-0155",
+              "client": "Красильникова Ангелина Ждановна",
+              "amount": "950.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "+7 (094) 754-2341"
+            },
+            {
+              "deal_id": "ORD-202607-0043",
+              "client": "г-жа Терентьева Таисия Захаровна",
+              "amount": "600.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "+75940983225"
+            },
+            {
+              "deal_id": "ORD-202607-0132",
+              "client": "Матвей Ерофеевич Павлов",
+              "amount": "9600.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "+7 (569) 044-68-77"
+            },
+            {
+              "deal_id": "ORD-202607-0252",
+              "client": "Терентьев Адам Елизарович",
+              "amount": "1250.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "zhukovrodion@mail.ru"
+            },
+            {
+              "deal_id": "ORD-202607-0148",
+              "client": "Петухов Касьян Демьянович",
+              "amount": "534.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "86579290516"
+            },
+            {
+              "deal_id": "ORD-202607-0091",
+              "client": "Таисия Феликсовна Лукина",
+              "amount": "3800.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "+7 826 428 96 64"
+            },
+            {
+              "deal_id": "ORD-202607-0165",
+              "client": "Колесникова Ирина Эльдаровна",
+              "amount": "1900.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "+7 083 125 6050"
+            },
+            {
+              "deal_id": "ORD-202607-0135",
+              "client": "Никанор Елизарович Фокин",
+              "amount": "3510.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "8 034 532 2900"
+            },
+            {
+              "deal_id": "ORD-202607-0298",
+              "client": "Ольга Макаровна Михеева",
+              "amount": "1710.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "+76282827225"
+            },
+            {
+              "deal_id": "ORD-202607-0071",
+              "client": "Александра Яковлевна Филатова",
+              "amount": "6745.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "8 231 904 2666"
+            },
+            {
+              "deal_id": "ORD-202607-0117",
+              "client": "Евдоким Фёдорович Громов",
+              "amount": "5200.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "arhipkomarov@gmail.com"
+            },
+            {
+              "deal_id": "ORD-202607-0126",
+              "client": "Фомичева Виктория Харитоновна",
+              "amount": "1615.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "+7 (895) 225-1525"
+            },
+            {
+              "deal_id": "ORD-202607-0064",
+              "client": "Надежда Вениаминовна Носова",
+              "amount": "8924.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "knjazevazinaida@gmail.com"
+            },
+            {
+              "deal_id": "ORD-202607-0072",
+              "client": "Глафира Афанасьевна Мясникова",
+              "amount": "1100.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "petrovaevdokija@gmail.com"
+            },
+            {
+              "deal_id": "ORD-202607-0170",
+              "client": "Муравьев Рюрик Ефремович",
+              "amount": "14760.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "petuhovsokrat@gmail.com"
+            },
+            {
+              "deal_id": "ORD-202607-0228",
+              "client": "Синклитикия Вячеславовна Карпова",
+              "amount": "2450.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "80509028452"
+            },
+            {
+              "deal_id": "ORD-202607-0300",
+              "client": "Мухина Тамара Аркадьевна",
+              "amount": "26336.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "8 803 054 32 69"
+            },
+            {
+              "deal_id": "ORD-202607-0258",
+              "client": "Иванов Семен Елисеевич",
+              "amount": "1092.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "+7 (118) 840-2034"
+            },
+            {
+              "deal_id": "ORD-202607-0062",
+              "client": "Федор Артёмович Вишняков",
+              "amount": "1568.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "arkadi_1992@rambler.ru"
+            },
+            {
+              "deal_id": "ORD-202607-0037",
+              "client": "Агата Руслановна Турова",
+              "amount": "1425.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "molchanovazhanna@hotmail.com"
+            },
+            {
+              "deal_id": "ORD-202607-0070",
+              "client": "Гурий Дорофеевич Киселев",
+              "amount": "3278.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "8 (073) 564-3740"
+            },
+            {
+              "deal_id": "ORD-202607-0129",
+              "client": "Ситников Аверьян Ермилович",
+              "amount": "5044.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "8 657 591 93 60"
+            },
+            {
+              "deal_id": "ORD-202607-0247",
+              "client": "Вишняков Тарас Дорофеевич",
+              "amount": "6032.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "8 437 913 8355"
+            },
+            {
+              "deal_id": "ORD-202607-0067",
+              "client": "Олимпий Федотович Давыдов",
+              "amount": "2150.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "8 075 573 6843"
+            },
+            {
+              "deal_id": "ORD-202607-0069",
+              "client": "Назарова Октябрина Болеславовна",
+              "amount": "4512.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "anastasijamiheeva@yahoo.com"
+            },
+            {
+              "deal_id": "ORD-202608-0194",
+              "client": "Копылова Валентина Тарасовна",
+              "amount": "1100.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "pahom46@mail.ru"
+            },
+            {
+              "deal_id": "ORD-202608-0052",
+              "client": "Марфа Львовна Шубина",
+              "amount": "1552.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "82122033491"
+            },
+            {
+              "deal_id": "ORD-202608-0229",
+              "client": "Федот Иосипович Кириллов",
+              "amount": "1105.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "+7 977 943 23 10"
+            },
+            {
+              "deal_id": "ORD-202608-0026",
+              "client": "Исай Эдгардович Ефремов",
+              "amount": "2900.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "fedoseevaalla@yahoo.com"
+            },
+            {
+              "deal_id": "ORD-202608-0263",
+              "client": "Ипполит Жанович Филиппов",
+              "amount": "4400.00",
+              "status": "proposal",
+              "manager": "",
+              "contact": "samson_43@mail.ru"
+            },
+            {
+              "deal_id": "ORD-202608-0154",
+              "client": "Логинов Тихон Владленович",
+              "amount": "3650.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "filaret85@hotmail.com"
+            },
+            {
+              "deal_id": "ORD-202608-0113",
+              "client": "Фаина Александровна Овчинникова",
+              "amount": "44250.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "+7 079 776 93 19"
+            },
+            {
+              "deal_id": "ORD-202608-0219",
+              "client": "Кулагина Оксана Харитоновна",
+              "amount": "3960.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "+7 (435) 059-11-53"
+            },
+            {
+              "deal_id": "ORD-202608-0284",
+              "client": "Глафира Семеновна Носова",
+              "amount": "5335.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "fominanaina@mail.ru"
+            },
+            {
+              "deal_id": "ORD-202608-0190",
+              "client": "Силина Василиса Рубеновна",
+              "amount": "810.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "8 160 705 62 00"
+            },
+            {
+              "deal_id": "ORD-202608-0271",
+              "client": "Алексеева Нонна Ивановна",
+              "amount": "1710.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "+7 340 478 53 63"
+            },
+            {
+              "deal_id": "ORD-202608-0068",
+              "client": "Эмилия Яковлевна Афанасьева",
+              "amount": "1400.00",
+              "status": "lost",
+              "manager": "",
+              "contact": "svjatoslav2020@gmail.com"
+            },
+            {
+              "deal_id": "ORD-202608-0201",
+              "client": "Савельев Изот Ильясович",
+              "amount": "3150.00",
+              "status": "in_progress",
+              "manager": "",
+              "contact": "+7 535 553 89 54"
+            }
+          ]
+        }
+      ],
+      "coverage": {
+        "available": [
+          "stagnation",
+          "discount_leakage",
+          "key_account_risk",
+          "dormant",
+          "funnel_dropoff"
+        ],
+        "skipped": [
+          "speed_to_lead",
+          "sales_cycle"
+        ]
+      },
+      "period": {
+        "from": "2026-06-24",
+        "to": "2026-09-22"
+      },
+      "totals": {
+        "deals": 300,
+        "amount": "1406852.00",
+        "accepted": 300,
+        "rejected": 0
+      },
+      "ok": [
+        "discount_leakage",
+        "key_account_risk",
+        "funnel_dropoff"
+      ],
+      "low_sample": []
+    },
+    "all_metrics": {
+      "speed_to_lead": {
+        "metric_id": "speed_to_lead",
+        "available": false,
+        "missing_fields": [
+          "first_contact_at"
+        ],
+        "verdict": "skipped",
+        "value": null,
+        "unit": "hours",
+        "money_impact": null,
+        "threshold_label": "быстрее 30 минут",
+        "action": "Отвечайте новым заявкам быстрее 30 минут",
+        "evidence": []
+      },
+      "stagnation": {
+        "metric_id": "stagnation",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "critical",
+        "value": 60,
+        "unit": "deals",
+        "money_impact": "254984.00",
+        "threshold_label": "Зависшей считаем сделку старше 21 дней",
+        "action": "Разморозьте 60 сделок старше 21 дней на 254 984 руб.",
+        "evidence": [
+          {
+            "deal_id": "ORD-202606-0005",
+            "client": "Назар Феофанович Потапов",
+            "amount": "1300.00",
+            "status": "in_progress",
+            "days_stale": 92,
+            "manager": "",
+            "contact": "aleksandra2018@mail.ru"
+          },
+          {
+            "deal_id": "ORD-202606-0209",
+            "client": "Борисов Галактион Дорофеевич",
+            "amount": "5900.00",
+            "status": "proposal",
+            "days_stale": 91,
+            "manager": "",
+            "contact": "8 658 326 2572"
+          },
+          {
+            "deal_id": "ORD-202606-0100",
+            "client": "Полякова Элеонора Мироновна",
+            "amount": "4450.00",
+            "status": "in_progress",
+            "days_stale": 91,
+            "manager": "",
+            "contact": "8 (688) 130-6140"
+          },
+          {
+            "deal_id": "ORD-202606-0299",
+            "client": "Богданова Марфа Борисовна",
+            "amount": "750.00",
+            "status": "in_progress",
+            "days_stale": 88,
+            "manager": "",
+            "contact": "lorasoloveva@hotmail.com"
+          },
+          {
+            "deal_id": "ORD-202606-0054",
+            "client": "Доронин Емельян Феоктистович",
+            "amount": "1212.00",
+            "status": "proposal",
+            "days_stale": 88,
+            "manager": "",
+            "contact": "svetlanaefremova@gmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0278",
+            "client": "Крюкова София Викторовна",
+            "amount": "4200.00",
+            "status": "in_progress",
+            "days_stale": 85,
+            "manager": "",
+            "contact": "8 (400) 913-06-89"
+          },
+          {
+            "deal_id": "ORD-202607-0251",
+            "client": "Ираида Вениаминовна Логинова",
+            "amount": "760.00",
+            "status": "in_progress",
+            "days_stale": 85,
+            "manager": "",
+            "contact": "+7 (255) 898-8961"
+          },
+          {
+            "deal_id": "ORD-202607-0296",
+            "client": "Белоусов Гостомысл Марсович",
+            "amount": "5600.00",
+            "status": "in_progress",
+            "days_stale": 84,
+            "manager": "",
+            "contact": "8 (162) 433-08-23"
+          },
+          {
+            "deal_id": "ORD-202607-0167",
+            "client": "Евгения Кузьминична Гаврилова",
+            "amount": "3610.00",
+            "status": "in_progress",
+            "days_stale": 83,
+            "manager": "",
+            "contact": "kim69@mail.ru"
+          },
+          {
+            "deal_id": "ORD-202607-0055",
+            "client": "Кириллов Сидор Владленович",
+            "amount": "8250.00",
+            "status": "proposal",
+            "days_stale": 82,
+            "manager": "",
+            "contact": "alina_1995@mail.ru"
+          },
+          {
+            "deal_id": "ORD-202607-0013",
+            "client": "Арсений Ярославович Стрелков",
+            "amount": "2700.00",
+            "status": "proposal",
+            "days_stale": 81,
+            "manager": "",
+            "contact": "+7 275 740 44 20"
+          },
+          {
+            "deal_id": "ORD-202607-0181",
+            "client": "Евсей Фролович Шубин",
+            "amount": "1260.00",
+            "status": "proposal",
+            "days_stale": 80,
+            "manager": "",
+            "contact": "tknjazeva@yandex.ru"
+          },
+          {
+            "deal_id": "ORD-202607-0043",
+            "client": "г-жа Терентьева Таисия Захаровна",
+            "amount": "600.00",
+            "status": "in_progress",
+            "days_stale": 80,
+            "manager": "",
+            "contact": "+75940983225"
+          },
+          {
+            "deal_id": "ORD-202607-0132",
+            "client": "Матвей Ерофеевич Павлов",
+            "amount": "9600.00",
+            "status": "in_progress",
+            "days_stale": 80,
+            "manager": "",
+            "contact": "+7 (569) 044-68-77"
+          },
+          {
+            "deal_id": "ORD-202607-0216",
+            "client": "Моисеева Фаина Богдановна",
+            "amount": "3782.00",
+            "status": "in_progress",
+            "days_stale": 79,
+            "manager": "",
+            "contact": "fomaignatov@hotmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0182",
+            "client": "Будимир Аверьянович Стрелков",
+            "amount": "1300.00",
+            "status": "proposal",
+            "days_stale": 76,
+            "manager": "",
+            "contact": "8 367 037 12 32"
+          },
+          {
+            "deal_id": "ORD-202607-0148",
+            "client": "Петухов Касьян Демьянович",
+            "amount": "534.00",
+            "status": "in_progress",
+            "days_stale": 74,
+            "manager": "",
+            "contact": "86579290516"
+          },
+          {
+            "deal_id": "ORD-202607-0008",
+            "client": "Муравьева Нинель Рудольфовна",
+            "amount": "6460.00",
+            "status": "in_progress",
+            "days_stale": 74,
+            "manager": "",
+            "contact": "8 (290) 862-2559"
+          },
+          {
+            "deal_id": "ORD-202607-0135",
+            "client": "Никанор Елизарович Фокин",
+            "amount": "3510.00",
+            "status": "in_progress",
+            "days_stale": 73,
+            "manager": "",
+            "contact": "8 034 532 2900"
+          },
+          {
+            "deal_id": "ORD-202607-0298",
+            "client": "Ольга Макаровна Михеева",
+            "amount": "1710.00",
+            "status": "in_progress",
+            "days_stale": 73,
+            "manager": "",
+            "contact": "+76282827225"
+          },
+          {
+            "deal_id": "ORD-202607-0179",
+            "client": "Романов Станислав Еремеевич",
+            "amount": "1500.00",
+            "status": "in_progress",
+            "days_stale": 72,
+            "manager": "",
+            "contact": "pelageja2003@yandex.ru"
+          },
+          {
+            "deal_id": "ORD-202607-0071",
+            "client": "Александра Яковлевна Филатова",
+            "amount": "6745.00",
+            "status": "in_progress",
+            "days_stale": 71,
+            "manager": "",
+            "contact": "8 231 904 2666"
+          },
+          {
+            "deal_id": "ORD-202607-0214",
+            "client": "Ираида Вениаминовна Логинова",
+            "amount": "2880.00",
+            "status": "in_progress",
+            "days_stale": 71,
+            "manager": "",
+            "contact": "+7 (255) 898-8961"
+          },
+          {
+            "deal_id": "ORD-202607-0010",
+            "client": "Игнатий Игнатьевич Бирюков",
+            "amount": "990.00",
+            "status": "in_progress",
+            "days_stale": 71,
+            "manager": "",
+            "contact": "avgust_1988@gmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0117",
+            "client": "Евдоким Фёдорович Громов",
+            "amount": "5200.00",
+            "status": "in_progress",
+            "days_stale": 69,
+            "manager": "",
+            "contact": "arhipkomarov@gmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0259",
+            "client": "Максимов Анатолий Феликсович",
+            "amount": "1067.00",
+            "status": "in_progress",
+            "days_stale": 67,
+            "manager": "",
+            "contact": "hariton_1998@hotmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0064",
+            "client": "Надежда Вениаминовна Носова",
+            "amount": "8924.00",
+            "status": "in_progress",
+            "days_stale": 66,
+            "manager": "",
+            "contact": "knjazevazinaida@gmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0228",
+            "client": "Синклитикия Вячеславовна Карпова",
+            "amount": "2450.00",
+            "status": "in_progress",
+            "days_stale": 66,
+            "manager": "",
+            "contact": "80509028452"
+          },
+          {
+            "deal_id": "ORD-202607-0258",
+            "client": "Иванов Семен Елисеевич",
+            "amount": "1092.00",
+            "status": "in_progress",
+            "days_stale": 65,
+            "manager": "",
+            "contact": "+7 (118) 840-2034"
+          },
+          {
+            "deal_id": "ORD-202607-0102",
+            "client": "Моисеева Фаина Богдановна",
+            "amount": "2550.00",
+            "status": "in_progress",
+            "days_stale": 64,
+            "manager": "",
+            "contact": "+75540909016"
+          },
+          {
+            "deal_id": "ORD-202607-0037",
+            "client": "Агата Руслановна Турова",
+            "amount": "1425.00",
+            "status": "in_progress",
+            "days_stale": 63,
+            "manager": "",
+            "contact": "molchanovazhanna@hotmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0070",
+            "client": "Гурий Дорофеевич Киселев",
+            "amount": "3278.00",
+            "status": "in_progress",
+            "days_stale": 62,
+            "manager": "",
+            "contact": "8 (073) 564-3740"
+          },
+          {
+            "deal_id": "ORD-202607-0240",
+            "client": "Исаков Роман Денисович",
+            "amount": "10428.00",
+            "status": "in_progress",
+            "days_stale": 62,
+            "manager": "",
+            "contact": "+7 154 053 47 48"
+          },
+          {
+            "deal_id": "ORD-202607-0065",
+            "client": "Тарасов Феофан Валентинович",
+            "amount": "5600.00",
+            "status": "in_progress",
+            "days_stale": 60,
+            "manager": "",
+            "contact": "poljakovmakar@yandex.ru"
+          },
+          {
+            "deal_id": "ORD-202607-0067",
+            "client": "Олимпий Федотович Давыдов",
+            "amount": "2150.00",
+            "status": "in_progress",
+            "days_stale": 59,
+            "manager": "",
+            "contact": "8 075 573 6843"
+          },
+          {
+            "deal_id": "ORD-202608-0194",
+            "client": "Копылова Валентина Тарасовна",
+            "amount": "1100.00",
+            "status": "in_progress",
+            "days_stale": 55,
+            "manager": "",
+            "contact": "pahom46@mail.ru"
+          },
+          {
+            "deal_id": "ORD-202608-0052",
+            "client": "Марфа Львовна Шубина",
+            "amount": "1552.00",
+            "status": "in_progress",
+            "days_stale": 55,
+            "manager": "",
+            "contact": "82122033491"
+          },
+          {
+            "deal_id": "ORD-202608-0263",
+            "client": "Ипполит Жанович Филиппов",
+            "amount": "4400.00",
+            "status": "proposal",
+            "days_stale": 54,
+            "manager": "",
+            "contact": "samson_43@mail.ru"
+          },
+          {
+            "deal_id": "ORD-202608-0154",
+            "client": "Логинов Тихон Владленович",
+            "amount": "3650.00",
+            "status": "in_progress",
+            "days_stale": 54,
+            "manager": "",
+            "contact": "filaret85@hotmail.com"
+          },
+          {
+            "deal_id": "ORD-202608-0113",
+            "client": "Фаина Александровна Овчинникова",
+            "amount": "44250.00",
+            "status": "in_progress",
+            "days_stale": 53,
+            "manager": "",
+            "contact": "+7 079 776 93 19"
+          },
+          {
+            "deal_id": "ORD-202608-0145",
+            "client": "Мясников Селиверст Авдеевич",
+            "amount": "3550.00",
+            "status": "in_progress",
+            "days_stale": 52,
+            "manager": "",
+            "contact": "8 775 239 62 23"
+          },
+          {
+            "deal_id": "ORD-202608-0201",
+            "client": "Савельев Изот Ильясович",
+            "amount": "3150.00",
+            "status": "in_progress",
+            "days_stale": 46,
+            "manager": "",
+            "contact": "+7 535 553 89 54"
+          },
+          {
+            "deal_id": "ORD-202608-0241",
+            "client": "Горбачева Ксения Максимовна",
+            "amount": "4650.00",
+            "status": "in_progress",
+            "days_stale": 45,
+            "manager": "",
+            "contact": "8 (446) 286-19-79"
+          },
+          {
+            "deal_id": "ORD-202608-0012",
+            "client": "Лихачев Радим Дмитриевич",
+            "amount": "6032.00",
+            "status": "in_progress",
+            "days_stale": 45,
+            "manager": "",
+            "contact": "8 529 986 09 97"
+          },
+          {
+            "deal_id": "ORD-202608-0287",
+            "client": "Ксения Даниловна Турова",
+            "amount": "1116.00",
+            "status": "proposal",
+            "days_stale": 41,
+            "manager": "",
+            "contact": "8 433 937 6767"
+          },
+          {
+            "deal_id": "ORD-202608-0077",
+            "client": "Павлова Вероника Анатольевна",
+            "amount": "400.00",
+            "status": "in_progress",
+            "days_stale": 38,
+            "manager": "",
+            "contact": "alina_44@yahoo.com"
+          },
+          {
+            "deal_id": "ORD-202608-0283",
+            "client": "Панов Богдан Аксёнович",
+            "amount": "2300.00",
+            "status": "proposal",
+            "days_stale": 37,
+            "manager": "",
+            "contact": "+7 351 136 9155"
+          },
+          {
+            "deal_id": "ORD-202608-0268",
+            "client": "Наумов Спиридон Юлианович",
+            "amount": "8000.00",
+            "status": "in_progress",
+            "days_stale": 36,
+            "manager": "",
+            "contact": "+71809417848"
+          },
+          {
+            "deal_id": "ORD-202608-0211",
+            "client": "Алексей Алексеевич Хохлов",
+            "amount": "4462.00",
+            "status": "in_progress",
+            "days_stale": 30,
+            "manager": "",
+            "contact": "osip_79@hotmail.com"
+          },
+          {
+            "deal_id": "ORD-202608-0115",
+            "client": "Эмилия Тимофеевна Абрамова",
+            "amount": "3950.00",
+            "status": "proposal",
+            "days_stale": 29,
+            "manager": "",
+            "contact": "8 (780) 695-82-25"
+          }
+        ]
+      },
+      "discount_leakage": {
+        "metric_id": "discount_leakage",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 5.0,
+        "unit": "pct",
+        "money_impact": "5062.00",
+        "threshold_label": "скидка больше 10%",
+        "action": "5.0% выигранных сделок ушли со скидкой больше 10%",
+        "evidence": [
+          {
+            "deal_id": "ORD-202607-0162",
+            "client": "Федотов Архип Архипович",
+            "amount": "16702.00",
+            "status": "won",
+            "manager": "",
+            "contact": "+7 695 004 1905"
+          },
+          {
+            "deal_id": "ORD-202607-0208",
+            "client": "Тимофеева Нонна Степановна",
+            "amount": "638.00",
+            "status": "won",
+            "manager": "",
+            "contact": "+77154372551"
+          },
+          {
+            "deal_id": "ORD-202607-0264",
+            "client": "Бобылев Евдоким Авдеевич",
+            "amount": "468.00",
+            "status": "won",
+            "manager": "",
+            "contact": "+7 076 093 61 59"
+          },
+          {
+            "deal_id": "ORD-202608-0027",
+            "client": "Эраст Эдгарович Королев",
+            "amount": "425.00",
+            "status": "won",
+            "manager": "",
+            "contact": "+7 (352) 158-0146"
+          },
+          {
+            "deal_id": "ORD-202608-0007",
+            "client": "Валентин Харлампович Елисеев",
+            "amount": "1148.00",
+            "status": "won",
+            "manager": "",
+            "contact": "+7 717 725 9313"
+          },
+          {
+            "deal_id": "ORD-202608-0215",
+            "client": "Савва Измаилович Моисеев",
+            "amount": "3570.00",
+            "status": "won",
+            "manager": "",
+            "contact": "viktor_2020@rambler.ru"
+          },
+          {
+            "deal_id": "ORD-202608-0213",
+            "client": "Светлана Львовна Фадеева",
+            "amount": "1870.00",
+            "status": "won",
+            "manager": "",
+            "contact": "+7 036 787 1412"
+          },
+          {
+            "deal_id": "ORD-202609-0246",
+            "client": "Юлия Игоревна Архипова",
+            "amount": "425.00",
+            "status": "won",
+            "manager": "",
+            "contact": "+7 292 863 01 70"
+          },
+          {
+            "deal_id": "ORD-202609-0262",
+            "client": "Белов Кир Яковлевич",
+            "amount": "3442.00",
+            "status": "won",
+            "manager": "",
+            "contact": "87458232977"
+          }
+        ]
+      },
+      "sales_cycle": {
+        "metric_id": "sales_cycle",
+        "available": false,
+        "missing_fields": [
+          "closed_at"
+        ],
+        "verdict": "skipped",
+        "value": null,
+        "unit": "days",
+        "money_impact": null,
+        "threshold_label": "цикл вырос",
+        "action": "Сокращайте длительность цикла сделки",
+        "evidence": []
+      },
+      "key_account_risk": {
+        "metric_id": "key_account_risk",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 8.8,
+        "unit": "pct",
+        "money_impact": "76300.00",
+        "threshold_label": "два клиента больше 50%",
+        "action": "Два клиента дают 8.8% выручки",
+        "evidence": [
+          {
+            "deal_id": "ORD-202608-0086",
+            "client": "Тетерина Людмила Семеновна",
+            "amount": "31680.00",
+            "status": "won",
+            "manager": "",
+            "contact": "+7 519 425 08 61"
+          },
+          {
+            "deal_id": "ORD-202608-0025",
+            "client": "Наумов Спиридон Юлианович",
+            "amount": "14820.00",
+            "status": "won",
+            "manager": "",
+            "contact": "selivan2023@yandex.ru"
+          },
+          {
+            "deal_id": "ORD-202609-0096",
+            "client": "Наумов Спиридон Юлианович",
+            "amount": "29800.00",
+            "status": "won",
+            "manager": "",
+            "contact": "selivan2023@yandex.ru"
+          }
+        ]
+      },
+      "dormant": {
+        "metric_id": "dormant",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "critical",
+        "value": 53,
+        "unit": "deals",
+        "money_impact": "237147.00",
+        "threshold_label": "дольше 45 дней",
+        "action": "53 клиентов молчат дольше 45 дней",
+        "evidence": [
+          {
+            "deal_id": "ORD-202606-0276",
+            "client": "Валентина Кузьминична Гаврилова",
+            "amount": "800.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "marfasavina@mail.ru"
+          },
+          {
+            "deal_id": "ORD-202606-0005",
+            "client": "Назар Феофанович Потапов",
+            "amount": "1300.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "aleksandra2018@mail.ru"
+          },
+          {
+            "deal_id": "ORD-202606-0209",
+            "client": "Борисов Галактион Дорофеевич",
+            "amount": "5900.00",
+            "status": "proposal",
+            "manager": "",
+            "contact": "8 658 326 2572"
+          },
+          {
+            "deal_id": "ORD-202606-0100",
+            "client": "Полякова Элеонора Мироновна",
+            "amount": "4450.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 (688) 130-6140"
+          },
+          {
+            "deal_id": "ORD-202606-0299",
+            "client": "Богданова Марфа Борисовна",
+            "amount": "750.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "lorasoloveva@hotmail.com"
+          },
+          {
+            "deal_id": "ORD-202606-0054",
+            "client": "Доронин Емельян Феоктистович",
+            "amount": "1212.00",
+            "status": "proposal",
+            "manager": "",
+            "contact": "svetlanaefremova@gmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0278",
+            "client": "Крюкова София Викторовна",
+            "amount": "4200.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 (400) 913-06-89"
+          },
+          {
+            "deal_id": "ORD-202607-0133",
+            "client": "Сысоева Елена Вадимовна",
+            "amount": "1116.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "+7 617 738 1470"
+          },
+          {
+            "deal_id": "ORD-202607-0296",
+            "client": "Белоусов Гостомысл Марсович",
+            "amount": "5600.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 (162) 433-08-23"
+          },
+          {
+            "deal_id": "ORD-202607-0167",
+            "client": "Евгения Кузьминична Гаврилова",
+            "amount": "3610.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "kim69@mail.ru"
+          },
+          {
+            "deal_id": "ORD-202607-0013",
+            "client": "Арсений Ярославович Стрелков",
+            "amount": "2700.00",
+            "status": "proposal",
+            "manager": "",
+            "contact": "+7 275 740 44 20"
+          },
+          {
+            "deal_id": "ORD-202607-0181",
+            "client": "Евсей Фролович Шубин",
+            "amount": "1260.00",
+            "status": "proposal",
+            "manager": "",
+            "contact": "tknjazeva@yandex.ru"
+          },
+          {
+            "deal_id": "ORD-202607-0155",
+            "client": "Красильникова Ангелина Ждановна",
+            "amount": "950.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "+7 (094) 754-2341"
+          },
+          {
+            "deal_id": "ORD-202607-0043",
+            "client": "г-жа Терентьева Таисия Захаровна",
+            "amount": "600.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+75940983225"
+          },
+          {
+            "deal_id": "ORD-202607-0132",
+            "client": "Матвей Ерофеевич Павлов",
+            "amount": "9600.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+7 (569) 044-68-77"
+          },
+          {
+            "deal_id": "ORD-202607-0252",
+            "client": "Терентьев Адам Елизарович",
+            "amount": "1250.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "zhukovrodion@mail.ru"
+          },
+          {
+            "deal_id": "ORD-202607-0148",
+            "client": "Петухов Касьян Демьянович",
+            "amount": "534.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "86579290516"
+          },
+          {
+            "deal_id": "ORD-202607-0091",
+            "client": "Таисия Феликсовна Лукина",
+            "amount": "3800.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "+7 826 428 96 64"
+          },
+          {
+            "deal_id": "ORD-202607-0165",
+            "client": "Колесникова Ирина Эльдаровна",
+            "amount": "1900.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "+7 083 125 6050"
+          },
+          {
+            "deal_id": "ORD-202607-0135",
+            "client": "Никанор Елизарович Фокин",
+            "amount": "3510.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 034 532 2900"
+          },
+          {
+            "deal_id": "ORD-202607-0298",
+            "client": "Ольга Макаровна Михеева",
+            "amount": "1710.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+76282827225"
+          },
+          {
+            "deal_id": "ORD-202607-0071",
+            "client": "Александра Яковлевна Филатова",
+            "amount": "6745.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 231 904 2666"
+          },
+          {
+            "deal_id": "ORD-202607-0117",
+            "client": "Евдоким Фёдорович Громов",
+            "amount": "5200.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "arhipkomarov@gmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0126",
+            "client": "Фомичева Виктория Харитоновна",
+            "amount": "1615.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "+7 (895) 225-1525"
+          },
+          {
+            "deal_id": "ORD-202607-0064",
+            "client": "Надежда Вениаминовна Носова",
+            "amount": "8924.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "knjazevazinaida@gmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0072",
+            "client": "Глафира Афанасьевна Мясникова",
+            "amount": "1100.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "petrovaevdokija@gmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0170",
+            "client": "Муравьев Рюрик Ефремович",
+            "amount": "14760.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "petuhovsokrat@gmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0228",
+            "client": "Синклитикия Вячеславовна Карпова",
+            "amount": "2450.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "80509028452"
+          },
+          {
+            "deal_id": "ORD-202607-0300",
+            "client": "Мухина Тамара Аркадьевна",
+            "amount": "26336.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "8 803 054 32 69"
+          },
+          {
+            "deal_id": "ORD-202607-0258",
+            "client": "Иванов Семен Елисеевич",
+            "amount": "1092.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+7 (118) 840-2034"
+          },
+          {
+            "deal_id": "ORD-202607-0062",
+            "client": "Федор Артёмович Вишняков",
+            "amount": "1568.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "arkadi_1992@rambler.ru"
+          },
+          {
+            "deal_id": "ORD-202607-0037",
+            "client": "Агата Руслановна Турова",
+            "amount": "1425.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "molchanovazhanna@hotmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0070",
+            "client": "Гурий Дорофеевич Киселев",
+            "amount": "3278.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 (073) 564-3740"
+          },
+          {
+            "deal_id": "ORD-202607-0129",
+            "client": "Ситников Аверьян Ермилович",
+            "amount": "5044.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "8 657 591 93 60"
+          },
+          {
+            "deal_id": "ORD-202607-0247",
+            "client": "Вишняков Тарас Дорофеевич",
+            "amount": "6032.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "8 437 913 8355"
+          },
+          {
+            "deal_id": "ORD-202607-0067",
+            "client": "Олимпий Федотович Давыдов",
+            "amount": "2150.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 075 573 6843"
+          },
+          {
+            "deal_id": "ORD-202607-0069",
+            "client": "Назарова Октябрина Болеславовна",
+            "amount": "4512.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "anastasijamiheeva@yahoo.com"
+          },
+          {
+            "deal_id": "ORD-202608-0194",
+            "client": "Копылова Валентина Тарасовна",
+            "amount": "1100.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "pahom46@mail.ru"
+          },
+          {
+            "deal_id": "ORD-202608-0052",
+            "client": "Марфа Львовна Шубина",
+            "amount": "1552.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "82122033491"
+          },
+          {
+            "deal_id": "ORD-202608-0229",
+            "client": "Федот Иосипович Кириллов",
+            "amount": "1105.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "+7 977 943 23 10"
+          },
+          {
+            "deal_id": "ORD-202608-0026",
+            "client": "Исай Эдгардович Ефремов",
+            "amount": "2900.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "fedoseevaalla@yahoo.com"
+          },
+          {
+            "deal_id": "ORD-202608-0263",
+            "client": "Ипполит Жанович Филиппов",
+            "amount": "4400.00",
+            "status": "proposal",
+            "manager": "",
+            "contact": "samson_43@mail.ru"
+          },
+          {
+            "deal_id": "ORD-202608-0154",
+            "client": "Логинов Тихон Владленович",
+            "amount": "3650.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "filaret85@hotmail.com"
+          },
+          {
+            "deal_id": "ORD-202608-0113",
+            "client": "Фаина Александровна Овчинникова",
+            "amount": "44250.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+7 079 776 93 19"
+          },
+          {
+            "deal_id": "ORD-202608-0219",
+            "client": "Кулагина Оксана Харитоновна",
+            "amount": "3960.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "+7 (435) 059-11-53"
+          },
+          {
+            "deal_id": "ORD-202608-0284",
+            "client": "Глафира Семеновна Носова",
+            "amount": "5335.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "fominanaina@mail.ru"
+          },
+          {
+            "deal_id": "ORD-202608-0190",
+            "client": "Силина Василиса Рубеновна",
+            "amount": "810.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "8 160 705 62 00"
+          },
+          {
+            "deal_id": "ORD-202608-0271",
+            "client": "Алексеева Нонна Ивановна",
+            "amount": "1710.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "+7 340 478 53 63"
+          },
+          {
+            "deal_id": "ORD-202608-0068",
+            "client": "Эмилия Яковлевна Афанасьева",
+            "amount": "1400.00",
+            "status": "lost",
+            "manager": "",
+            "contact": "svjatoslav2020@gmail.com"
+          },
+          {
+            "deal_id": "ORD-202608-0201",
+            "client": "Савельев Изот Ильясович",
+            "amount": "3150.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+7 535 553 89 54"
+          }
+        ]
+      },
+      "funnel_dropoff": {
+        "metric_id": "funnel_dropoff",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 20.1,
+        "unit": "pct",
+        "money_impact": "242408.00",
+        "threshold_label": "этап теряет больше 40% суммы",
+        "action": "На этапе «in_progress» теряется 242 408 руб.",
+        "evidence": [
+          {
+            "deal_id": "ORD-202606-0005",
+            "client": "Назар Феофанович Потапов",
+            "amount": "1300.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "aleksandra2018@mail.ru"
+          },
+          {
+            "deal_id": "ORD-202606-0100",
+            "client": "Полякова Элеонора Мироновна",
+            "amount": "4450.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 (688) 130-6140"
+          },
+          {
+            "deal_id": "ORD-202606-0299",
+            "client": "Богданова Марфа Борисовна",
+            "amount": "750.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "lorasoloveva@hotmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0278",
+            "client": "Крюкова София Викторовна",
+            "amount": "4200.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 (400) 913-06-89"
+          },
+          {
+            "deal_id": "ORD-202607-0251",
+            "client": "Ираида Вениаминовна Логинова",
+            "amount": "760.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+7 (255) 898-8961"
+          },
+          {
+            "deal_id": "ORD-202607-0296",
+            "client": "Белоусов Гостомысл Марсович",
+            "amount": "5600.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 (162) 433-08-23"
+          },
+          {
+            "deal_id": "ORD-202607-0167",
+            "client": "Евгения Кузьминична Гаврилова",
+            "amount": "3610.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "kim69@mail.ru"
+          },
+          {
+            "deal_id": "ORD-202607-0043",
+            "client": "г-жа Терентьева Таисия Захаровна",
+            "amount": "600.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+75940983225"
+          },
+          {
+            "deal_id": "ORD-202607-0132",
+            "client": "Матвей Ерофеевич Павлов",
+            "amount": "9600.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+7 (569) 044-68-77"
+          },
+          {
+            "deal_id": "ORD-202607-0216",
+            "client": "Моисеева Фаина Богдановна",
+            "amount": "3782.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "fomaignatov@hotmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0148",
+            "client": "Петухов Касьян Демьянович",
+            "amount": "534.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "86579290516"
+          },
+          {
+            "deal_id": "ORD-202607-0008",
+            "client": "Муравьева Нинель Рудольфовна",
+            "amount": "6460.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 (290) 862-2559"
+          },
+          {
+            "deal_id": "ORD-202607-0135",
+            "client": "Никанор Елизарович Фокин",
+            "amount": "3510.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 034 532 2900"
+          },
+          {
+            "deal_id": "ORD-202607-0298",
+            "client": "Ольга Макаровна Михеева",
+            "amount": "1710.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+76282827225"
+          },
+          {
+            "deal_id": "ORD-202607-0179",
+            "client": "Романов Станислав Еремеевич",
+            "amount": "1500.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "pelageja2003@yandex.ru"
+          },
+          {
+            "deal_id": "ORD-202607-0071",
+            "client": "Александра Яковлевна Филатова",
+            "amount": "6745.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 231 904 2666"
+          },
+          {
+            "deal_id": "ORD-202607-0214",
+            "client": "Ираида Вениаминовна Логинова",
+            "amount": "2880.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+7 (255) 898-8961"
+          },
+          {
+            "deal_id": "ORD-202607-0010",
+            "client": "Игнатий Игнатьевич Бирюков",
+            "amount": "990.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "avgust_1988@gmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0117",
+            "client": "Евдоким Фёдорович Громов",
+            "amount": "5200.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "arhipkomarov@gmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0259",
+            "client": "Максимов Анатолий Феликсович",
+            "amount": "1067.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "hariton_1998@hotmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0064",
+            "client": "Надежда Вениаминовна Носова",
+            "amount": "8924.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "knjazevazinaida@gmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0228",
+            "client": "Синклитикия Вячеславовна Карпова",
+            "amount": "2450.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "80509028452"
+          },
+          {
+            "deal_id": "ORD-202607-0258",
+            "client": "Иванов Семен Елисеевич",
+            "amount": "1092.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+7 (118) 840-2034"
+          },
+          {
+            "deal_id": "ORD-202607-0102",
+            "client": "Моисеева Фаина Богдановна",
+            "amount": "2550.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+75540909016"
+          },
+          {
+            "deal_id": "ORD-202607-0037",
+            "client": "Агата Руслановна Турова",
+            "amount": "1425.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "molchanovazhanna@hotmail.com"
+          },
+          {
+            "deal_id": "ORD-202607-0070",
+            "client": "Гурий Дорофеевич Киселев",
+            "amount": "3278.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 (073) 564-3740"
+          },
+          {
+            "deal_id": "ORD-202607-0240",
+            "client": "Исаков Роман Денисович",
+            "amount": "10428.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+7 154 053 47 48"
+          },
+          {
+            "deal_id": "ORD-202607-0065",
+            "client": "Тарасов Феофан Валентинович",
+            "amount": "5600.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "poljakovmakar@yandex.ru"
+          },
+          {
+            "deal_id": "ORD-202607-0067",
+            "client": "Олимпий Федотович Давыдов",
+            "amount": "2150.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 075 573 6843"
+          },
+          {
+            "deal_id": "ORD-202608-0194",
+            "client": "Копылова Валентина Тарасовна",
+            "amount": "1100.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "pahom46@mail.ru"
+          },
+          {
+            "deal_id": "ORD-202608-0052",
+            "client": "Марфа Львовна Шубина",
+            "amount": "1552.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "82122033491"
+          },
+          {
+            "deal_id": "ORD-202608-0154",
+            "client": "Логинов Тихон Владленович",
+            "amount": "3650.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "filaret85@hotmail.com"
+          },
+          {
+            "deal_id": "ORD-202608-0113",
+            "client": "Фаина Александровна Овчинникова",
+            "amount": "44250.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+7 079 776 93 19"
+          },
+          {
+            "deal_id": "ORD-202608-0145",
+            "client": "Мясников Селиверст Авдеевич",
+            "amount": "3550.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 775 239 62 23"
+          },
+          {
+            "deal_id": "ORD-202608-0201",
+            "client": "Савельев Изот Ильясович",
+            "amount": "3150.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+7 535 553 89 54"
+          },
+          {
+            "deal_id": "ORD-202608-0241",
+            "client": "Горбачева Ксения Максимовна",
+            "amount": "4650.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 (446) 286-19-79"
+          },
+          {
+            "deal_id": "ORD-202608-0012",
+            "client": "Лихачев Радим Дмитриевич",
+            "amount": "6032.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 529 986 09 97"
+          },
+          {
+            "deal_id": "ORD-202608-0077",
+            "client": "Павлова Вероника Анатольевна",
+            "amount": "400.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "alina_44@yahoo.com"
+          },
+          {
+            "deal_id": "ORD-202608-0268",
+            "client": "Наумов Спиридон Юлианович",
+            "amount": "8000.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+71809417848"
+          },
+          {
+            "deal_id": "ORD-202608-0211",
+            "client": "Алексей Алексеевич Хохлов",
+            "amount": "4462.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "osip_79@hotmail.com"
+          },
+          {
+            "deal_id": "ORD-202608-0112",
+            "client": "Красильников Эдуард Антонович",
+            "amount": "4200.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "zandreeva@rambler.ru"
+          },
+          {
+            "deal_id": "ORD-202608-0101",
+            "client": "Евфросиния Львовна Смирнова",
+            "amount": "10379.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 (338) 485-83-88"
+          },
+          {
+            "deal_id": "ORD-202608-0003",
+            "client": "Нонна Александровна Ершова",
+            "amount": "760.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+7 462 825 5049"
+          },
+          {
+            "deal_id": "ORD-202608-0108",
+            "client": "Соловьева Майя Альбертовна",
+            "amount": "3515.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+7 389 118 0645"
+          },
+          {
+            "deal_id": "ORD-202609-0038",
+            "client": "Мясников Селиверст Авдеевич",
+            "amount": "13300.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "samsonovfilimon@rambler.ru"
+          },
+          {
+            "deal_id": "ORD-202609-0207",
+            "client": "Виссарион Андреевич Потапов",
+            "amount": "2518.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "+7 617 546 7958"
+          },
+          {
+            "deal_id": "ORD-202609-0290",
+            "client": "Борислав Данилович Беляев",
+            "amount": "998.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "zahargusev@rambler.ru"
+          },
+          {
+            "deal_id": "ORD-202609-0205",
+            "client": "Эрнст Игоревич Красильников",
+            "amount": "405.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 (085) 787-96-06"
+          },
+          {
+            "deal_id": "ORD-202609-0033",
+            "client": "Вишнякова Октябрина Кузьминична",
+            "amount": "8640.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "8 (436) 531-25-48"
+          },
+          {
+            "deal_id": "ORD-202609-0186",
+            "client": "Наумова Людмила Мироновна",
+            "amount": "550.00",
+            "status": "in_progress",
+            "manager": "",
+            "contact": "jan_1998@yandex.ru"
+          }
+        ]
+      }
+    }
   }
 }
