@@ -16,6 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.views.generic import RedirectView
 from .views import chat_stream
 from engine.views_api import (
     UploadView,
@@ -33,6 +34,7 @@ from engine.views_api import (
 )
 
 urlpatterns = [
+    path('admin', RedirectView.as_view(url='/admin/', permanent=False)),
     path('admin/', admin.site.urls),
     path('api/chat/stream/', chat_stream, name='chat_stream'),
 

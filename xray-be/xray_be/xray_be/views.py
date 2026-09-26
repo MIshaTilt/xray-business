@@ -24,128 +24,149 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
         "Content-Type": "application/json"
     }
 
-    current_messages = list(messages_list)
-    executed_tools_for_saving = []
-
-    # 1. Step 1: Multi-turn tool resolution loop (supports tool chaining like search -> chart)
-    if snapshot_id:
-        try:
-            tools_for_snapshot = get_ai_tools_definitions(snapshot_id)
-            for round_idx in range(4):
-                tool_payload = {
-                    "model": model_name,
-                    "messages": current_messages,
-                    "tools": tools_for_snapshot,
-                    "tool_choice": "auto",
-                    "stream": False
-                }
-                resp_tool = requests.post(target_url, headers=headers, json=tool_payload, timeout=25)
-                if resp_tool.status_code != 200:
-                    break
-
-                t_json = resp_tool.json()
-                choice = t_json.get("choices", [{}])[0]
-                msg = choice.get("message", {})
-                tool_calls = msg.get("tool_calls", [])
-
-                if not tool_calls:
-                    # Model has concluded tool calls and is ready to generate textual response
-                    break
-
-                current_messages.append(msg)
-                for tc in tool_calls:
-                    func_name = tc.get("function", {}).get("name")
-                    raw_args = tc.get("function", {}).get("arguments", "{}")
-                    try:
-                        parsed_args = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
-                    except Exception:
-                        parsed_args = {}
-
-                    tool_result = execute_tool_call(func_name, parsed_args, snapshot_id)
-
-                    # Emit an event to client about this tool execution
-                    tool_event = {
-                        "type": "tool_call",
-                        "tool_name": func_name,
-                        "arguments": parsed_args,
-                        "result": tool_result
-                    }
-                    executed_tools_for_saving.append(tool_event)
-                    yield f"data: {json.dumps(tool_event, ensure_ascii=False)}\n\n"
-
-                    current_messages.append({
-                        "role": "tool",
-                        "tool_call_id": tc.get("id"),
-                        "name": func_name,
-                        "content": tool_result
-                    })
-        except Exception as e:
-            # Fallback smoothly to standard completion without tools
-            print(f"[TOOL CALL ERROR]: {e}")
-
-    # 2. Step 2: Stream final synthesized answer with SSE
-    payload = {
-        "model": model_name,
-        "messages": current_messages,
-        "stream": True
-    }
-
     try:
-        collected_chunks = []
-        with requests.post(target_url, headers=headers, json=payload, stream=True, timeout=60) as resp:
-            if resp.status_code != 200:
-                err_text = resp.text
-                log_llm_interaction(
-                    title="ПОТОКОВЫЙ ЧАТ: ОШИБКА",
-                    payload_data=payload,
-                    response_data=err_text,
-                    extra_info=f"STATUS: {resp.status_code}"
-                )
-                yield f"data: {json.dumps({'error': f'Upstream error {resp.status_code}: {err_text}'})}\n\n"
-                yield "data: [DONE]\n\n"
-                return
+        current_messages = list(messages_list)
+        executed_tools_for_saving = []
+        initial_final_content = None
 
-            for line in resp.iter_lines():
-                if line:
-                    decoded = line.decode('utf-8')
-                    if decoded.startswith('data:'):
-                        raw_data = decoded[5:].strip()
-                        if raw_data != '[DONE]':
-                            try:
-                                chunk_json = json.loads(raw_data)
-                                content = chunk_json['choices'][0]['delta'].get('content', '')
-                                if content:
-                                    collected_chunks.append(content)
-                            except Exception:
-                                pass
-                        yield f"{decoded}\n\n"
-                    else:
-                        yield f"data: {decoded}\n\n"
+        # 1. Step 1: Multi-turn tool resolution loop (supports tool chaining like search -> chart)
+        if snapshot_id:
+            try:
+                tools_for_snapshot = get_ai_tools_definitions(snapshot_id)
+                for round_idx in range(4):
+                    tool_payload = {
+                        "model": model_name,
+                        "messages": current_messages,
+                        "tools": tools_for_snapshot,
+                        "tool_choice": "auto",
+                        "stream": False
+                    }
+                    resp_tool = requests.post(target_url, headers=headers, json=tool_payload, timeout=25)
+                    if resp_tool.status_code != 200:
+                        break
 
-        full_stream_response = "".join(collected_chunks).strip()
+                    t_json = resp_tool.json()
+                    choice = t_json.get("choices", [{}])[0]
+                    msg = choice.get("message", {})
+                    tool_calls = msg.get("tool_calls", [])
 
-        # If model emitted tools but no text tokens in stream, provide graceful summary text
-        if not full_stream_response and executed_tools_for_saving:
-            chart_call = next((tc for tc in executed_tools_for_saving if tc.get("tool_name") == "render_chart"), None)
-            if chart_call and chart_call.get("result"):
-                try:
-                    c_res = json.loads(chart_call["result"]) if isinstance(chart_call["result"], str) else chart_call["result"]
-                    full_stream_response = c_res.get("summary", "График успешно построен и отображен выше.")
-                except Exception:
-                    full_stream_response = "График успешно построен и отображен выше."
-            else:
-                full_stream_response = "Запрос к базе данных выполнен. Необходимые данные получены."
+                    if not tool_calls:
+                        # Model has concluded tool calls and produced its final textual answer
+                        if msg.get("content"):
+                            initial_final_content = msg.get("content")
+                        break
 
-            chunk_event = {
-                "choices": [{
-                    "delta": {"content": full_stream_response}
-                }]
+                    current_messages.append(msg)
+                    for tc in tool_calls:
+                        func_name = tc.get("function", {}).get("name")
+                        raw_args = tc.get("function", {}).get("arguments", "{}")
+                        try:
+                            parsed_args = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
+                        except Exception:
+                            parsed_args = {}
+
+                        tool_result = execute_tool_call(func_name, parsed_args, snapshot_id)
+
+                        # Emit an event to client about this tool execution
+                        tool_event = {
+                            "type": "tool_call",
+                            "tool_name": func_name,
+                            "arguments": parsed_args,
+                            "result": tool_result
+                        }
+                        executed_tools_for_saving.append(tool_event)
+                        yield f"data: {json.dumps(tool_event, ensure_ascii=False)}\n\n"
+
+                        current_messages.append({
+                            "role": "tool",
+                            "tool_call_id": tc.get("id"),
+                            "name": func_name,
+                            "content": tool_result
+                        })
+            except Exception as e:
+                # Fallback smoothly to standard completion without tools
+                print(f"[TOOL CALL ERROR]: {e}")
+
+        # 2. Step 2: Stream final synthesized answer with SSE
+        if initial_final_content:
+            # We already have the complete synthesized answer from the model!
+            # Stream it in chunks so the frontend UI gets the same real-time SSE effect
+            chunk_size = 40
+            for i in range(0, len(initial_final_content), chunk_size):
+                sub_chunk = initial_final_content[i:i+chunk_size]
+                chunk_event = {
+                    "choices": [{
+                        "delta": {"content": sub_chunk}
+                    }]
+                }
+                yield f"data: {json.dumps(chunk_event, ensure_ascii=False)}\n\n"
+            full_stream_response = initial_final_content
+        else:
+            payload = {
+                "model": model_name,
+                "messages": current_messages,
+                "stream": True
             }
-            yield f"data: {json.dumps(chunk_event, ensure_ascii=False)}\n\n"
+
+            collected_chunks = []
+            try:
+                with requests.post(target_url, headers=headers, json=payload, stream=True, timeout=60) as resp:
+                    if resp.status_code != 200:
+                        err_text = resp.text
+                        log_llm_interaction(
+                            title="ПОТОКОВЫЙ ЧАТ: ОШИБКА",
+                            payload_data=payload,
+                            response_data=err_text,
+                            extra_info=f"STATUS: {resp.status_code}"
+                        )
+                        yield f"data: {json.dumps({'error': f'Upstream error {resp.status_code}: {err_text}'})}\n\n"
+                        yield "data: [DONE]\n\n"
+                        return
+
+                    for line in resp.iter_lines():
+                        if line:
+                            decoded = line.decode('utf-8')
+                            if decoded.startswith('data:'):
+                                raw_data = decoded[5:].strip()
+                                if raw_data != '[DONE]':
+                                    try:
+                                        chunk_json = json.loads(raw_data)
+                                        content = chunk_json['choices'][0]['delta'].get('content', '')
+                                        if content:
+                                            collected_chunks.append(content)
+                                    except Exception:
+                                        pass
+                                yield f"{decoded}\n\n"
+                            else:
+                                yield f"data: {decoded}\n\n"
+
+                full_stream_response = "".join(collected_chunks).strip()
+            except Exception as stream_err:
+                print(f"[STREAM ERROR]: {stream_err}")
+                full_stream_response = ""
+
+            # If model emitted tools but no text tokens in stream, provide graceful summary text
+            if not full_stream_response and executed_tools_for_saving:
+                chart_call = next((tc for tc in executed_tools_for_saving if tc.get("tool_name") == "render_chart"), None)
+                if chart_call and chart_call.get("result"):
+                    try:
+                        c_res = json.loads(chart_call["result"]) if isinstance(chart_call["result"], str) else chart_call["result"]
+                        full_stream_response = c_res.get("summary", "График успешно построен и отображен выше.")
+                    except Exception:
+                        full_stream_response = "График успешно построен и отображен выше."
+                else:
+                    full_stream_response = "Запрос к базе данных выполнен. Необходимые данные получены."
+
+                chunk_event = {
+                    "choices": [{
+                        "delta": {"content": full_stream_response}
+                    }]
+                }
+                yield f"data: {json.dumps(chunk_event, ensure_ascii=False)}\n\n"
 
         log_llm_interaction(
             title="ПОТОКОВЫЙ ЧАТ: УСПЕШНЫЙ ОТВЕТ (RAG/TOOLS)",
-            payload_data=payload,
+            payload_data=payload if 'payload' in locals() else {"model": model_name, "stream": False},
             response_data=full_stream_response,
             extra_info=f"URL: {target_url} | STATUS: 200"
         )
@@ -176,7 +197,6 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
                     )
             except Exception as e:
                 print(f"[CHAT ORM SAVE ERROR]: {e}")
-
 
     except Exception as e:
         log_llm_interaction(

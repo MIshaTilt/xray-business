@@ -191,6 +191,9 @@ def normalize_records(
             else:
                 discount_pct = Decimal('0.0')
 
+        if discount_pct is not None:
+            discount_pct = min(max(discount_pct, Decimal('0.0')), Decimal('100.0'))
+
         client_col = mapping.get('client')
         client = str(row.get(client_col, '')).strip() if client_col else ''
 

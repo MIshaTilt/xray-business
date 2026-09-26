@@ -1,0 +1,382 @@
+[
+  {
+    "dataset": "ecommerce_canonical.csv",
+    "label": "📦 Выручка по категориям",
+    "query": "Сравни выручку и количество заказов по категориям каталога.",
+    "tools": "execute_sql_query, render_chart",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 21.2,
+    "preview": "Сводный анализ по всем **300 заказам** на общую сумму **1 406 852 ₽**:  ### 📊 Сравнение категорий каталога  | Категория "
+  },
+  {
+    "dataset": "ecommerce_canonical.csv",
+    "label": "🌍 Срез по городам",
+    "query": "В каких городах самый высокий средний чек? Сравни города по выручке.",
+    "tools": "execute_sql_query, render_chart",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 29.1,
+    "preview": "Вот детальный срез по городам: где клиенты платят больше всего за один заказ и кто приносит бизнесу основную кассу.  ---"
+  },
+  {
+    "dataset": "ecommerce_canonical.csv",
+    "label": "💳 Способы оплаты",
+    "query": "Какими способами оплаты чаще всего пользуются и какая выручка по каждому?",
+    "tools": "execute_sql_query, render_chart",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 18.5,
+    "preview": "Вот точные данные по способам оплаты за весь период:  ### Сводная статистика по способам оплаты  | Способ оплаты | Кол-в"
+  },
+  {
+    "dataset": "ecommerce_canonical.csv",
+    "label": "⏳ Зависшие сделки (254984.00 ₽)",
+    "query": "Покажи зависшие сделки, где застряли деньги, и предложи план действий для РОПа.",
+    "tools": "execute_sql_query, execute_sql_query, execute_sql_query, execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 21.4,
+    "preview": "### Где застряли деньги (анализ зависших сделок)  Всего в незакрытых статусах старше 21 дня висит **55 сделок на сумму 2"
+  },
+  {
+    "dataset": "ecommerce_canonical.csv",
+    "label": "👥 Эффективность менеджеров",
+    "query": "Кто из менеджеров лучший по выручке и закрытым сделкам? Сравни показатели команды.",
+    "tools": "execute_sql_query, execute_sql_query",
+    "status": "FAIL",
+    "sql_error": "",
+    "duration": 15.8,
+    "preview": ""
+  },
+  {
+    "dataset": "ecommerce_canonical.csv",
+    "label": "📈 График выручки по дням",
+    "query": "Построй интерактивный график динамики выручки по датам.",
+    "tools": "execute_sql_query, render_chart",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 19.6,
+    "preview": "Интерактивный график динамики выручки по датам построен.  ### Анализ динамики и ключевые выводы:  1. **Общие объемы**:  "
+  },
+  {
+    "dataset": "ecommerce_canonical.csv",
+    "label": "📉 Воронка по этапам",
+    "query": "Построй сводную таблицу воронки продаж по этапам сделок и рассчитай конверсию между стадиями.",
+    "tools": "execute_sql_query, execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 23.6,
+    "preview": "На основе выгрузки базы сделок сформирована сводная воронка продаж по этапам жизненного цикла заказов.  ---  ### Сводная"
+  },
+  {
+    "dataset": "ecommerce_marketplace.csv",
+    "label": "📦 Выручка по категориям",
+    "query": "Сравни выручку и количество заказов по категориям каталога.",
+    "tools": "execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 13.4,
+    "preview": "Вот детальное сравнение выручки и количества заказов по категориям каталога:  ### Сводная таблица по категориям  | Катег"
+  },
+  {
+    "dataset": "ecommerce_marketplace.csv",
+    "label": "🏆 Топ-5 товаров",
+    "query": "Покажи топ-5 самых продаваемых товаров по сумме выручки.",
+    "tools": "execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 46.0,
+    "preview": "Вот **топ-5 самых продаваемых товаров по сумме выручки** за анализируемый период:  | № | Наименование товара | Категория"
+  },
+  {
+    "dataset": "ecommerce_marketplace.csv",
+    "label": "🛒 Продажи по каналам",
+    "query": "Сравни продажи, количество заказов и выручку по каналам сбыта (складам/площадкам).",
+    "tools": "execute_sql_query, execute_sql_query, execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 21.4,
+    "preview": "Сравнение ключевых показателей по каналам сбыта (складам и площадкам) за весь анализируемый период:  ### Сводная таблица"
+  },
+  {
+    "dataset": "ecommerce_marketplace.csv",
+    "label": "⏳ Зависшие сделки (1076062.00 ₽)",
+    "query": "Покажи зависшие сделки, где застряли деньги, и предложи план действий для РОПа.",
+    "tools": "execute_sql_query, execute_sql_query, execute_sql_query, execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 20.4,
+    "preview": "По результатам рентгена базы заказов и детального анализа статусов, в воронке накопился критический объем незавершенных "
+  },
+  {
+    "dataset": "ecommerce_marketplace.csv",
+    "label": "📈 График выручки по дням",
+    "query": "Построй интерактивный график динамики выручки по датам.",
+    "tools": "render_chart, execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 13.1,
+    "preview": "График динамики выручки построен выше 👆.  ### Анализ динамики и ключевые выводы: 1. **Общий объем выручки:** **1 406 852"
+  },
+  {
+    "dataset": "ecommerce_marketplace.csv",
+    "label": "📉 Воронка по этапам",
+    "query": "Построй сводную таблицу воронки продаж по этапам сделок и рассчитай конверсию между стадиями.",
+    "tools": "execute_sql_query, execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 18.5,
+    "preview": "На основе базы сделок сформирована воронка движения заказов по этапам жизненного цикла.  ### Структура воронки  В текуще"
+  },
+  {
+    "dataset": "ecommerce_marketplace.csv",
+    "label": "🔍 Самые крупные сделки",
+    "query": "Найди топ-5 самых крупных сделок в отчете.",
+    "tools": "execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 11.0,
+    "preview": "Вот топ-5 самых крупных сделок по сумме в отчете:  | № | ID заказа | Клиент | Товар (Категория) | Сумма | Статус | Дата "
+  },
+  {
+    "dataset": "ecommerce_moysklad_1c.csv",
+    "label": "📦 Выручка по категориям",
+    "query": "Сравни выручку и количество заказов по категориям каталога.",
+    "tools": "execute_sql_query, render_chart",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 17.1,
+    "preview": "Сравнение выручки и количества заказов по категориям товаров:  | Категория | Кол-во заказов | Доля заказов | Выручка (ру"
+  },
+  {
+    "dataset": "ecommerce_moysklad_1c.csv",
+    "label": "🏆 Топ-5 товаров",
+    "query": "Покажи топ-5 самых продаваемых товаров по сумме выручки.",
+    "tools": "execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 14.5,
+    "preview": "Вот **топ-5 самых продаваемых товаров** по общей сумме заказов:  | № | Товар / Номенклатура | Кол-во заказов | Общая сум"
+  },
+  {
+    "dataset": "ecommerce_moysklad_1c.csv",
+    "label": "🌍 Срез по городам",
+    "query": "В каких городах самый высокий средний чек? Сравни города по выручке.",
+    "tools": "execute_sql_query, render_chart",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 18.0,
+    "preview": "Свежая аналитика по городам доставки:  ### Топ городов по среднему чеку и сравнение по выручке  | Город | Сделок | Выруч"
+  },
+  {
+    "dataset": "ecommerce_moysklad_1c.csv",
+    "label": "🛒 Продажи по каналам",
+    "query": "Сравни продажи, количество заказов и выручку по каналам сбыта (складам/площадкам).",
+    "tools": "execute_sql_query, render_chart",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 23.6,
+    "preview": "Вот детальный сравнительный анализ продаж, заказов и выручки по всем каналам сбыта:  ### Сводная таблица по каналам сбыт"
+  },
+  {
+    "dataset": "ecommerce_moysklad_1c.csv",
+    "label": "💳 Способы оплаты",
+    "query": "Какими способами оплаты чаще всего пользуются и какая выручка по каждому?",
+    "tools": "execute_sql_query",
+    "status": "FAIL",
+    "sql_error": "",
+    "duration": 10.6,
+    "preview": ""
+  },
+  {
+    "dataset": "ecommerce_moysklad_1c.csv",
+    "label": "⏳ Зависшие сделки (254984.00 ₽)",
+    "query": "Покажи зависшие сделки, где застряли деньги, и предложи план действий для РОПа.",
+    "tools": "execute_sql_query, execute_sql_query, execute_sql_query, execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 24.7,
+    "preview": "### Анализ зависших сделок (> 21 дня)  В незакрытом состоянии зависли сделки на общую сумму **254 984 руб.**  ---  ### 1"
+  },
+  {
+    "dataset": "ecommerce_moysklad_1c.csv",
+    "label": "👥 Эффективность менеджеров",
+    "query": "Кто из менеджеров лучший по выручке и закрытым сделкам? Сравни показатели команды.",
+    "tools": "execute_sql_query, execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 35.0,
+    "preview": "Вот подробный разбор эффективности команды продаж по закрытым сделкам и выручке за исследуемый период:  ---  ### 🏆 Кто л"
+  },
+  {
+    "dataset": "ecommerce_messy_user_table.csv",
+    "label": "🛒 Продажи по каналам",
+    "query": "Сравни продажи, количество заказов и выручку по каналам сбыта (складам/площадкам).",
+    "tools": "execute_sql_query, execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 17.0,
+    "preview": "Проанализировал продажи по всем каналам сбыта (точкам продаж) за весь период.  ---  ### Сводная таблица по каналам сбыта"
+  },
+  {
+    "dataset": "ecommerce_messy_user_table.csv",
+    "label": "💳 Способы оплаты",
+    "query": "Какими способами оплаты чаще всего пользуются и какая выручка по каждому?",
+    "tools": "execute_sql_query, execute_sql_query, execute_sql_query, execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 28.8,
+    "preview": "В исходной выгрузке **нет отдельной графы «Способ оплаты»** (наличные, карта, СБП, рассрочка или расчетный счет).  Однак"
+  },
+  {
+    "dataset": "ecommerce_messy_user_table.csv",
+    "label": "⏳ Зависшие сделки (254984.00 ₽)",
+    "query": "Покажи зависшие сделки, где застряли деньги, и предложи план действий для РОПа.",
+    "tools": "execute_sql_query, execute_sql_query, execute_sql_query, execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 19.3,
+    "preview": "В текущей воронке выявлено **60 зависших заказов старше 21 дня** на общую сумму **254 984 руб.**   Ниже детальная раскла"
+  },
+  {
+    "dataset": "ecommerce_messy_user_table.csv",
+    "label": "📈 График выручки по дням",
+    "query": "Построй интерактивный график динамики выручки по датам.",
+    "tools": "render_chart",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 33.9,
+    "preview": "Интерактивный график динамики выручки по дням построен выше 👆  ### 📊 Аналитика и ключевые выводы по динамике:  1. **Общи"
+  },
+  {
+    "dataset": "ecommerce_messy_user_table.csv",
+    "label": "📉 Воронка по этапам",
+    "query": "Построй сводную таблицу воронки продаж по этапам сделок и рассчитай конверсию между стадиями.",
+    "tools": "execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 22.5,
+    "preview": "Вот сводная аналитика воронки продаж на основе всех **300 сделок** (общий оборот: **1 406 852 руб.**).  Процесс продаж и"
+  },
+  {
+    "dataset": "ecommerce_messy_user_table.csv",
+    "label": "🔍 Самые крупные сделки",
+    "query": "Найди топ-5 самых крупных сделок в отчете.",
+    "tools": "execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 14.4,
+    "preview": "Вот топ-5 самых крупных сделок по сумме за весь анализируемый период:  | № | ID заказа | Клиент | Товар | Сумма сделки |"
+  },
+  {
+    "dataset": "custom_messy_slang_crm.csv",
+    "label": "⏳ Зависшие сделки (1329000.00 ₽)",
+    "query": "Покажи зависшие сделки, где застряли деньги, и предложи план действий для РОПа.",
+    "tools": "execute_sql_query, execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 21.4,
+    "preview": "В вашей воронке зависли **8 сделок на общую сумму 1 329 000 руб.** (это **64.5%** от всего объема денег в пайплайне). Ос"
+  },
+  {
+    "dataset": "custom_messy_slang_crm.csv",
+    "label": "👥 Эффективность менеджеров",
+    "query": "Кто из менеджеров лучший по выручке и закрытым сделкам? Сравни показатели команды.",
+    "tools": "execute_sql_query, execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 19.8,
+    "preview": "### Сводная таблица эффективности менеджеров  | Менеджер | Всего сделок | Сумма в пайплайне | Выиграно (шт / руб.) | Сли"
+  },
+  {
+    "dataset": "custom_messy_slang_crm.csv",
+    "label": "📈 График выручки по дням",
+    "query": "Построй интерактивный график динамики выручки по датам.",
+    "tools": "render_chart, execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 11.5,
+    "preview": "Интерактивный график динамики выручки по датам построен выше 👆  ### 📊 Анализ динамики и ключевые выводы:  1. **Пиковые т"
+  },
+  {
+    "dataset": "custom_messy_slang_crm.csv",
+    "label": "📉 Воронка по этапам",
+    "query": "Построй сводную таблицу воронки продаж по этапам сделок и рассчитай конверсию между стадиями.",
+    "tools": "execute_sql_query",
+    "status": "FAIL",
+    "sql_error": "",
+    "duration": 13.8,
+    "preview": ""
+  },
+  {
+    "dataset": "custom_messy_slang_crm.csv",
+    "label": "🔍 Самые крупные сделки",
+    "query": "Найди топ-5 самых крупных сделок в отчете.",
+    "tools": "execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 10.7,
+    "preview": "Вот топ-5 самых крупных сделок в вашем отчете:  | № | ID сделки | Клиент | Сумма | Менеджер | Статус | Дата создания | |"
+  },
+  {
+    "dataset": "demo_deals.csv",
+    "label": "⏳ Зависшие сделки (243000.00 ₽)",
+    "query": "Покажи зависшие сделки, где застряли деньги, и предложи план действий для РОПа.",
+    "tools": "execute_sql_query, execute_sql_query, execute_sql_query, execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 29.7,
+    "preview": "В воронке прямо сейчас находятся **17 открытых сделок** на общую сумму **243 000 руб.** При этом **11 из них (на сумму 1"
+  },
+  {
+    "dataset": "demo_deals.csv",
+    "label": "👑 Топ клиентов по выручке",
+    "query": "Выведи топ ключевых клиентов по выручке и оцени риск концентрации.",
+    "tools": "execute_sql_query, execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 18.7,
+    "preview": "### Топ клиентов по фактической выручке (закрытые сделки)  Всего закрыто и оплачено выручки: **326 000 руб.** (15 сделок"
+  },
+  {
+    "dataset": "demo_deals.csv",
+    "label": "👥 Эффективность менеджеров",
+    "query": "Кто из менеджеров лучший по выручке и закрытым сделкам? Сравни показатели команды.",
+    "tools": "execute_sql_query, execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 17.9,
+    "preview": "Лидером команды по всем ключевым показателям является **Марина**.  Сравнение показателей команды:  | Менеджер | Всего сд"
+  },
+  {
+    "dataset": "demo_deals.csv",
+    "label": "📈 График выручки по дням",
+    "query": "Построй интерактивный график динамики выручки по датам.",
+    "tools": "render_chart, execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 11.6,
+    "preview": "Интерактивный график динамики выручки по датам построен выше.  ---  ### Анализ динамики и ключевые выводы:  1. **Общие п"
+  },
+  {
+    "dataset": "demo_deals.csv",
+    "label": "📉 Воронка по этапам",
+    "query": "Построй сводную таблицу воронки продаж по этапам сделок и рассчитай конверсию между стадиями.",
+    "tools": "execute_sql_query, execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 17.9,
+    "preview": "Собрал сводную аналитику по текущему срезу воронки продаж.  В пайплайне 6 статусов: от входа лида до успешной оплаты или"
+  },
+  {
+    "dataset": "demo_deals.csv",
+    "label": "🔍 Самые крупные сделки",
+    "query": "Найди топ-5 самых крупных сделок в отчете.",
+    "tools": "execute_sql_query",
+    "status": "PASS",
+    "sql_error": "",
+    "duration": 12.6,
+    "preview": "Вот **топ-5 самых крупных сделок** в вашей базе:  | № | Клиент | Сумма | Менеджер | Статус | Дней на этапе | Дата создан"
+  }
+]

@@ -86,7 +86,7 @@ class Deal(models.Model):
     manager = models.CharField(max_length=255, blank=True)
     amount = models.DecimalField(max_digits=14, decimal_places=2)
     list_price = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
-    discount_pct = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    discount_pct = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     status_raw = models.CharField(max_length=255, blank=True)
     status = models.CharField(max_length=32)
     created_at = models.DateTimeField(null=True, blank=True)
