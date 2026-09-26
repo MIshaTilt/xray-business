@@ -15,7 +15,6 @@ type FlowValue = {
   stopVeil: () => void
   finishVeil: () => void
   dark: boolean
-  themePlayed: boolean
   toggleTheme: () => void
 }
 
@@ -36,7 +35,6 @@ export function FlowProvider({ children }: { children: ReactNode }) {
   const [veil, setVeil] = useState(false)
   const [veilLeaving, setVeilLeaving] = useState(false)
   const [dark, setDark] = useState(() => window.localStorage.getItem('xray-theme') === 'dark')
-  const [themePlayed, setThemePlayed] = useState(false)
   const veilRef = useRef(false)
 
   useEffect(() => {
@@ -101,7 +99,6 @@ export function FlowProvider({ children }: { children: ReactNode }) {
   }, [veil])
 
   const toggleTheme = useCallback(() => {
-    setThemePlayed(true)
     setDark((value) => !value)
   }, [])
 
@@ -117,7 +114,6 @@ export function FlowProvider({ children }: { children: ReactNode }) {
       stopVeil,
       finishVeil,
       dark,
-      themePlayed,
       toggleTheme,
     }),
     [
@@ -131,7 +127,6 @@ export function FlowProvider({ children }: { children: ReactNode }) {
       stopVeil,
       finishVeil,
       dark,
-      themePlayed,
       toggleTheme,
     ],
   )

@@ -15,7 +15,7 @@ from engine.mapping import guess_column_mapping, derive_computed_columns, CANONI
 from pathlib import Path
 from engine.normalizer import normalize_records
 from engine.analyzer import calculate_metrics_and_findings
-from engine.narrator import generate_llm_narrative
+from engine.narrator import filename_to_title, generate_llm_narrative
 from engine.models import Upload, Snapshot, ChatMessage, Deal
 from engine.ai_mapper import ai_smart_column_mapping, ai_smart_status_mapping
 from engine.reports import generate_excel_report, generate_pdf_report
@@ -340,6 +340,42 @@ class SaveMappingView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+def snapshot_card(snap: dict) -> dict:
+    diag = snap.get('diagnosis')
+    crit = 'ok'
+    topics = []
+    if diag and diag.get('findings'):
+        v_set = {f['verdict'] for f in diag['findings']}
+        if 'critical' in v_set:
+            crit = 'critical'
+        elif 'watch' in v_set:
+            crit = 'watch'
+        ranked = [f for f in diag['findings'] if f.get('verdict') in ('critical', 'watch')]
+        ranked.sort(key=lambda item: 0 if item.get('verdict') == 'critical' else 1)
+        for finding in ranked:
+            metric_id = finding.get('metric_id')
+            if metric_id and metric_id not in topics:
+                topics.append(metric_id)
+            if len(topics) == 2:
+                break
+    return {
+        'snapshot_id': snap['snapshot_id'],
+        'scan_no': snap.get('scan_no'),
+        'status': snap['status'],
+        'created_at': snap['created_at'],
+        'filename': snap['filename'],
+        'source': snap['source'],
+        'period': diag.get('period') if diag else None,
+        'headline': diag.get('headline') if diag else None,
+        'card_title': ((diag.get('card_title') if diag else None) or '').strip()
+        or filename_to_title(snap.get('filename') or ''),
+        'topics': topics,
+        'verdict': crit,
+        'coverage_ready': len(diag['coverage']['available']) if diag else 0,
+        'coverage_total': 7,
+    }
+
+
 class SnapshotCreateView(APIView):
     def get(self, request):
         cleanup_expired_guest_data()
@@ -362,28 +398,8 @@ class SnapshotCreateView(APIView):
             else:
                 continue
 
-            diag = snap.get('diagnosis')
-            crit = 'ok'
-            if diag and diag.get('findings'):
-                v_set = {f['verdict'] for f in diag['findings']}
-                if 'critical' in v_set:
-                    crit = 'critical'
-                elif 'watch' in v_set:
-                    crit = 'watch'
+            items.append(snapshot_card(snap))
 
-            items.append({
-                'snapshot_id': snap['snapshot_id'],
-                'scan_no': snap.get('scan_no'),
-                'status': snap['status'],
-                'created_at': snap['created_at'],
-                'filename': snap['filename'],
-                'source': snap['source'],
-                'period': diag.get('period') if diag else None,
-                'headline': diag.get('headline') if diag else None,
-                'verdict': crit,
-                'coverage_ready': len(diag.get('coverage', {}).get('available', [])) if (diag and isinstance(diag.get('coverage'), dict)) else 0,
-                'coverage_total': 7,
-            })
         return Response({'items': items, 'next_cursor': None})
 
     def post(self, request):
@@ -427,7 +443,7 @@ class SnapshotCreateView(APIView):
 
         headline = findings[0]['action'] if findings else 'По этому файлу критичных утечек не видно.'
         # LLM Enhancement strictly according to TZ §6.5
-        headline, findings = generate_llm_narrative(findings, headline)
+        headline, findings, card_title = generate_llm_narrative(findings, headline, upload['filename'])
         body = ' '.join([f['action'] for f in findings])
 
         SNAPSHOTS_STORE[snapshot_id] = {
@@ -445,6 +461,7 @@ class SnapshotCreateView(APIView):
             'diagnosis': {
                 'snapshot_id': snapshot_id,
                 'headline': headline,
+                'card_title': card_title,
                 'body': body,
                 'findings': findings,
                 'coverage': coverage,
@@ -473,6 +490,7 @@ class SnapshotCreateView(APIView):
                 is_guest=ident.is_guest,
                 filename=upload['filename'],
                 headline=headline,
+                quality={'card_title': card_title} if card_title else {},
                 body=body,
                 findings=findings,
                 coverage=coverage,

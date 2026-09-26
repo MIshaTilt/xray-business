@@ -240,6 +240,12 @@ export const fixtures = {
           status: poll.status,
           created_at: snapshot.createdAt,
           headline: poll.status === 'ready' ? first?.action ?? snapshot.diagnosis.headline : undefined,
+          card_title: poll.status === 'ready' ? snapshot.source : undefined,
+          filename: snapshot.source,
+          topics: snapshot.diagnosis.findings
+            .filter((finding) => finding.verdict === 'critical' || finding.verdict === 'watch')
+            .slice(0, 2)
+            .map((finding) => finding.metric_id),
           source: snapshot.source,
           verdict: first && (first.verdict === 'critical' || first.verdict === 'watch' || first.verdict === 'ok') ? first.verdict : undefined,
           coverage_label: `${snapshot.diagnosis.coverage.available.length} из 7`,

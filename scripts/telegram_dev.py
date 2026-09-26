@@ -44,7 +44,7 @@ def api(token: str, method: str, payload: dict | None = None) -> dict:
         method='POST' if data else 'GET',
     )
     try:
-        with urllib.request.urlopen(request, timeout=60, context=SSL_CONTEXT) as response:
+        with urllib.request.urlopen(request, timeout=90, context=SSL_CONTEXT) as response:
             body = json.loads(response.read().decode())
     except urllib.error.HTTPError as error:
         detail = error.read().decode()
@@ -84,7 +84,12 @@ def handle_start(token: str, app_url: str) -> None:
     offset = 0
     print('Жду /start в Telegram у @xray_business_bot', flush=True)
     while True:
-        updates = api(token, 'getUpdates', {'timeout': 50, 'offset': offset, 'allowed_updates': ['message']})
+        try:
+            updates = api(token, 'getUpdates', {'timeout': 40, 'offset': offset, 'allowed_updates': ['message']})
+        except (TimeoutError, urllib.error.URLError) as error:
+            print(f'сеть: {error.__class__.__name__}, ещё раз', flush=True)
+            time.sleep(2)
+            continue
         for update in updates:
             offset = int(update['update_id']) + 1
             message = update.get('message') or {}

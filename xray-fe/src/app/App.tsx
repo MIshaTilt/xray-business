@@ -3,8 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
 import type { Diagnosis as DiagnosisData, MetricId } from '../api/types.ts'
 import { api } from '../api/client.ts'
-import { bindBack, getPlatform, initBridge, showBack } from '../bridge/index.ts'
-import { dealsAsTable } from '../domain/platform.ts'
+import { bindBack, initBridge, showBack } from '../bridge/index.ts'
 import { ChatScreen } from '../screens/ChatScreen.tsx'
 import { Diagnosis } from '../screens/Diagnosis.tsx'
 import { Home } from '../screens/Home.tsx'
@@ -43,7 +42,6 @@ function Shell() {
   const navigate = useNavigate()
   const flow = useFlow()
   const [hostBack, setHostBack] = useState(false)
-  const wide = dealsAsTable(getPlatform())
   const tab = tabOf(location.pathname)
   const inChat = location.pathname.endsWith('/chat')
   const nested =
@@ -51,7 +49,7 @@ function Shell() {
     location.pathname.startsWith('/processing/')
   const showBackBtn =
     !hostBack && (nested || location.pathname.startsWith('/mapping') || location.pathname.startsWith('/templates'))
-  const showTabs = !flow.veil && !flow.veilLeaving
+  const showTabs = true
 
   useEffect(() => {
     document.documentElement.dataset.scene = inChat ? 'chat' : 'home'
@@ -97,7 +95,7 @@ function Shell() {
     <Panel mode="secondary" className="app-panel">
       <LiveWallpaper />
       <main
-        className={`${wide ? 'app-shell wide' : 'app-shell'}${showBackBtn ? ' with-back' : ''}${showTabs ? ' with-tabs' : ''}${inChat ? ' is-chat' : ''}`}
+        className={`app-shell${showBackBtn ? ' with-back' : ''}${showTabs ? ' with-tabs' : ''}${inChat ? ' is-chat' : ''}`}
       >
         <div className="nav-bar">
           {showBackBtn ? (
@@ -109,6 +107,7 @@ function Shell() {
             </button>
           ) : null}
           {inChat ? <div className="chat-nav-actions" id="chat-nav-actions" /> : null}
+          <div className="diag-more-slot" id="diag-more-slot" />
         </div>
         {showBackBtn ? <div className="back-spacer" aria-hidden="true" /> : null}
 
@@ -251,7 +250,7 @@ function ChatGatePage() {
 
 function MenuPage() {
   const flow = useFlow()
-  return <Menu dark={flow.dark} themePlayed={flow.themePlayed} onToggleTheme={flow.toggleTheme} />
+  return <Menu dark={flow.dark} onToggleTheme={flow.toggleTheme} />
 }
 
 function MappingPage() {
@@ -289,14 +288,12 @@ function DiagnosisPage() {
   const { snapshotId = '' } = useParams()
   const navigate = useNavigate()
   const { setLastScanId, finishVeil } = useFlow()
-  const wide = dealsAsTable(getPlatform())
   useEffect(() => {
     setLastScanId(snapshotId)
   }, [setLastScanId, snapshotId])
   return (
     <Diagnosis
       snapshotId={snapshotId}
-      wide={wide}
       onMetric={(metricId) => go(navigate, `/scan/${snapshotId}/metric/${metricId}`)}
       onMissing={() => go(navigate, `/scan/${snapshotId}/missing`)}
       onLoaded={finishVeil}

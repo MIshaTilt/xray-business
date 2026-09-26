@@ -8,19 +8,16 @@ import { hapticSuccess } from '../bridge/index.ts'
 import { buildConclusion } from '../domain/conclusion.ts'
 import { formatRub, formatWhen } from '../domain/metrics.ts'
 import { FindingCard } from '../widgets/FindingCard.tsx'
-import { InsetVScroll } from '../widgets/InsetVScroll.tsx'
 import { Notice } from '../widgets/Notice.tsx'
 
 export function Diagnosis({
   snapshotId,
-  wide,
   onMetric,
   onMissing,
   onOpenChat,
   onLoaded,
 }: {
   snapshotId: string
-  wide: boolean
   onMetric: (metricId: MetricId) => void
   onMissing: () => void
   onOpenChat: (diagnosis: DiagnosisData) => void
@@ -36,7 +33,7 @@ export function Diagnosis({
   const copiedTimer = useRef(0)
   const moreTimer = useRef(0)
   const moreWrapRef = useRef<HTMLDivElement>(null)
-  const [moreBox, setMoreBox] = useState<{ top: number; left: number; width: number } | null>(null)
+  const [sheetFont, setSheetFont] = useState<{ fontFamily: string; fontSize: string } | null>(null)
   useEffect(() => {
     let alive = true
     void api
@@ -60,17 +57,22 @@ export function Diagnosis({
   }, [onLoaded, snapshotId])
 
   async function copy() {
-    if (!diagnosis) return
+    if (!diagnosis || copied) return
     const text = buildConclusion(diagnosis)
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
       setFallback('')
       window.clearTimeout(copiedTimer.current)
-      copiedTimer.current = window.setTimeout(() => setCopied(false), 1800)
+      const hold = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1100
+      copiedTimer.current = window.setTimeout(() => {
+        closeMore()
+        copiedTimer.current = window.setTimeout(() => setCopied(false), 420)
+      }, hold)
     } catch {
       setCopied(false)
       setFallback(text)
+      closeMore()
     }
   }
 
@@ -89,43 +91,20 @@ export function Diagnosis({
   }
 
   useLayoutEffect(() => {
-    if (!moreOpen) {
-      setMoreBox(null)
-      return
-    }
-    function place() {
-      const host = moreWrapRef.current
-      if (!host) return
-      const trigger = (host.querySelector('button') ?? host) as HTMLElement
-      const rect = trigger.getBoundingClientRect()
-      setMoreBox({
-        top: rect.bottom + window.scrollY + 8,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-      })
-    }
-    place()
-    window.addEventListener('resize', place)
-    return () => window.removeEventListener('resize', place)
+    if (!moreOpen) return
+    const shell = document.querySelector('.app-shell')
+    if (!(shell instanceof HTMLElement)) return
+    const style = window.getComputedStyle(shell)
+    setSheetFont({ fontFamily: style.fontFamily, fontSize: style.fontSize })
   }, [moreOpen])
 
   useEffect(() => {
     if (!moreOpen || moreClosing) return
-    function onPointer(event: PointerEvent) {
-      const target = event.target as Node | null
-      if (moreWrapRef.current?.contains(target)) return
-      if (target instanceof Element && target.closest('.template-dropdown-menu')) return
-      closeMore()
-    }
     function onKey(event: KeyboardEvent) {
       if (event.key === 'Escape') closeMore()
     }
-    document.addEventListener('pointerdown', onPointer)
     document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('pointerdown', onPointer)
-      document.removeEventListener('keydown', onKey)
-    }
+    return () => document.removeEventListener('keydown', onKey)
   }, [moreOpen, moreClosing])
 
   if (error) return <Notice tone="error">{error}</Notice>
@@ -151,7 +130,7 @@ export function Diagnosis({
           {diagnosis.totals.deals} сделок · {shortMoney(diagnosis.totals.amount)}
         </p>
       </div>
-      <div className={wide ? 'findings wide' : 'findings'}>
+      <div className="findings">
         {visible.map((finding) => (
           <FindingCard key={finding.metric_id} finding={finding} onOpen={() => onMetric(finding.metric_id)} />
         ))}
@@ -171,92 +150,92 @@ export function Diagnosis({
           <textarea className="copy-fallback" readOnly value={fallback} />
         </label>
       ) : null}
-      <div className="diagnosis-actions">
-        <Button className="action action-accent" type="button" size="large" stretched variant="primary" onClick={() => onOpenChat(diagnosis)}>
-          Что делать
-        </Button>
+      {createPortal(
         <div className="template-dropdown-wrapper" ref={moreWrapRef}>
-          <Button
-            className="action action-secondary"
+          <button
             type="button"
-            size="large"
-            stretched
-            variant="secondary"
+            className="more-dot-btn"
+            aria-label="Поделиться"
+            aria-expanded={moreOpen && !moreClosing}
             onClick={() => {
               if (moreClosing) return
               if (moreOpen) closeMore()
               else setMoreOpen(true)
             }}
           >
-            <span className="template-label">
-              Ещё
-              <span className={`template-caret${moreOpen && !moreClosing ? ' open' : ''}`} aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M6 9.5 12 15.5 18 9.5" />
-                </svg>
-              </span>
-            </span>
-          </Button>
-          {moreOpen && moreBox
-            ? createPortal(
-                <div
-                  className={`template-dropdown-menu is-portal${moreClosing ? ' is-closing' : ''}`}
-                  style={{
-                    top: moreBox.top,
-                    left: moreBox.left,
-                    width: moreBox.width,
-                    right: 'auto',
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3.5v11" />
+              <path d="M8 7 12 3.5 16 7" />
+              <path d="M6.5 11.5v7.5h11v-7.5" />
+            </svg>
+          </button>
+        </div>,
+        document.getElementById('diag-more-slot') ?? document.body,
+      )}
+      {moreOpen
+        ? createPortal(
+            <div className={`download-sheet${moreClosing ? ' is-closing' : ''}`}>
+              <button type="button" className="download-sheet-backdrop" aria-label="Закрыть" onClick={closeMore} />
+              <div
+                className="download-sheet-panel"
+                role="dialog"
+                aria-label="Сохранить снимок"
+                style={sheetFont ?? undefined}
+              >
+                <p className="download-sheet-title">Сохранить снимок</p>
+                <button
+                  type="button"
+                  className={`template-item-btn copy-action${copied ? ' is-copied' : ''}`}
+                  onClick={() => void copy()}
+                >
+                  <span className="copy-action-status">
+                    <svg className="copy-action-check" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M5 12.6 9.2 16.8 19 7.2" />
+                    </svg>
+                    <span className="copy-action-words">
+                      <span className="is-idle" aria-hidden={copied}>
+                        Скопировать заключение
+                      </span>
+                      <span className="is-done" aria-hidden={!copied}>
+                        Скопировано в буфер обмена
+                      </span>
+                    </span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="template-item-btn"
+                  onClick={() => {
+                    closeMore()
+                    window.open(`${exportBase}/api/snapshots/${snapshotId}/export-pdf`, '_blank')
                   }}
                 >
-                  <InsetVScroll watch={`${moreOpen}:${skipped}:${copied}`}>
-                    <button
-                      type="button"
-                      className="template-item-btn"
-                      onClick={() => {
-                        closeMore()
-                        void copy()
-                      }}
-                    >
-                      {copied ? 'Скопировано' : 'Скопировать заключение'}
-                    </button>
-                    <button
-                      type="button"
-                      className="template-item-btn"
-                      onClick={() => {
-                        closeMore()
-                        window.open(`${exportBase}/api/snapshots/${snapshotId}/export-pdf`, '_blank')
-                      }}
-                    >
-                      Скачать PDF
-                    </button>
-                    <button
-                      type="button"
-                      className="template-item-btn"
-                      onClick={() => {
-                        closeMore()
-                        window.open(`${exportBase}/api/snapshots/${snapshotId}/export-excel`, '_blank')
-                      }}
-                    >
-                      Скачать Excel
-                    </button>
-                    {skipped ? (
-                      <button
-                        type="button"
-                        className="template-item-btn"
-                        onClick={() => {
-                          closeMore()
-                          onMissing()
-                        }}
-                      >
-                        Чего не хватило
-                      </button>
-                    ) : null}
-                  </InsetVScroll>
-                </div>,
-                document.body,
-              )
-            : null}
-        </div>
+                  Скачать PDF
+                </button>
+                <button
+                  type="button"
+                  className="template-item-btn"
+                  onClick={() => {
+                    closeMore()
+                    window.open(`${exportBase}/api/snapshots/${snapshotId}/export-excel`, '_blank')
+                  }}
+                >
+                  Скачать Excel
+                </button>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+      <div className="diagnosis-actions">
+        <Button className="action action-accent" type="button" size="large" stretched variant="primary" onClick={() => onOpenChat(diagnosis)}>
+          Что делать
+        </Button>
+        {skipped ? (
+          <Button className="action action-missing" type="button" size="large" stretched variant="secondary" onClick={onMissing}>
+            Чего не хватило
+          </Button>
+        ) : null}
       </div>
     </div>
   )
