@@ -5204,25 +5204,31 @@ html[data-theme="dark"] .template-dropdown-menu {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.chart-line-labels {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 6px;
+.chart-axis-text {
   font-size: 11px;
-  color: #64748b;
-  overflow: hidden;
+  fill: #64748b;
+  font-family: inherit;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
 }
 
-.chart-line-lbl {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 70px;
+.chart-axis-hovered {
+  fill: #2563eb;
+  font-weight: 700;
 }
 
-.chart-line-lbl.hovered {
-  font-weight: 650;
-  color: #2563eb;
+.chart-active-guideline {
+  stroke: #3b82f6;
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.tooltip-hint {
+  font-size: 10px;
+  opacity: 0.75;
+  margin-top: 2px;
 }
 
 /* Table View */
@@ -5321,9 +5327,19 @@ html[data-theme="dark"] .chart-bar-item.hovered {
 html[data-theme="dark"] .chart-center-sub,
 html[data-theme="dark"] .chart-bar-hint,
 html[data-theme="dark"] .chart-funnel-cnt,
-html[data-theme="dark"] .chart-line-labels,
+html[data-theme="dark"] .chart-axis-text,
 html[data-theme="dark"] .chart-mini-table th {
   color: #94a3b8;
+  fill: #94a3b8;
+}
+
+html[data-theme="dark"] .chart-axis-hovered {
+  color: #60a5fa;
+  fill: #60a5fa;
+}
+
+html[data-theme="dark"] .chart-active-guideline {
+  stroke: #60a5fa;
 }
 
 html[data-theme="dark"] .chart-bar-pct,

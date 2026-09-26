@@ -75,8 +75,9 @@ AI_TOOLS_DEFINITIONS = [
             "name": "render_chart",
             "description": (
                 "Построить интерактивный график или диаграмму прямо в чате для наглядной визуализации данных. "
-                "Вызывай этот инструмент ОБЯЗАТЕЛЬНО, когда пользователь просит 'построй график', 'нарисуй диаграмму', "
-                "'покажи распределение', 'воронку', 'сравни менеджеров', 'визуализируй выручку' или 'сделай чарт'. "
+                "Вызывай этот инструмент ВСЕГДА, когда пользователь просит 'построй график', 'нарисуй диаграмму', "
+                "'покажи распределение', 'воронку', 'график выручки по времени/датам/динамику', 'сравни менеджеров' или 'сделай чарт'. "
+                "Для графиков выручки по времени или датам ОБЯЗАТЕЛЬНО используй chart_type='line' и dimension='date' (или 'month'). "
                 "Инструмент возвращает рассчитанные структурированные данные, а интерфейс чата мгновенно рендерит красивый интерактивный график."
             ),
             "parameters": {
@@ -84,17 +85,17 @@ AI_TOOLS_DEFINITIONS = [
                 "properties": {
                     "chart_type": {
                         "type": "string",
-                        "enum": ["bar", "donut", "funnel", "line"],
-                        "description": "Тип графика: 'bar' (столбчатая диаграмма), 'donut' (круговая диаграмма долей), 'funnel' (воронка продаж и конверсии), 'line' (линейный тренд)"
+                        "enum": ["line", "bar", "donut", "funnel"],
+                        "description": "Тип графика: 'line' (линейный тренд / динамика по времени/датам), 'bar' (столбчатая диаграмма), 'donut' (круговая диаграмма долей), 'funnel' (воронка продаж)"
                     },
                     "title": {
                         "type": "string",
-                        "description": "Понятный заголовок графика на русском языке (например, 'Выручка по менеджерам', 'Воронка сделок по стадиям', 'Топ-5 ключевых клиентов')"
+                        "description": "Понятный заголовок графика на русском языке (например, 'Динамика выручки по датам', 'Выручка по менеджерам', 'Воронка сделок по стадиям', 'Топ-5 ключевых клиентов')"
                     },
                     "dimension": {
                         "type": "string",
-                        "enum": ["manager", "status", "client", "source", "custom"],
-                        "description": "По какому параметру группировать данные из базы: 'manager' (по менеджерам), 'status' (по этапам/статусам сделок), 'client' (по клиентам), 'source' (по источникам) или 'custom' (если передаешь массив data вручную)"
+                        "enum": ["date", "month", "manager", "status", "client", "source", "custom"],
+                        "description": "По какому параметру группировать: 'date' (динамика по датам/дням), 'month' (динамика по месяцам), 'manager' (по менеджерам), 'status' (по этапам/статусам), 'client' (по клиентам), 'source' (по источникам) или 'custom' (если передаешь массив data вручную)"
                     },
                     "metric": {
                         "type": "string",
@@ -256,8 +257,11 @@ def execute_tool_call(tool_name: str, arguments: dict, snapshot_id: str) -> str:
         }
 
         # Auto-detect dimension if missing or invalid
-        if not dimension or dimension not in ("manager", "status", "client", "source", "custom"):
-            if chart_type == "funnel":
+        time_keywords = ["врем", "дат", "месяц", "динамик", "период", "день", "дням", "тренд", "хронолог"]
+        if not dimension or dimension not in ("date", "month", "manager", "status", "client", "source", "custom"):
+            if chart_type == "line" or any(w in title.lower() for w in time_keywords):
+                dimension = "date"
+            elif chart_type == "funnel":
                 dimension = "status"
             elif any(w in title.lower() for w in ["статус", "этап", "стади", "воронк"]):
                 dimension = "status"
@@ -267,6 +271,9 @@ def execute_tool_call(tool_name: str, arguments: dict, snapshot_id: str) -> str:
                 dimension = "source"
             else:
                 dimension = "manager"
+
+        if dimension in ("date", "month", "time") and chart_type == "bar":
+            chart_type = "line"
 
         items = []
         metric_label = "Выручка" if metric == "amount" else ("Количество сделок" if metric == "count" else "Средний чек")
@@ -487,6 +494,57 @@ def execute_tool_call(tool_name: str, arguments: dict, snapshot_id: str) -> str:
                     "hint": f"{cnt} сделок на сумму {fmt_val(amt, True)}"
                 })
 
+        elif dimension in ("date", "month", "time"):
+            deals_with_date = qs.exclude(created_at=None).order_by("created_at")
+            if deals_with_date.exists():
+                ru_months = {
+                    "01": "Янв", "02": "Фев", "03": "Мар", "04": "Апр",
+                    "05": "Май", "06": "Июн", "07": "Июл", "08": "Авг",
+                    "09": "Сен", "10": "Окт", "11": "Ноя", "12": "Дек"
+                }
+                from collections import defaultdict
+                date_groups = defaultdict(lambda: {"amount": 0.0, "count": 0, "label": ""})
+
+                dates = [d.created_at.date() for d in deals_with_date if d.created_at]
+                span_days = (max(dates) - min(dates)).days if dates else 0
+
+                group_by_month = (dimension == "month") or (span_days > 75 and dimension != "date")
+
+                for d in deals_with_date:
+                    if not d.created_at:
+                        continue
+                    dt = d.created_at
+                    m_code = dt.strftime("%m")
+                    m_name = ru_months.get(m_code, m_code)
+                    if group_by_month:
+                        key = dt.strftime("%Y-%m")
+                        lbl = f"{m_name} {dt.strftime('%Y')}"
+                    else:
+                        key = dt.strftime("%Y-%m-%d")
+                        day_str = dt.strftime("%d")
+                        lbl = f"{day_str} {m_name}"
+
+                    date_groups[key]["label"] = lbl
+                    date_groups[key]["amount"] += float(d.amount or 0)
+                    date_groups[key]["count"] += 1
+
+                sorted_keys = sorted(date_groups.keys())
+                for idx, k in enumerate(sorted_keys):
+                    grp = date_groups[k]
+                    amt = grp["amount"]
+                    cnt = grp["count"]
+                    val = amt if metric == "amount" else cnt
+                    items.append({
+                        "label": grp.get("label", k),
+                        "date_key": k,
+                        "value": val,
+                        "amount": amt,
+                        "count": cnt,
+                        "formatted_value": fmt_val(val, metric == "amount"),
+                        "color": "#3B82F6",
+                        "hint": f"{cnt} сделок на {fmt_val(amt, True)}"
+                    })
+
         # Calculate totals & percentages
         total_val = sum(it["value"] for it in items)
         for it in items:
@@ -494,7 +552,13 @@ def execute_tool_call(tool_name: str, arguments: dict, snapshot_id: str) -> str:
             it["percentage"] = pct
 
         formatted_total = fmt_val(total_val, metric in ("amount", "avg_check"))
-        leader_info = f"Лидер: {items[0]['label']} ({items[0]['formatted_value']}, {items[0]['percentage']}%)" if items else "Нет данных"
+        if dimension in ("date", "month", "time") and items:
+            peak = max(items, key=lambda x: x["value"])
+            leader_info = f"Пик выручки: {peak['label']} ({peak['formatted_value']})"
+        elif items:
+            leader_info = f"Лидер: {items[0]['label']} ({items[0]['formatted_value']}, {items[0]['percentage']}%)"
+        else:
+            leader_info = "Нет данных"
 
         summary = (
             f"Построен график '{title}'. "

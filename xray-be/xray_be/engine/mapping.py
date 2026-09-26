@@ -23,12 +23,42 @@ SYNONYMS = {
 }
 
 STATUS_MAP_DEFAULT = {
-    'new': ['новая', 'не разобрана', 'входящая', 'лид', 'новый'],
-    'in_progress': ['в работе', 'квалификация', 'думает', 'созвон', 'согласование условий'],
-    'proposal': ['кп отправлено', 'коммерческое', 'счёт выставлен', 'счет выставлен'],
-    'negotiation': ['согласование', 'торг', 'пинать в пятницу', 'переговоры'],
-    'won': ['успешно', 'оплачено', 'закрыто', 'выиграна', 'доставлен', 'завершен', 'выполнен'],
-    'lost': ['отказ', 'проиграна', 'нецелевой', 'отменен', 'возврат'],
+    'new': [
+        'новая', 'новый', 'новые', 'не разобрана', 'не разобран', 'входящая', 'входящие',
+        'лид', 'лиды', 'создан', 'создана', 'создано', 'оформлен', 'оформлена', 'оформлен заказ',
+        'поступил', 'поступила', 'принят', 'принята', 'первичный', 'первичный контакт',
+        'new', 'lead', 'created', 'open', 'draft', 'черновик'
+    ],
+    'in_progress': [
+        'в работе', 'в обработке', 'обрабатывается', 'квалификация', 'думает', 'созвон',
+        'согласование условий', 'сборка', 'собирается', 'комплектация', 'комплектуется',
+        'передан в доставку', 'в доставке', 'доставка', 'в пути', 'отгружен', 'отправлен',
+        'застряло / думает', 'застряло', 'в работе / переговоры', 'на паузе', 'пауза',
+        'in_progress', 'processing', 'shipping', 'shipped', 'in_transit'
+    ],
+    'proposal': [
+        'кп отправлено', 'кп', 'коммерческое', 'коммерческое предложение',
+        'счёт выставлен', 'счет выставлен', 'выставлен счет', 'выставлен счёт',
+        'счет', 'счёт', 'ожидает оплаты', 'ждет оплаты', 'жду оплаты', 'к оплате',
+        'proposal', 'quote', 'awaiting_payment', 'pending_payment', 'invoice'
+    ],
+    'negotiation': [
+        'согласование', 'торг', 'пинать в пятницу', 'переговоры', 'на согласовании',
+        'уточнение', 'обсуждение', 'согласование договора', 'договор',
+        'negotiation', 'contract'
+    ],
+    'won': [
+        'успешно', 'успешно завершено', 'оплачено', 'оплачен', 'закрыто', 'закрыта', 'закрыт',
+        'выиграна', 'выигран', 'выиграно', 'доставлен', 'доставлено', 'доставлен и оплачен',
+        'завершен', 'завершена', 'завершено', 'выполнен', 'выполнена', 'выполнено',
+        'реализован', 'реализована', 'реализовано', 'выдан', 'вручен', 'получен', 'купили',
+        'продано', 'won', 'paid', 'delivered', 'completed', 'success', 'done'
+    ],
+    'lost': [
+        'отказ', 'проиграна', 'проигран', 'проиграно', 'нецелевой', 'отменен', 'отменена',
+        'отменено', 'отменен клиентом', 'возврат', 'слив', 'слив / отказ', 'брак', 'спам',
+        'недозвон', 'lost', 'cancelled', 'canceled', 'rejected', 'refund', 'returned', 'failed'
+    ],
 }
 
 CANONICAL_FIELDS = [
@@ -209,7 +239,84 @@ def map_status(raw: str, user_status_map: Optional[Dict[str, str]] = None) -> st
         return user_status_map[raw_str]
 
     norm = normalize_string(raw_str)
+    if user_status_map:
+        for k, v in user_status_map.items():
+            if normalize_string(k) == norm:
+                return v
+
+    # 1. Exact match against defaults
     for canon, syns in STATUS_MAP_DEFAULT.items():
         if norm in syns:
             return canon
+
+    # 2. Check compound splits (e.g. 'Слив / Отказ', 'В работе / переговоры', 'Отказ; брак')
+    parts = [p.strip() for p in re.split(r'[/\\,;|]', norm) if p.strip()]
+    if len(parts) > 1:
+        for p in parts:
+            for canon, syns in STATUS_MAP_DEFAULT.items():
+                if p in syns:
+                    return canon
+
+    # 3. Semantic keyword & stem rules (ordered by strict business priority)
+    # Rule 3.1: Rejection / Cancellation / Loss overrides everything
+    loss_stems = [
+        'отказ', 'отмен', 'возврат', 'проигр', 'слив', 'брак', 'спам', 'нецелев',
+        'недозвон', 'ошибочн', 'lost', 'cancel', 'reject', 'refund'
+    ]
+    if any(stem in norm for stem in loss_stems):
+        return 'lost'
+
+    # Rule 3.2: Awaiting payment / quotes (must precede won payment check!)
+    awaiting_stems = [
+        'ожидает оплат', 'ждет оплат', 'жду оплат', 'к оплат', 'ожидани',
+        'awaiting_pay', 'pending_pay', 'счет', 'счёт', 'кп', 'коммерческ', 'quote', 'proposal', 'invoice'
+    ]
+    if any(stem in norm for stem in awaiting_stems):
+        return 'proposal'
+
+    # Rule 3.3: Won / Delivered / Paid / Completed
+    won_stems = [
+        'доставлен', 'оплач', 'выдан', 'вручен', 'получен', 'выигр', 'выполнен',
+        'завершен', 'реализован', 'успеш', 'купили', 'won', 'paid', 'deliver', 'complet'
+    ]
+    if any(stem in norm for stem in won_stems):
+        return 'won'
+
+    # Rule 3.4: Negotiation / Agreement
+    negotiation_stems = ['переговор', 'согласован', 'торг', 'договор', 'negotiat', 'contract']
+    if any(stem in norm for stem in negotiation_stems):
+        return 'negotiation'
+
+    # Rule 3.5: In Progress / Processing / Shipping / Delay
+    progress_stems = [
+        'работ', 'обработк', 'обрабатыва', 'сборк', 'комплектац', 'доставк', 'в пути',
+        'отгруз', 'отгружен', 'отправлен', 'квалификац', 'думает', 'созвон', 'пауз',
+        'застря', 'курьер', 'process', 'ship'
+    ]
+    if any(stem in norm for stem in progress_stems):
+        return 'in_progress'
+
+    # Rule 3.6: New / Lead
+    new_stems = [
+        'нов', 'не разобран', 'входящ', 'лид', 'создан', 'оформлен', 'поступил',
+        'принят', 'первичн', 'lead', 'new', 'creat'
+    ]
+    if any(stem in norm for stem in new_stems):
+        return 'new'
+
     return 'other'
+
+
+def build_status_map(
+    unique_statuses: List[str],
+    user_status_map: Optional[Dict[str, str]] = None
+) -> Dict[str, str]:
+    """
+    Builds a status_map dictionary for a list of unique raw statuses.
+    """
+    result: Dict[str, str] = {}
+    for st in unique_statuses:
+        if not st:
+            continue
+        result[st] = map_status(st, user_status_map)
+    return result

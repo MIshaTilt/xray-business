@@ -27,51 +27,57 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
     current_messages = list(messages_list)
     executed_tools_for_saving = []
 
-    # 1. Step 1: Tool resolution (if snapshot_id is provided, allow model to inspect deals)
+    # 1. Step 1: Multi-turn tool resolution loop (supports tool chaining like search -> chart)
     if snapshot_id:
         try:
-            tool_payload = {
-                "model": model_name,
-                "messages": current_messages,
-                "tools": AI_TOOLS_DEFINITIONS,
-                "tool_choice": "auto",
-                "stream": False
-            }
-            resp_tool = requests.post(target_url, headers=headers, json=tool_payload, timeout=20)
-            if resp_tool.status_code == 200:
+            for round_idx in range(4):
+                tool_payload = {
+                    "model": model_name,
+                    "messages": current_messages,
+                    "tools": AI_TOOLS_DEFINITIONS,
+                    "tool_choice": "auto",
+                    "stream": False
+                }
+                resp_tool = requests.post(target_url, headers=headers, json=tool_payload, timeout=25)
+                if resp_tool.status_code != 200:
+                    break
+
                 t_json = resp_tool.json()
                 choice = t_json.get("choices", [{}])[0]
                 msg = choice.get("message", {})
                 tool_calls = msg.get("tool_calls", [])
 
-                if tool_calls:
-                    current_messages.append(msg)
-                    for tc in tool_calls:
-                        func_name = tc.get("function", {}).get("name")
-                        raw_args = tc.get("function", {}).get("arguments", "{}")
-                        try:
-                            parsed_args = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
-                        except Exception:
-                            parsed_args = {}
+                if not tool_calls:
+                    # Model has concluded tool calls and is ready to generate textual response
+                    break
 
-                        tool_result = execute_tool_call(func_name, parsed_args, snapshot_id)
+                current_messages.append(msg)
+                for tc in tool_calls:
+                    func_name = tc.get("function", {}).get("name")
+                    raw_args = tc.get("function", {}).get("arguments", "{}")
+                    try:
+                        parsed_args = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
+                    except Exception:
+                        parsed_args = {}
 
-                        # Emit an event to client about this tool execution
-                        tool_event = {
-                            "type": "tool_call",
-                            "tool_name": func_name,
-                            "arguments": parsed_args,
-                            "result": tool_result
-                        }
-                        executed_tools_for_saving.append(tool_event)
-                        yield f"data: {json.dumps(tool_event, ensure_ascii=False)}\n\n"
+                    tool_result = execute_tool_call(func_name, parsed_args, snapshot_id)
 
-                        current_messages.append({
-                            "role": "tool",
-                            "tool_call_id": tc.get("id"),
-                            "name": func_name,
-                            "content": tool_result
-                        })
+                    # Emit an event to client about this tool execution
+                    tool_event = {
+                        "type": "tool_call",
+                        "tool_name": func_name,
+                        "arguments": parsed_args,
+                        "result": tool_result
+                    }
+                    executed_tools_for_saving.append(tool_event)
+                    yield f"data: {json.dumps(tool_event, ensure_ascii=False)}\n\n"
+
+                    current_messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc.get("id"),
+                        "name": func_name,
+                        "content": tool_result
+                    })
         except Exception as e:
             # Fallback smoothly to standard completion without tools
             print(f"[TOOL CALL ERROR]: {e}")
@@ -115,7 +121,27 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
                     else:
                         yield f"data: {decoded}\n\n"
 
-        full_stream_response = "".join(collected_chunks)
+        full_stream_response = "".join(collected_chunks).strip()
+
+        # If model emitted tools but no text tokens in stream, provide graceful summary text
+        if not full_stream_response and executed_tools_for_saving:
+            chart_call = next((tc for tc in executed_tools_for_saving if tc.get("tool_name") == "render_chart"), None)
+            if chart_call and chart_call.get("result"):
+                try:
+                    c_res = json.loads(chart_call["result"]) if isinstance(chart_call["result"], str) else chart_call["result"]
+                    full_stream_response = c_res.get("summary", "График успешно построен и отображен выше.")
+                except Exception:
+                    full_stream_response = "График успешно построен и отображен выше."
+            else:
+                full_stream_response = "Запрос к базе данных выполнен. Необходимые данные получены."
+
+            chunk_event = {
+                "choices": [{
+                    "delta": {"content": full_stream_response}
+                }]
+            }
+            yield f"data: {json.dumps(chunk_event, ensure_ascii=False)}\n\n"
+
         log_llm_interaction(
             title="ПОТОКОВЫЙ ЧАТ: УСПЕШНЫЙ ОТВЕТ (RAG/TOOLS)",
             payload_data=payload,

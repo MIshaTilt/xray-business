@@ -388,6 +388,31 @@ function FunnelChartWidget({ items }: { items: ChartItem[] }) {
   )
 }
 
+function formatAxisVal(val: number, isRub: boolean, isCnt: boolean): string {
+  if (val === 0) return isRub ? '0 ₽' : '0'
+  if (isRub) {
+    if (Math.abs(val) >= 1_000_000) {
+      const m = +(val / 1_000_000).toFixed(1)
+      return `${m} млн ₽`
+    }
+    if (Math.abs(val) >= 10_000) {
+      const k = +(val / 1_000).toFixed(val % 1000 === 0 ? 0 : 1)
+      return `${k} тыс. ₽`
+    }
+    return `${Math.round(val).toLocaleString('ru-RU')} ₽`
+  }
+  if (isCnt) {
+    if (Math.abs(val) >= 10_000) {
+      const k = +(val / 1_000).toFixed(1)
+      return `${k}k шт.`
+    }
+    return `${Math.round(val).toLocaleString('ru-RU')} шт.`
+  }
+  if (Math.abs(val) >= 1_000_000) return `${+(val / 1_000_000).toFixed(1)}M`
+  if (Math.abs(val) >= 10_000) return `${+(val / 1_000).toFixed(1)}k`
+  return `${Math.round(val).toLocaleString('ru-RU')}`
+}
+
 function LineChartWidget({
   items,
   hoveredIdx,
@@ -401,16 +426,21 @@ function LineChartWidget({
   const minVal = Math.min(...items.map((i) => i.value), 0)
   const range = maxVal - minVal || 1
 
-  const width = 460
-  const height = 150
-  const padX = 40
-  const padY = 24
-  const chartW = width - padX * 2
-  const chartH = height - padY * 2
+  const width = 500
+  const height = 190
+  const padLeft = 72
+  const padRight = 16
+  const padTop = 18
+  const padBottom = 28
+  const chartW = width - padLeft - padRight
+  const chartH = height - padTop - padBottom
+
+  const isRubles = items.some((it) => it.formatted_value?.includes('₽'))
+  const isCount = items.some((it) => it.formatted_value?.includes('шт'))
 
   const pts = items.map((it, idx) => {
-    const x = padX + (items.length > 1 ? (idx / (items.length - 1)) * chartW : chartW / 2)
-    const y = padY + chartH - ((it.value - minVal) / range) * chartH
+    const x = padLeft + (items.length > 1 ? (idx / (items.length - 1)) * chartW : chartW / 2)
+    const y = padTop + chartH - ((it.value - minVal) / range) * chartH
     return { x, y, ...it }
   })
 
@@ -421,43 +451,59 @@ function LineChartWidget({
 
   const areaD =
     pts.length > 0
-      ? `${pathD} L ${pts[pts.length - 1].x},${padY + chartH} L ${pts[0].x},${padY + chartH} Z`
+      ? `${pathD} L ${pts[pts.length - 1].x},${padTop + chartH} L ${pts[0].x},${padTop + chartH} Z`
       : ''
 
   const activePt = hoveredIdx !== null ? pts[hoveredIdx] : null
+
+  // Calculate 3 Y-axis ticks
+  const yTicks = [
+    { y: padTop, val: maxVal },
+    { y: padTop + chartH / 2, val: minVal + range / 2 },
+    { y: padTop + chartH, val: minVal },
+  ]
+
+  // Calculate 5-6 evenly spaced X-axis date ticks
+  const tickCount = Math.min(items.length, 6)
+  const tickStep = items.length > 1 ? (items.length - 1) / (tickCount - 1) : 0
+  const tickIndices =
+    items.length === 1
+      ? [0]
+      : Array.from({ length: tickCount }, (_, i) => Math.round(i * tickStep))
+
+  const colWidth = items.length > 1 ? chartW / (items.length - 1) : chartW
 
   return (
     <div className="chart-line-wrapper">
       <svg viewBox={`0 0 ${width} ${height}`} className="chart-line-svg">
         <defs>
           <linearGradient id="chartLineGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.32" />
+            <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.3" />
             <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.0" />
           </linearGradient>
         </defs>
 
-        {/* Grid lines */}
-        <line
-          x1={padX}
-          y1={padY}
-          x2={width - padX}
-          y2={padY}
-          className="chart-grid-line"
-        />
-        <line
-          x1={padX}
-          y1={padY + chartH / 2}
-          x2={width - padX}
-          y2={padY + chartH / 2}
-          className="chart-grid-line"
-        />
-        <line
-          x1={padX}
-          y1={padY + chartH}
-          x2={width - padX}
-          y2={padY + chartH}
-          className="chart-grid-line"
-        />
+        {/* Horizontal grid lines & Y-axis labels */}
+        {yTicks.map((tick, i) => (
+          <g key={i}>
+            <line
+              x1={padLeft}
+              y1={tick.y}
+              x2={width - padRight}
+              y2={tick.y}
+              className="chart-grid-line"
+            />
+            <text
+              x={padLeft - 8}
+              y={tick.y}
+              textAnchor="end"
+              dominantBaseline="middle"
+              className="chart-axis-text"
+            >
+              {formatAxisVal(tick.val, isRubles, isCount)}
+            </text>
+          </g>
+        ))}
 
         {/* Fill Area & Line */}
         <path d={areaD} fill="url(#chartLineGrad)" />
@@ -465,14 +511,29 @@ function LineChartWidget({
           d={pathD}
           fill="none"
           stroke="#3B82F6"
-          strokeWidth="3"
+          strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
 
-        {/* Data points */}
+        {/* Hover vertical guideline */}
+        {activePt && (
+          <line
+            x1={activePt.x}
+            y1={padTop}
+            x2={activePt.x}
+            y2={padTop + chartH}
+            className="chart-active-guideline"
+          />
+        )}
+
+        {/* Data points & interactive hit columns */}
         {pts.map((pt, idx) => {
           const isHovered = hoveredIdx === idx
+          const dotR =
+            items.length > 45 ? (isHovered ? 5.5 : 1.5) : isHovered ? 6 : 3.5
+          const strokeW = items.length > 45 ? (isHovered ? 2 : 1) : 2
+
           return (
             <g
               key={idx}
@@ -480,16 +541,45 @@ function LineChartWidget({
               onMouseEnter={() => setHoveredIdx(idx)}
               onMouseLeave={() => setHoveredIdx(null)}
             >
+              {/* Invisible wide hit target for smooth mouse/touch tracking */}
+              <rect
+                x={pt.x - colWidth / 2}
+                y={padTop}
+                width={colWidth}
+                height={chartH}
+                fill="transparent"
+              />
               <circle
                 cx={pt.x}
                 cy={pt.y}
-                r={isHovered ? 6 : 4}
+                r={dotR}
                 fill={pt.color || '#3B82F6'}
                 stroke="#fff"
-                strokeWidth="2"
+                strokeWidth={strokeW}
                 className="chart-line-dot"
               />
             </g>
+          )
+        })}
+
+        {/* X-axis tick labels */}
+        {tickIndices.map((tIdx, i) => {
+          const pt = pts[tIdx]
+          if (!pt) return null
+          const anchor =
+            i === 0 ? 'start' : i === tickIndices.length - 1 ? 'end' : 'middle'
+          const isHovered = hoveredIdx === tIdx
+          return (
+            <text
+              key={tIdx}
+              x={pt.x}
+              y={padTop + chartH + 18}
+              textAnchor={anchor}
+              dominantBaseline="middle"
+              className={`chart-axis-text ${isHovered ? 'chart-axis-hovered' : ''}`}
+            >
+              {pt.label}
+            </text>
           )
         })}
       </svg>
@@ -501,24 +591,19 @@ function LineChartWidget({
           style={{
             left: `${(activePt.x / width) * 100}%`,
             top: `${(activePt.y / height) * 100}%`,
+            transform:
+              activePt.x < padLeft + 45
+                ? 'translate(-10%, -125%)'
+                : activePt.x > width - padRight - 45
+                  ? 'translate(-90%, -125%)'
+                  : 'translate(-50%, -125%)',
           }}
         >
           <span className="tooltip-title">{activePt.label}</span>
           <span className="tooltip-val">{activePt.formatted_value}</span>
+          {activePt.hint ? <span className="tooltip-hint">{activePt.hint}</span> : null}
         </div>
       ) : null}
-
-      <div className="chart-line-labels">
-        {items.map((it, idx) => (
-          <span
-            key={idx}
-            className={`chart-line-lbl ${hoveredIdx === idx ? 'hovered' : ''}`}
-            title={it.label}
-          >
-            {it.label}
-          </span>
-        ))}
-      </div>
     </div>
   )
 }

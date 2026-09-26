@@ -17,7 +17,7 @@ from engine.normalizer import normalize_records
 from engine.analyzer import calculate_metrics_and_findings
 from engine.narrator import generate_llm_narrative
 from engine.models import Upload, Snapshot, ChatMessage, Deal
-from engine.ai_mapper import ai_smart_column_mapping
+from engine.ai_mapper import ai_smart_column_mapping, ai_smart_status_mapping
 from engine.reports import generate_excel_report, generate_pdf_report
 from engine.auth import (
     get_request_identity,
@@ -233,6 +233,18 @@ class UploadView(APIView):
         if not suggested_mapping.get('amount') or not suggested_mapping.get('status') or not suggested_mapping.get('manager') or not suggested_mapping.get('deal_id'):
             suggested_mapping = ai_smart_column_mapping(cols, sample_rows, suggested_mapping)
 
+        # AI / Heuristic Status Normalization
+        status_map = {}
+        status_col = suggested_mapping.get('status')
+        if status_col:
+            unique_statuses = list(dict.fromkeys(
+                str(r.get(status_col, '')).strip()
+                for r in all_rows
+                if str(r.get(status_col, '')).strip()
+            ))
+            if unique_statuses:
+                status_map = ai_smart_status_mapping(unique_statuses, sample_rows)
+
         coverage = get_coverage(suggested_mapping)
         upload_id = str(uuid.uuid4())
         ident = get_request_identity(request)
@@ -247,7 +259,7 @@ class UploadView(APIView):
             'sample_rows': sample_rows,
             'all_rows': all_rows,
             'mapping': suggested_mapping,
-            'status_map': {},
+            'status_map': status_map,
         }
 
         try:
@@ -261,6 +273,7 @@ class UploadView(APIView):
                 all_rows=all_rows,
                 suggested_mapping=suggested_mapping,
                 mapping=suggested_mapping,
+                status_map=status_map,
             )
         except Exception as e:
             print(f"[DB ERROR] Не удалось сохранить Upload: {e}")
@@ -282,11 +295,22 @@ class SaveMappingView(APIView):
             return Response({'code': 'not_found', 'message': 'Сессия загрузки не найдена или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
 
         mapping = request.data.get('mapping', {})
-        status_map = request.data.get('status_map', {})
+        status_map = request.data.get('status_map') or {}
 
         # Validation
         if not mapping.get('amount') or (not mapping.get('status') and not mapping.get('created_at')):
             return Response({'code': 'mapping_incomplete', 'message': 'Необходимо выбрать колонку суммы и статуса или даты'}, status=status.HTTP_400_BAD_REQUEST)
+
+        status_col = mapping.get('status')
+        if status_col and not status_map:
+            all_rows = upload.get('all_rows') or []
+            unique_statuses = list(dict.fromkeys(
+                str(r.get(status_col, '')).strip()
+                for r in all_rows
+                if str(r.get(status_col, '')).strip()
+            ))
+            if unique_statuses:
+                status_map = ai_smart_status_mapping(unique_statuses, upload.get('sample_rows'))
 
         upload['mapping'] = mapping
         upload['status_map'] = status_map
@@ -354,7 +378,20 @@ class SnapshotCreateView(APIView):
             return Response({'code': 'not_found', 'message': 'Файл загрузки не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
 
         mapping = upload.get('mapping', {})
-        status_map = upload.get('status_map', {})
+        status_map = upload.get('status_map') or {}
+
+        status_col = mapping.get('status')
+        if status_col and not status_map:
+            all_rows = upload.get('all_rows') or []
+            unique_statuses = list(dict.fromkeys(
+                str(r.get(status_col, '')).strip()
+                for r in all_rows
+                if str(r.get(status_col, '')).strip()
+            ))
+            if unique_statuses:
+                status_map = ai_smart_status_mapping(unique_statuses, upload.get('sample_rows'))
+                upload['status_map'] = status_map
+                persist_upload_mapping(upload_id, mapping, status_map)
 
         snapshot_id = str(uuid.uuid4())
         scan_no = next_scan_no()
@@ -574,6 +611,18 @@ class LoadTemplateView(APIView):
         if not suggested_mapping.get('amount') or not suggested_mapping.get('status') or not suggested_mapping.get('manager') or not suggested_mapping.get('deal_id'):
             suggested_mapping = ai_smart_column_mapping(cols, sample_rows, suggested_mapping)
 
+        # AI / Heuristic Status Normalization
+        status_map = {}
+        status_col = suggested_mapping.get('status')
+        if status_col:
+            unique_statuses = list(dict.fromkeys(
+                str(r.get(status_col, '')).strip()
+                for r in all_rows
+                if str(r.get(status_col, '')).strip()
+            ))
+            if unique_statuses:
+                status_map = ai_smart_status_mapping(unique_statuses, sample_rows)
+
         coverage = get_coverage(suggested_mapping)
         upload_id = str(uuid.uuid4())
         ident = get_request_identity(request)
@@ -588,7 +637,7 @@ class LoadTemplateView(APIView):
             'sample_rows': sample_rows,
             'all_rows': all_rows,
             'mapping': suggested_mapping,
-            'status_map': {},
+            'status_map': status_map,
         }
 
         try:
@@ -602,6 +651,7 @@ class LoadTemplateView(APIView):
                 all_rows=all_rows,
                 suggested_mapping=suggested_mapping,
                 mapping=suggested_mapping,
+                status_map=status_map,
                 source=Upload.Source.DEMO,
             )
         except Exception as e:
