@@ -86,9 +86,9 @@ def get_request_identity(request) -> RequestIdentity:
     return RequestIdentity(user=None, guest_session=guest_session, is_guest=True)
 
 
-def cleanup_expired_guest_data(max_age_seconds: int = 300) -> int:
+def cleanup_expired_guest_data(max_age_seconds: int = 86400) -> int:
     """
-    Erases all guest snapshots, deals, chat history, and uploads older than 5 minutes (300 seconds).
+    Erases all guest snapshots, deals, chat history, and uploads older than 24 hours (86400 seconds).
     """
     cutoff = datetime.now(timezone.utc) - timedelta(seconds=max_age_seconds)
     deleted_count = 0
@@ -115,7 +115,7 @@ def cleanup_expired_guest_data(max_age_seconds: int = 300) -> int:
         count, _ = expired_snaps.delete()
         deleted_count += len(expired_ids)
 
-    # 2. Clean up guest uploads older than 5 minutes
+    # 2. Clean up guest uploads older than 24 hours
     expired_uploads = Upload.objects.filter(user__isnull=True, created_at__lt=cutoff)
     up_ids = list(expired_uploads.values_list("id", flat=True))
     if up_ids:
@@ -144,8 +144,8 @@ def start_background_cleanup_thread():
     def loop():
         while True:
             try:
-                time.sleep(30)
-                cleanup_expired_guest_data(max_age_seconds=300)
+                time.sleep(300)
+                cleanup_expired_guest_data(max_age_seconds=86400)
             except Exception as e:
                 print(f"[BG CLEANUP ERROR]: {e}")
 

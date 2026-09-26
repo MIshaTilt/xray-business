@@ -3,6 +3,7 @@ import re
 from decimal import Decimal
 from django.db import connection
 from django.db.models import Sum, Count, Avg, Q
+from pathlib import Path
 from engine.models import Deal, Snapshot
 
 
@@ -103,12 +104,196 @@ AI_TOOLS_DEFINITIONS = [
 ]
 
 
+def ensure_snapshot_deals(snapshot_id: str):
+    """
+    Guarantees that deals for the given snapshot exist in SQLite engine_deal table.
+    If they are missing (e.g. legacy snapshot or created prior to migration),
+    automatically reconstructs and populates them on the fly.
+    """
+    if not snapshot_id:
+        return
+    s_id = str(snapshot_id)
+    clean_id = s_id.replace('-', '')
+
+    count = Deal.objects.filter(Q(snapshot_id=s_id) | Q(snapshot_id=clean_id)).count()
+    if count > 0:
+        return
+
+    from engine.models import Upload
+    from engine.parsers import read_table_file
+    from engine.mapping import guess_column_mapping, derive_computed_columns
+    from engine.normalizer import normalize_records
+
+    snap_obj = Snapshot.objects.filter(Q(id=s_id) | Q(id=clean_id)).first()
+    filename = snap_obj.filename if snap_obj else ""
+
+    # Check SNAPSHOTS_STORE if not in DB or filename missing
+    if not filename or not snap_obj:
+        try:
+            from engine.views_api import SNAPSHOTS_STORE, load_disk_store
+            load_disk_store()
+            s_dict = SNAPSHOTS_STORE.get(s_id) or SNAPSHOTS_STORE.get(clean_id)
+            if s_dict:
+                filename = s_dict.get('filename', '')
+                if not snap_obj:
+                    diag = s_dict.get('diagnosis', {})
+                    snap_obj, _ = Snapshot.objects.get_or_create(
+                        id=s_id,
+                        defaults={
+                            'scan_no': s_dict.get('scan_no'),
+                            'filename': filename,
+                            'headline': diag.get('headline', ''),
+                            'body': diag.get('body', ''),
+                            'findings': diag.get('findings', []),
+                            'coverage': diag.get('coverage', {}),
+                            'totals': diag.get('totals', {}),
+                            'all_metrics': s_dict.get('all_metrics', {}),
+                            'ok_list': diag.get('ok', []),
+                            'low_sample': diag.get('low_sample', []),
+                            'is_guest': False,
+                        }
+                    )
+        except Exception as e:
+            print(f"[RECOVERY ERROR] Failed to recover snapshot metadata: {e}")
+
+    if not snap_obj:
+        return
+
+    all_rows = []
+    cols = []
+    mapping = {}
+    status_map = {}
+
+    # 1. Try from Upload
+    up = snap_obj.upload or Upload.objects.filter(filename=filename).order_by('-created_at').first()
+    if up and up.all_rows:
+        all_rows = up.all_rows
+        cols = up.columns or []
+        mapping = up.mapping or up.suggested_mapping or {}
+        status_map = up.status_map or {}
+
+    # 2. Try from templates directory
+    if not all_rows and filename:
+        tmpl_candidates = [
+            Path(__file__).resolve().parent.parent.parent.parent / 'templates' / filename,
+            Path(__file__).resolve().parent.parent.parent / 'templates' / filename,
+            Path(__file__).resolve().parent.parent / 'templates' / filename,
+        ]
+        tmpl_path = next((p for p in tmpl_candidates if p.exists()), None)
+        if tmpl_path:
+            try:
+                with open(tmpl_path, 'rb') as f:
+                    cols, _, all_rows = read_table_file(f, filename)
+                mapping = guess_column_mapping(cols, all_rows[:5])
+                cols, _, all_rows, mapping, _ = derive_computed_columns(cols, all_rows[:5], all_rows, mapping)
+                st_col = mapping.get('status')
+                if st_col:
+                    unq = list(dict.fromkeys(str(r.get(st_col, '')).strip() for r in all_rows if str(r.get(st_col, '')).strip()))
+                    status_map = {s: 'in_progress' for s in unq}
+            except Exception as e:
+                print(f"[RECOVERY ERROR] Failed reading template: {e}")
+
+    if all_rows:
+        deals, _ = normalize_records(all_rows, mapping, status_map)
+        deal_objs = [
+            Deal(
+                snapshot=snap_obj,
+                deal_id=d.deal_id,
+                client=d.client,
+                contact=d.contact,
+                manager=d.manager,
+                amount=d.amount,
+                list_price=d.list_price,
+                discount_pct=d.discount_pct,
+                status_raw=d.status_raw,
+                status=d.status,
+                created_at=d.created_at,
+                first_contact_at=d.first_contact_at,
+                status_changed_at=d.status_changed_at,
+                last_activity_at=d.last_activity_at,
+                closed_at=d.closed_at,
+                source=d.source,
+                raw_data=d.raw_data or {},
+            )
+            for d in deals
+        ]
+        Deal.objects.bulk_create(deal_objs)
+        print(f"[AUTO-RECOVERY] Successfully synced {len(deal_objs)} deals for snapshot {s_id}")
+
+
+def get_snapshot_extra_columns(snapshot_id: str) -> list:
+    """
+    Returns list of all column names from the raw upload associated with this snapshot.
+    """
+    if not snapshot_id:
+        return []
+    ensure_snapshot_deals(snapshot_id)
+    try:
+        snap = Snapshot.objects.filter(id=snapshot_id).select_related('upload').first()
+        if snap and snap.upload and snap.upload.columns:
+            return list(snap.upload.columns)
+    except Exception:
+        pass
+
+    try:
+        deal = Deal.objects.filter(snapshot_id=snapshot_id).exclude(raw_data={}).first()
+        if deal and deal.raw_data:
+            rd = deal.raw_data
+            if isinstance(rd, str):
+                try:
+                    rd = json.loads(rd)
+                except Exception:
+                    rd = {}
+            if isinstance(rd, dict):
+                return list(rd.keys())
+    except Exception:
+        pass
+
+    return []
+
+
+def get_ai_tools_definitions(snapshot_id: str = None) -> list:
+    """
+    Returns AI tools definitions, dynamically enriched with custom/unmapped columns
+    from the current snapshot's uploaded dataset so the LLM knows all queryable fields.
+    """
+    extra_cols = get_snapshot_extra_columns(snapshot_id) if snapshot_id else []
+    standard_cols = {
+        'deal_id', 'client', 'contact', 'manager', 'amount', 'list_price',
+        'discount_pct', 'status_raw', 'status', 'created_at', 'first_contact_at',
+        'status_changed_at', 'last_activity_at', 'closed_at', 'source', 'raw_data'
+    }
+    custom_cols = [c for c in extra_cols if c and c not in standard_cols]
+
+    custom_cols_text = ""
+    if custom_cols:
+        cols_formatted = "\n".join([f'  - "{c}"' for c in custom_cols])
+        custom_cols_text = (
+            f"\n\nДОПОЛНИТЕЛЬНЫЕ СТОЛБЦЫ ИЗ ИСХОДНОГО ФАЙЛА ПОЛЬЗОВАТЕЛЯ (доступны в таблице deals!):\n"
+            f"{cols_formatted}\n"
+            f"Ты можешь обращаться к ним напрямую в SELECT, WHERE, GROUP BY, ORDER BY, заключая их в кавычки:\n"
+            f'Пример: SELECT "{custom_cols[0]}", COUNT(*), SUM(amount) FROM deals GROUP BY "{custom_cols[0]}"'
+        )
+
+    defs = []
+    for tool in AI_TOOLS_DEFINITIONS:
+        tool_copy = json.loads(json.dumps(tool))
+        if tool_copy.get("function", {}).get("name") == "execute_sql_query" and custom_cols_text:
+            orig_desc = tool_copy["function"]["description"]
+            tool_copy["function"]["description"] = orig_desc + custom_cols_text
+        defs.append(tool_copy)
+
+    return defs
+
+
 def _run_sql_query(query: str, snapshot_id: str) -> str:
     """
     Executes a read-only SQL SELECT query against the 'deals' table scoped to the given snapshot.
     """
     if not snapshot_id:
         return json.dumps({"error": "snapshot_id не указан"}, ensure_ascii=False)
+
+    ensure_snapshot_deals(snapshot_id)
 
     if not query or not isinstance(query, str):
         return json.dumps({"error": "Запрос query пустой или некорректный"}, ensure_ascii=False)
@@ -148,11 +333,27 @@ def _run_sql_query(query: str, snapshot_id: str) -> str:
     s_id = str(snapshot_id)
     clean_id = s_id.replace('-', '')
 
+    raw_cols = get_snapshot_extra_columns(snapshot_id)
+    standard_cols = {
+        'deal_id', 'client', 'contact', 'manager', 'amount', 'list_price',
+        'discount_pct', 'status_raw', 'status', 'created_at', 'first_contact_at',
+        'status_changed_at', 'last_activity_at', 'closed_at', 'source', 'raw_data'
+    }
+
+    extra_selects = []
+    for col in raw_cols:
+        if col and col not in standard_cols:
+            k = col.replace("'", "''")
+            alias = col.replace('"', '""')
+            extra_selects.append(f"(raw_data ->> '{k}') AS \"{alias}\"")
+
+    extra_str = (', ' + ', '.join(extra_selects)) if extra_selects else ''
+
     cte_deals = (
         "WITH deals AS ("
         "SELECT deal_id, client, contact, manager, amount, list_price, discount_pct, "
         "status_raw, status, created_at, first_contact_at, status_changed_at, "
-        "last_activity_at, closed_at, source "
+        f"last_activity_at, closed_at, source, raw_data{extra_str} "
         "FROM engine_deal "
         "WHERE snapshot_id = %s OR snapshot_id = %s"
         ")"
@@ -205,6 +406,8 @@ def execute_tool_call(tool_name: str, arguments: dict, snapshot_id: str) -> str:
     """
     if not snapshot_id:
         return json.dumps({"error": "snapshot_id не указан"})
+
+    ensure_snapshot_deals(snapshot_id)
 
     if tool_name == "execute_sql_query":
         return _run_sql_query(arguments.get("query", ""), snapshot_id)

@@ -144,7 +144,7 @@ export function Diagnosis({
   return (
     <div className="stack diagnosis">
       <div className="lead">
-        <p className="eyebrow">{diagnosis.scan_no ? `Снимок №${diagnosis.scan_no}` : 'Сводка'}</p>
+        <p className="eyebrow">Сводка</p>
         <h1>{diagnosis.headline}</h1>
         <p className="diag-totals">
           {period ? `${period} · ` : ''}

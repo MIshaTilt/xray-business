@@ -4,7 +4,7 @@ import requests
 from django.http import StreamingHttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from engine.llm_logger import log_llm_interaction
-from engine.tools import AI_TOOLS_DEFINITIONS, execute_tool_call
+from engine.tools import AI_TOOLS_DEFINITIONS, execute_tool_call, get_ai_tools_definitions
 from engine.models import ChatMessage, Snapshot
 
 
@@ -30,11 +30,12 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
     # 1. Step 1: Multi-turn tool resolution loop (supports tool chaining like search -> chart)
     if snapshot_id:
         try:
+            tools_for_snapshot = get_ai_tools_definitions(snapshot_id)
             for round_idx in range(4):
                 tool_payload = {
                     "model": model_name,
                     "messages": current_messages,
-                    "tools": AI_TOOLS_DEFINITIONS,
+                    "tools": tools_for_snapshot,
                     "tool_choice": "auto",
                     "stream": False
                 }

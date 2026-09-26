@@ -80,6 +80,7 @@ export type Diagnosis = {
   coverage: Coverage
   period: { from: string | null; to: string | null }
   totals: { deals: number; amount: string; accepted: number; rejected: number }
+  available_columns?: string[]
 }
 
 export type DiagnosisResponse = Diagnosis & {
@@ -92,6 +93,7 @@ export type SnapshotListItem = {
   status: SnapshotStatus
   created_at: string
   headline?: string
+  filename?: string
   source?: string
   verdict?: 'critical' | 'watch' | 'ok'
   coverage_label?: string

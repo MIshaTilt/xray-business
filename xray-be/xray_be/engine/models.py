@@ -1,5 +1,12 @@
+import json
 import uuid
 from django.db import models
+
+
+class UTF8JSONEncoder(json.JSONEncoder):
+    def __init__(self, *args, **kwargs):
+        kwargs['ensure_ascii'] = False
+        super().__init__(*args, **kwargs)
 
 
 class MaxUser(models.Model):
@@ -88,6 +95,7 @@ class Deal(models.Model):
     last_activity_at = models.DateTimeField(null=True, blank=True)
     closed_at = models.DateTimeField(null=True, blank=True)
     source = models.CharField(max_length=255, blank=True)
+    raw_data = models.JSONField(encoder=UTF8JSONEncoder, default=dict, blank=True)
 
     class Meta:
         indexes = [

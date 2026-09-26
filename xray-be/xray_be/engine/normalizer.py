@@ -23,6 +23,7 @@ class NormalizedDeal:
         last_activity_at: Optional[Any],
         closed_at: Optional[Any],
         source: str,
+        raw_data: Optional[Dict[str, Any]] = None,
     ):
         self.deal_id = deal_id
         self.client = client
@@ -39,6 +40,7 @@ class NormalizedDeal:
         self.last_activity_at = last_activity_at
         self.closed_at = closed_at
         self.source = source
+        self.raw_data = raw_data or {}
 
 
 def normalize_records(
@@ -216,7 +218,8 @@ def normalize_records(
             status_changed_at=status_changed_at,
             last_activity_at=last_activity_at,
             closed_at=closed_at,
-            source=source
+            source=source,
+            raw_data=dict(row)
         )
         deals.append(deal)
 

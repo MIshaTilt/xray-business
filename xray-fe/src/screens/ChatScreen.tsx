@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { marked } from 'marked'
 import type { Diagnosis as DiagnosisData } from '../api/types.ts'
@@ -24,6 +24,145 @@ export type ChatMessage = {
   toolCalls?: ToolCallData[]
 }
 
+export type PromptSuggestion = {
+  label: string
+  query: string
+}
+
+export function getSuggestedPrompts(diagnosis: DiagnosisData | null): PromptSuggestion[] {
+  const suggestions: PromptSuggestion[] = []
+  const availableCols = diagnosis?.available_columns || []
+  const normCols = availableCols.map((c) => c.toLowerCase())
+
+  // 1. Unmapped / Custom business columns from user file
+  const hasCategory = normCols.some(
+    (c) => c.includes('категори') || c.includes('category') || c.includes('группа')
+  )
+  const hasProduct = normCols.some(
+    (c) =>
+      c.includes('товар') ||
+      c.includes('артикул') ||
+      c.includes('номенклатур') ||
+      c.includes('продукт')
+  )
+  const hasCity = normCols.some(
+    (c) => c.includes('город') || c.includes('city') || c.includes('регион')
+  )
+  const hasChannel = normCols.some(
+    (c) =>
+      c.includes('канал') ||
+      c.includes('склад') ||
+      c.includes('площадк') ||
+      c.includes('точка')
+  )
+  const hasPayment = normCols.some(
+    (c) => c.includes('оплат') || c.includes('payment')
+  )
+  const hasManager = normCols.some(
+    (c) =>
+      c.includes('менеджер') ||
+      c.includes('manager') ||
+      c.includes('кто тащит') ||
+      c.includes('ответствен')
+  )
+
+  if (hasCategory) {
+    suggestions.push({
+      label: '📦 Выручка по категориям',
+      query: 'Сравни выручку и количество заказов по категориям каталога.',
+    })
+  }
+  if (hasProduct) {
+    suggestions.push({
+      label: '🏆 Топ-5 товаров',
+      query: 'Покажи топ-5 самых продаваемых товаров по сумме выручки.',
+    })
+  }
+  if (hasCity) {
+    suggestions.push({
+      label: '🌍 Срез по городам',
+      query: 'В каких городах самый высокий средний чек? Сравни города по выручке.',
+    })
+  }
+  if (hasChannel) {
+    suggestions.push({
+      label: '🛒 Продажи по каналам',
+      query: 'Сравни продажи, количество заказов и выручку по каналам сбыта (складам/площадкам).',
+    })
+  }
+  if (hasPayment) {
+    suggestions.push({
+      label: '💳 Способы оплаты',
+      query: 'Какими способами оплаты чаще всего пользуются и какая выручка по каждому?',
+    })
+  }
+
+  // 2. Specific threats from audit diagnosis
+  const findings = diagnosis?.findings || []
+  const stagnationFinding = findings.find((f) => f.metric_id === 'stagnation')
+  const discountFinding = findings.find((f) => f.metric_id === 'discount_leakage')
+  const speedFinding = findings.find((f) => f.metric_id === 'speed_to_lead')
+  const keyAccountFinding = findings.find((f) => f.metric_id === 'key_account_risk')
+
+  if (stagnationFinding) {
+    const amtStr = stagnationFinding.money_impact ? ` (${stagnationFinding.money_impact} ₽)` : ''
+    suggestions.push({
+      label: `⏳ Зависшие сделки${amtStr}`,
+      query: 'Покажи зависшие сделки, где застряли деньги, и предложи план действий для РОПа.',
+    })
+  }
+  if (discountFinding) {
+    suggestions.push({
+      label: '💸 Сделки с макс. скидками',
+      query: 'Найди сделки с самыми большими скидками и оцени потери маржи.',
+    })
+  }
+  if (speedFinding) {
+    suggestions.push({
+      label: '⚡ Задержки первого ответа',
+      query: 'Сколько лидов ждут первого ответа дольше нормы и кто из менеджеров отвечает медленнее всех?',
+    })
+  }
+  if (keyAccountFinding) {
+    suggestions.push({
+      label: '👑 Топ клиентов по выручке',
+      query: 'Выведи топ ключевых клиентов по выручке и оцени риск концентрации.',
+    })
+  }
+
+  // 3. Essential Charts & Team Analytics
+  if (hasManager || normCols.length === 0) {
+    suggestions.push({
+      label: '👥 Эффективность менеджеров',
+      query: 'Кто из менеджеров лучший по выручке и закрытым сделкам? Сравни показатели команды.',
+    })
+  }
+  suggestions.push({
+    label: '📈 График выручки по дням',
+    query: 'Построй интерактивный график динамики выручки по датам.',
+  })
+  suggestions.push({
+    label: '📉 Воронка по этапам',
+    query: 'Построй воронку продаж по этапам и покажи конверсию между стадиями.',
+  })
+  suggestions.push({
+    label: '🔍 Самые крупные сделки',
+    query: 'Найди топ-5 самых крупных сделок в отчете.',
+  })
+
+  // Deduplicate and return up to 7 prompts
+  const seen = new Set<string>()
+  const result: PromptSuggestion[] = []
+  for (const s of suggestions) {
+    if (!seen.has(s.label)) {
+      seen.add(s.label)
+      result.push(s)
+      if (result.length >= 7) break
+    }
+  }
+  return result
+}
+
 export function ChatScreen({
   snapshotId,
   diagnosis,
@@ -34,6 +173,8 @@ export function ChatScreen({
   onBack: () => void
 }) {
   const storageKey = `xray_chat_history_${snapshotId}`
+
+  const suggestedPrompts = useMemo(() => getSuggestedPrompts(diagnosis), [diagnosis])
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -195,6 +336,38 @@ export function ChatScreen({
       )
       .join('\n')
 
+    const standardFields = new Set([
+      'deal_id',
+      'client',
+      'contact',
+      'manager',
+      'amount',
+      'list_price',
+      'discount_pct',
+      'status',
+      'status_raw',
+      'created_at',
+      'first_contact_at',
+      'status_changed_at',
+      'last_activity_at',
+      'closed_at',
+      'source',
+    ])
+    const customCols = (diagnosis.available_columns || []).filter(
+      (c) => c && !standardFields.has(c)
+    )
+    const customColsSection =
+      customCols.length > 0
+        ? '\n  ДОПОЛНИТЕЛЬНЫЕ СТОЛБЦЫ ИЗ ИСХОДНОГО ФАЙЛА ПОЛЬЗОВАТЕЛЯ (также доступны в таблице deals!):\n' +
+          customCols.map((c) => `  * "${c}"`).join('\n') +
+          '\n  Ты можешь обращаться к ним напрямую в SELECT, WHERE, GROUP BY, ORDER BY, заключая их в двойные кавычки (например: SELECT "' +
+          customCols[0] +
+          '", COUNT(*), SUM(amount) FROM deals GROUP BY "' +
+          customCols[0] +
+          '").\n' +
+          '  Используй эти столбцы для глубокого анализа товаров, категорий, городов, каналов, способов оплаты и любых специфичных для бизнеса метрик!\n'
+        : ''
+
     return (
       'Ты — персональный бизнес-аналитик и консультант по продажам сервиса X-Ray.\n' +
       'Перед тобой результаты рентгена продаж реального бизнеса пользователя:\n\n' +
@@ -226,6 +399,7 @@ export function ChatScreen({
       '  * status_raw (текст): исходный статус из CRM / файла пользователя (например, "Доставлен и оплачен", "В обработке")\n' +
       '  * created_at, closed_at, first_contact_at, status_changed_at, last_activity_at (даты/время)\n' +
       '  * source (текст): канал / источник / маркетплейс\n' +
+      customColsSection +
       '  Пиши только одиночные SELECT-запросы. Все данные уже изолированы по текущему снимку.\n' +
       '- render_chart: вызывай ВСЕГДА, когда пользователь просит "построй график", "нарисуй диаграмму", "покажи воронку", "динамику выручки по времени", "сравни менеджеров визуально", "распределение выручки/сделок" или "сделай чарт".\n' +
       '  * Для графиков выручки по времени/датам: chart_type="line", dimension="date" (или "month").\n' +
@@ -242,8 +416,8 @@ export function ChatScreen({
     )
   }
 
-  async function handleSend() {
-    const text = input.trim()
+  async function handleSend(overrideText?: string) {
+    const text = (overrideText ?? input).trim()
     if (!text || streaming) return
 
     const newMessages: ChatMessage[] = [...messages, { role: 'user', content: text }]
@@ -395,11 +569,7 @@ export function ChatScreen({
       <div className="chat-header">
         <div className="lead">
           <h1>Консультант</h1>
-          <p className="home-hint chat-scan-label">
-            {diagnosis?.scan_no
-              ? `Снимок №${diagnosis.scan_no}`
-              : 'Снимок'}
-          </p>
+          <p className="home-hint chat-scan-label">Рентген продаж</p>
         </div>
         <div className="chat-clear-slot">
           <button
@@ -484,6 +654,22 @@ export function ChatScreen({
       </div>
 
       <div className={`chat-input-row${input.trim() ? ' has-text' : ''}`}>
+        {!streaming && suggestedPrompts.length > 0 && (
+          <div className="chat-suggestions-bar" aria-label="Быстрые вопросы">
+            {suggestedPrompts.map((p, idx) => (
+              <button
+                key={idx}
+                type="button"
+                className="chat-suggestion-chip"
+                onClick={() => void handleSend(p.query)}
+                disabled={streaming}
+                title={p.query}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="chat-composer">
           <textarea
             ref={areaRef}

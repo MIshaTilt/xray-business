@@ -226,8 +226,8 @@ export function Scans({
                     >
                       <span className="scan-top">
                         <span className="scan-meta">
-                          {item.scan_no ? `№${item.scan_no} · ` : ''}
-                          {shortWhen(item.created_at)} · {item.source || STATUS[item.status]}
+                          {shortWhen(item.created_at)}
+                          {item.filename ? ` · ${item.filename}` : item.source && item.source !== 'miniapp' ? ` · ${item.source}` : ` · ${STATUS[item.status]}`}
                         </span>
                         {item.verdict ? (
                           <span className={`pill ${item.verdict}`}>

@@ -2314,6 +2314,20 @@ html[data-theme="dark"] .chat-composer {
   box-shadow: none;
 }
 
+html[data-theme="dark"] .chat-suggestion-chip {
+  background: linear-gradient(180deg, rgb(30 41 59 / 75%), rgb(15 23 42 / 65%));
+  border-color: rgb(96 140 196 / 32%);
+  color: #93c5fd;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 30%);
+}
+
+html[data-theme="dark"] .chat-suggestion-chip:hover {
+  background: linear-gradient(180deg, rgb(37 78 168 / 65%), rgb(30 58 138 / 55%));
+  border-color: rgb(147 197 253 / 50%);
+  color: #dbeafe;
+  box-shadow: 0 4px 14px rgb(37 99 235 / 30%);
+}
+
 html[data-theme="dark"] .chat-bubble.assistant {
   background: #0a0a0a;
   color: #fff;
@@ -4469,11 +4483,69 @@ html[data-theme="dark"] .tool-sql-error {
 .chat-input-row {
   width: 100%;
   margin: 0 auto;
-  padding: 16px 4px 8px;
+  padding: 12px 4px 8px;
   box-sizing: border-box;
   overflow: visible;
   border-top: 1px solid rgb(37 99 235 / 22%);
   flex: none;
+}
+
+.chat-suggestions-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 2px 10px 2px;
+}
+
+.chat-suggestions-bar::-webkit-scrollbar {
+  display: none;
+  height: 0;
+}
+
+.chat-suggestion-chip {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  white-space: nowrap;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #1e40af;
+  background: linear-gradient(180deg, rgb(255 255 255 / 92%), rgb(239 246 255 / 82%));
+  border: 1px solid rgb(37 99 235 / 24%);
+  border-radius: 9999px;
+  padding: 7px 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgb(37 99 235 / 8%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chat-suggestion-chip:hover {
+  background: linear-gradient(180deg, rgb(238 245 255 / 98%), rgb(219 234 254 / 92%));
+  border-color: rgb(37 99 235 / 48%);
+  color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgb(37 99 235 / 16%);
+}
+
+.chat-suggestion-chip:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgb(37 99 235 / 12%);
+}
+
+.chat-suggestion-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .chat-composer {

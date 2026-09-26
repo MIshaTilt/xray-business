@@ -505,6 +505,7 @@ class SnapshotCreateView(APIView):
                     last_activity_at=d.last_activity_at,
                     closed_at=d.closed_at,
                     source=d.source,
+                    raw_data=d.raw_data or {},
                 )
                 for d in deals
             ]
@@ -546,13 +547,32 @@ class SnapshotPollView(APIView):
 
 class SnapshotDiagnosisView(APIView):
     def get(self, request, snapshot_id):
-        snap, _ = get_snapshot_for_request(snapshot_id, request)
+        snap, snap_obj = get_snapshot_for_request(snapshot_id, request)
         if not snap:
             return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
         ensure_scan_numbers()
         payload = dict(snap.get('diagnosis') or {})
         payload['scan_no'] = snap.get('scan_no')
         payload['snapshot_id'] = snap.get('snapshot_id', snapshot_id)
+
+        # Include available columns from upload for AI SQL analytics
+        cols = []
+        if snap_obj and snap_obj.upload and snap_obj.upload.columns:
+            cols = list(snap_obj.upload.columns)
+        elif snap.get('upload_id') and snap.get('upload_id') in UPLOADS_STORE:
+            cols = list(UPLOADS_STORE[snap['upload_id']].get('columns', []))
+        elif snap_obj:
+            sample_deal = Deal.objects.filter(snapshot=snap_obj).exclude(raw_data={}).first()
+            if sample_deal and sample_deal.raw_data:
+                cols = list(sample_deal.raw_data.keys())
+
+        if not cols and snap.get('filename'):
+            matching_upload = Upload.objects.filter(filename=snap['filename']).order_by('-created_at').first()
+            if matching_upload and matching_upload.columns:
+                cols = list(matching_upload.columns)
+
+        payload['available_columns'] = cols
+
         return Response(payload)
 
 
