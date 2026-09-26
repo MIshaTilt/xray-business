@@ -1,4 +1,5 @@
 import type {
+  ComparisonResult,
   Coverage,
   Diagnosis,
   DiagnosisResponse,
@@ -261,5 +262,165 @@ export const fixtures = {
     const response = await fetch('/xray-template.xlsx')
     if (!response.ok) throw new ApiError(response.status, 'Шаблон не найден')
     return response.blob()
+  },
+
+  async compare(baseId: string, targetId: string): Promise<ComparisonResult> {
+    const snap1 = snapshots.get(baseId)
+    const snap2 = snapshots.get(targetId)
+
+    const baseName = snap1?.source || 'Срез 1'
+    const targetName = snap2?.source || 'Срез 2'
+    const baseDate = snap1?.createdAt || '2026-07-15'
+    const targetDate = snap2?.createdAt || '2026-09-22'
+
+    return {
+      base: {
+        snapshot_id: baseId,
+        filename: baseName,
+        created_at: baseDate,
+        headline: snap1?.diagnosis.headline || 'Исходный аудит воронки',
+        totals: snap1?.diagnosis.totals || { deals: 15, amount: 1890000 },
+      },
+      target: {
+        snapshot_id: targetId,
+        filename: targetName,
+        created_at: targetDate,
+        headline: snap2?.diagnosis.headline || 'Повторный срез после оптимизации',
+        totals: snap2?.diagnosis.totals || { deals: 24, amount: 2645000 },
+      },
+      summary: {
+        headline: 'Вы вернули в оборот 581 775 ₽ благодаря разбору зависших сделок и контролю скидок',
+        body: `Сравнение среза от ${baseDate} со срезом от ${targetDate}. Выручка выросла на 755 000 ₽ (+40.0%), средний чек скорректировался до 110 208 ₽. Ключевые точки роста: устранение утечки скидок на 56.4% и сокращение зависших сделок на 62.5%.`,
+        saved_money: 581775,
+        trend: 'improved',
+      },
+      totals_diff: {
+        amount: {
+          base: 1890000,
+          target: 2645000,
+          delta_abs: 755000,
+          delta_pct: 39.9,
+          status: 'positive',
+          unit: 'rub',
+        },
+        deals: {
+          base: 15,
+          target: 24,
+          delta_abs: 9,
+          delta_pct: 60.0,
+          status: 'positive',
+          unit: 'count',
+        },
+        avg_check: {
+          base: 126000,
+          target: 110208,
+          delta_abs: -15792,
+          delta_pct: -12.5,
+          status: 'negative',
+          unit: 'rub',
+        },
+      },
+      metrics_diff: [
+        {
+          metric_id: 'stagnation',
+          name: 'Зависшие сделки',
+          base_value: 24,
+          target_value: 9,
+          base_impact: 840000,
+          target_impact: 315000,
+          delta_value: -15,
+          delta_pct: -62.5,
+          delta_impact: -525000,
+          unit: 'days',
+          status: 'positive',
+          base_verdict: 'critical',
+          target_verdict: 'ok',
+        },
+        {
+          metric_id: 'discount_leakage',
+          name: 'Утечка скидок',
+          base_value: 18.5,
+          target_value: 8.1,
+          base_impact: 142000,
+          target_impact: 85225,
+          delta_value: -10.4,
+          delta_pct: -56.2,
+          delta_impact: -56775,
+          unit: 'pct',
+          status: 'positive',
+          base_verdict: 'watch',
+          target_verdict: 'ok',
+        },
+        {
+          metric_id: 'speed_to_lead',
+          name: 'Скорость первого ответа',
+          base_value: 3.2,
+          target_value: 1.1,
+          base_impact: 0,
+          target_impact: 0,
+          delta_value: -2.1,
+          delta_pct: -65.6,
+          delta_impact: 0,
+          unit: 'hours',
+          status: 'positive',
+          base_verdict: 'watch',
+          target_verdict: 'ok',
+        },
+        {
+          metric_id: 'sales_cycle',
+          name: 'Цикл сделки',
+          base_value: 38,
+          target_value: 26,
+          base_impact: 0,
+          target_impact: 0,
+          delta_value: -12,
+          delta_pct: -31.6,
+          delta_impact: 0,
+          unit: 'days',
+          status: 'positive',
+          base_verdict: 'ok',
+          target_verdict: 'ok',
+        },
+      ],
+      managers_diff: [
+        {
+          manager: 'Алексей Смирнов',
+          base_amount: 850000,
+          target_amount: 1420000,
+          delta_amount: 570000,
+          delta_pct: 67.1,
+          base_deals: 6,
+          target_deals: 11,
+          base_won: 520000,
+          target_won: 980000,
+          status: 'positive',
+        },
+        {
+          manager: 'Елена Кузнецова',
+          base_amount: 640000,
+          target_amount: 825000,
+          delta_amount: 185000,
+          delta_pct: 28.9,
+          base_deals: 5,
+          target_deals: 8,
+          base_won: 410000,
+          target_won: 590000,
+          status: 'positive',
+        },
+        {
+          manager: 'Михаил Орлов',
+          base_amount: 400000,
+          target_amount: 400000,
+          delta_amount: 0,
+          delta_pct: 0.0,
+          base_deals: 4,
+          target_deals: 5,
+          base_won: 210000,
+          target_won: 240000,
+          status: 'positive',
+        },
+      ],
+      total_saved_money: 581775,
+    }
   },
 }

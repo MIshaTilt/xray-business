@@ -31,6 +31,7 @@ from engine.views_api import (
     SnapshotChatHistoryView,
     SnapshotExportExcelView,
     SnapshotExportPdfView,
+    SnapshotCompareView,
 )
 
 urlpatterns = [
@@ -42,6 +43,7 @@ urlpatterns = [
     path('api/uploads', UploadView.as_view(), name='api_uploads'),
     path('api/uploads/<uuid:upload_id>/mapping', SaveMappingView.as_view(), name='api_upload_mapping'),
     path('api/snapshots', SnapshotCreateView.as_view(), name='api_snapshots_create'),
+    path('api/snapshots/compare', SnapshotCompareView.as_view(), name='api_snapshots_compare'),
     path('api/snapshots/<uuid:snapshot_id>', SnapshotPollView.as_view(), name='api_snapshot_poll'),
     path('api/snapshots/<uuid:snapshot_id>/diagnosis', SnapshotDiagnosisView.as_view(), name='api_snapshot_diagnosis'),
     path('api/snapshots/<uuid:snapshot_id>/metrics/<str:metric_id>', SnapshotMetricDetailView.as_view(), name='api_snapshot_metric_detail'),

@@ -105,6 +105,16 @@ export function hapticSuccess(): void {
   }
 }
 
+export function hapticImpact(style: 'light' | 'medium' | 'heavy' = 'medium'): void {
+  const platform = getPlatform()
+  if (platform === 'desktop' || platform === 'web') return
+  try {
+    hostApp()?.HapticFeedback?.impactOccurred?.(style)
+  } catch {
+    // Ignore
+  }
+}
+
 export async function downloadByBridge(url: string, fileName: string): Promise<boolean> {
   const download = hostApp()?.downloadFile
   if (!isInsideMax() || !download) return false

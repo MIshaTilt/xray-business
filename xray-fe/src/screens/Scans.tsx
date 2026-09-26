@@ -18,9 +18,11 @@ const STATUS: Record<SnapshotListItem['status'], string> = {
 export function Scans({
   onDiagnosis,
   onProcessing,
+  onCompare,
 }: {
   onDiagnosis: (snapshotId: string) => void
   onProcessing: (snapshotId: string) => void
+  onCompare?: (baseId: string, targetId: string) => void
 }) {
   const [busy, setBusy] = useState<'seed' | null>(null)
   const [error, setError] = useState('')
@@ -149,11 +151,11 @@ export function Scans({
     pickTimer.current = window.setTimeout(() => setPickClosing(false), 400)
   }
 
-  function startPick() {
+  function startPick(initialId?: string) {
     window.clearTimeout(pickTimer.current)
     setPickClosing(false)
     setOpenSwipeId(null)
-    setPicked([])
+    setPicked(initialId ? [initialId] : [])
     setPicking(true)
   }
 
@@ -229,22 +231,46 @@ export function Scans({
   return (
     <div className={`stack scans-screen${picking ? ' is-picking' : ''}`}>
       <div className="lead">
-        <h1>Сканы</h1>
+        <div className="scans-lead-header">
+          <h1>Сканы</h1>
+          {canPick && !picking ? (
+            <button
+              type="button"
+              className="scans-select-text-btn"
+              onClick={() => startPick()}
+            >
+              Выбрать
+            </button>
+          ) : null}
+        </div>
+        {visible.length >= 2 && !picking && onCompare ? (
+          <div className="scans-quick-compare-wrap">
+            <button
+              type="button"
+              className="action scans-quick-compare-btn"
+              onClick={() => onCompare(visible[0].snapshot_id, visible[1].snapshot_id)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7 16V4m0 0L3 8m4-4 4 4m6 4v12m0 0 4-4m-4 4-4-4" />
+              </svg>
+              <span>Сравнить 2 последних среза</span>
+            </button>
+          </div>
+        ) : null}
       </div>
       {canPick && pickSlot
         ? createPortal(
             <button
               type="button"
               className={`more-dot-btn scans-tool${picking ? ' is-cancel' : ''}`}
-              aria-label={picking ? 'Отмена' : 'Выбрать для удаления'}
-              onClick={picking ? stopPick : startPick}
+              aria-label={picking ? 'Отмена' : 'Выбрать сканы'}
+              title={picking ? 'Отмена' : 'Выбрать сканы'}
+              onClick={picking ? stopPick : () => startPick()}
             >
-              <span className="scans-tool-face scans-tool-trash" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M5 7.5h14" />
-                  <path d="M9.5 7.5V6.2A1.2 1.2 0 0 1 10.7 5h2.6A1.2 1.2 0 0 1 14.5 6.2V7.5" />
-                  <path d="M8 7.5h8l-.6 11.2A1.6 1.6 0 0 1 13.8 20h-3.6a1.6 1.6 0 0 1-1.6-1.3L8 7.5Z" />
-                  <path d="M10.5 11v5M13.5 11v5" />
+              <span className="scans-tool-face scans-tool-select" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 11 12 14 22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
                 </svg>
               </span>
               <span className="scans-tool-face scans-tool-close" aria-hidden="true">
@@ -258,7 +284,19 @@ export function Scans({
         : null}
       {picking || pickClosing
         ? createPortal(
-            <div className={`scans-pick-bar${pickClosing ? ' is-closing' : ''}`} style={pickFont ?? undefined}>
+            <div
+              className={`scans-pick-bar${pickClosing ? ' is-closing' : ''}${picked.length === 2 && onCompare ? ' has-compare' : ''}`}
+              style={pickFont ?? undefined}
+            >
+              {picked.length === 2 && onCompare ? (
+                <button
+                  type="button"
+                  className="action scans-pick-compare"
+                  onClick={() => onCompare(picked[0], picked[1])}
+                >
+                  Сравнить (2)
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="action scans-pick-delete"
@@ -335,6 +373,9 @@ export function Scans({
                         else void openSnapshot(item)
                       }}
                       onDelete={() => void removeSnapshot(item.snapshot_id)}
+                      onLongPress={() => {
+                        if (!picking) startPick(item.snapshot_id)
+                      }}
                     >
                       <ScanFace
                         item={item}

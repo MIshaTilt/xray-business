@@ -25,6 +25,7 @@ export type MaxWebApp = {
   downloadFile?: (url: string, fileName: string) => Promise<unknown>
   HapticFeedback?: {
     notificationOccurred?: (type: 'error' | 'success' | 'warning', disableVibrationFallback?: boolean) => void
+    impactOccurred?: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void
   }
 }
 

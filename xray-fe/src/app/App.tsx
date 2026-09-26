@@ -1,10 +1,11 @@
 import { Panel } from '@maxhub/max-ui'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import type { Diagnosis as DiagnosisData, MetricId } from '../api/types.ts'
 import { api } from '../api/client.ts'
 import { bindBack, initBridge, showBack } from '../bridge/index.ts'
 import { ChatScreen } from '../screens/ChatScreen.tsx'
+import { Compare } from '../screens/Compare.tsx'
 import { Diagnosis } from '../screens/Diagnosis.tsx'
 import { Home } from '../screens/Home.tsx'
 import { MappingScreen } from '../screens/Mapping.tsx'
@@ -52,12 +53,13 @@ function Shell() {
   const tab = tabOf(location.pathname)
   const inChat = location.pathname.endsWith('/chat')
   const onDiagnosis = /^\/scan\/[^/]+$/.test(location.pathname)
+  const onCompare = location.pathname.startsWith('/compare')
   const nested =
     /\/scan\/[^/]+\/(metric|missing|chat)/.test(location.pathname) ||
     location.pathname.startsWith('/processing/')
   const showBackBtn =
     !hostBack &&
-    (nested || onDiagnosis || location.pathname.startsWith('/mapping') || location.pathname.startsWith('/templates'))
+    (nested || onDiagnosis || onCompare || location.pathname.startsWith('/mapping') || location.pathname.startsWith('/templates'))
   const showTabs = true
   const lastTabPath = useRef<Record<TabName, string>>({ ...TAB_ROOT })
   const skipBack = useRef(false)
@@ -92,7 +94,7 @@ function Shell() {
 
   const pop = useCallback(() => {
     if (skipBack.current) return
-    if (/^\/scan\/[^/]+$/.test(location.pathname)) {
+    if (/^\/scan\/[^/]+$/.test(location.pathname) || location.pathname.startsWith('/compare')) {
       go(navigate, '/scans')
       return
     }
@@ -156,6 +158,7 @@ function Shell() {
             <Route path="/settings" element={<Navigate to="/menu" replace />} />
             <Route path="/mapping" element={<MappingPage />} />
             <Route path="/processing/:snapshotId" element={<ProcessingPage />} />
+            <Route path="/compare" element={<ComparePage />} />
             <Route path="/scan" element={<Navigate to="/scans" replace />} />
             <Route path="/scan/:snapshotId" element={<DiagnosisPage />} />
             <Route path="/scan/:snapshotId/metric/:metricId" element={<MetricPage />} />
@@ -266,6 +269,28 @@ function ScansPage() {
         flow.setLastScanId(snapshotId)
         go(navigate, `/processing/${snapshotId}`)
       }}
+      onCompare={(baseId, targetId) => {
+        go(navigate, `/compare?base_id=${encodeURIComponent(baseId)}&target_id=${encodeURIComponent(targetId)}`)
+      }}
+    />
+  )
+}
+
+function ComparePage() {
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const baseId = searchParams.get('base_id') || ''
+  const targetId = searchParams.get('target_id') || ''
+
+  if (!baseId || !targetId) {
+    return <Navigate to="/scans" replace />
+  }
+
+  return (
+    <Compare
+      baseId={baseId}
+      targetId={targetId}
+      onOpenSnapshot={(snapshotId) => go(navigate, `/scan/${snapshotId}`)}
     />
   )
 }

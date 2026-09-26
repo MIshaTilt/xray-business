@@ -626,12 +626,27 @@ class TemplatesListView(APIView):
 
         files = []
         labels = {
+            'b2b_sales_before.csv': '🏢 [1/2 Срез ДО] B2B Услуги: Зависшие сделки и скидки',
+            'b2b_sales_after.csv': '🚀 [2/2 Срез ПОСЛЕ] B2B Услуги: Наведение порядка и РОП',
+            'retail_q1_before.csv': '🛒 [1/2 Срез ДО] Ритейл: Долгий ответ и брошенные заказы',
+            'retail_q2_after.csv': '⚡ [2/2 Срез ПОСЛЕ] Ритейл: Быстрое подтверждение и рост',
             'ecommerce_canonical.csv': 'Стандартный E-commerce (Канонический)',
             'ecommerce_moysklad_1c.csv': 'Выгрузка 1С / МойСклад (Товары и розница)',
             'ecommerce_marketplace.csv': 'Маркетплейсы (Wildberries / Ozon)',
             'ecommerce_messy_user_table.csv': 'Реальная таблица бизнеса (Смешанные форматы)',
-            'custom_messy_slang_crm.csv': '🔥 Стресс-тест для AI-нормализатора («Баблос», «Кто тащит»)'
+            'custom_messy_slang_crm.csv': '🔥 Стресс-тест для AI-нормализатора («Баблос», «Кто тащит»)',
         }
+        order = [
+            'b2b_sales_before.csv',
+            'b2b_sales_after.csv',
+            'retail_q1_before.csv',
+            'retail_q2_after.csv',
+            'ecommerce_canonical.csv',
+            'ecommerce_moysklad_1c.csv',
+            'ecommerce_marketplace.csv',
+            'ecommerce_messy_user_table.csv',
+            'custom_messy_slang_crm.csv',
+        ]
         for p in tmpl_dir.glob('*.csv'):
             files.append({
                 'id': p.name,
@@ -639,6 +654,7 @@ class TemplatesListView(APIView):
                 'label': labels.get(p.name, p.name),
                 'size_bytes': p.stat().st_size
             })
+        files.sort(key=lambda x: order.index(x['id']) if x['id'] in order else 99)
         return Response({'items': files})
 
 
@@ -804,6 +820,43 @@ class SnapshotExportPdfView(APIView):
         )
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
+
+
+class SnapshotCompareView(APIView):
+    """
+    GET /api/snapshots/compare?base_id=<uuid>&target_id=<uuid>
+    Compares two snapshots (Before vs After) for the authenticated user / guest session.
+    """
+    def get(self, request):
+        cleanup_expired_guest_data()
+        base_id = request.query_params.get('base_id')
+        target_id = request.query_params.get('target_id')
+
+        if not base_id or not target_id:
+            return Response(
+                {'code': 'bad_request', 'message': 'Требуются параметры base_id и target_id'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        _, snap1 = get_snapshot_for_request(base_id, request)
+        _, snap2 = get_snapshot_for_request(target_id, request)
+
+        if not snap1 or not snap2:
+            return Response(
+                {'code': 'not_found', 'message': 'Один или оба снимка не найдены или доступ ограничен'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        from engine.comparator import compare_snapshots
+        try:
+            diff_result = compare_snapshots(snap1, snap2)
+            return Response(diff_result, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {'code': 'comparison_error', 'message': f'Ошибка сравнения снимков: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 
 
 

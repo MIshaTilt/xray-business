@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
+import { hapticImpact } from '../bridge/index.ts'
 
 const BASE = 156
 const HIDDEN_PAD = 72
@@ -8,6 +9,7 @@ export function SwipeScan({
   onOpenChange,
   onActivate,
   onDelete,
+  onLongPress,
   selecting = false,
   selected = false,
   children,
@@ -16,6 +18,7 @@ export function SwipeScan({
   onOpenChange: (open: boolean) => void
   onActivate: () => void
   onDelete: () => void
+  onLongPress?: () => void
   selecting?: boolean
   selected?: boolean
   children: ReactNode
@@ -31,8 +34,10 @@ export function SwipeScan({
   const rootRef = useRef<HTMLDivElement>(null)
   const onOpenChangeRef = useRef(onOpenChange)
   const onDeleteRef = useRef(onDelete)
+  const onLongPressRef = useRef(onLongPress)
   onOpenChangeRef.current = onOpenChange
   onDeleteRef.current = onDelete
+  onLongPressRef.current = onLongPress
   const selectingRef = useRef(selecting)
   selectingRef.current = selecting
   const dragging = useRef(false)
@@ -47,6 +52,8 @@ export function SwipeScan({
   const deleteTap = useRef<{ x: number; y: number } | null>(null)
   const twitchTimer = useRef(0)
   const pressTimer = useRef(0)
+  const longPressTimer = useRef(0)
+  const longPressed = useRef(false)
   const wheelTimer = useRef(0)
   const wheelActive = useRef(false)
   const wheelPendingX = useRef(0)
@@ -246,6 +253,7 @@ export function SwipeScan({
       window.clearTimeout(releaseTimer.current)
       window.clearTimeout(twitchTimer.current)
       window.clearTimeout(pressTimer.current)
+      window.clearTimeout(longPressTimer.current)
       window.clearTimeout(sealTimer.current)
       window.clearTimeout(deleteTimer.current)
       window.clearTimeout(closeTimer.current)
@@ -286,6 +294,18 @@ export function SwipeScan({
     dragging.current = true
     setPress(false)
     window.clearTimeout(pressTimer.current)
+    window.clearTimeout(longPressTimer.current)
+    longPressed.current = false
+    if (!selectingRef.current && !open && onLongPressRef.current) {
+      longPressTimer.current = window.setTimeout(() => {
+        if (moved.current < 8 && dragging.current && !selectingRef.current) {
+          longPressed.current = true
+          dragging.current = false
+          hapticImpact('medium')
+          onLongPressRef.current?.()
+        }
+      }, 420)
+    }
     startedOpen.current = open || latest.current > 8
     startX.current = event.clientX
     startOffset.current = drag ?? (open ? BASE : latest.current)
@@ -302,16 +322,26 @@ export function SwipeScan({
     }
     const delta = startX.current - event.clientX
     moved.current = Math.max(moved.current, Math.abs(delta))
-    if (moved.current < 8) return
-    window.clearTimeout(pressTimer.current)
-    setPress(false)
-    const next = Math.max(0, Math.min(BASE + 280, startOffset.current + delta))
-    latest.current = next
-    if (!live) setLive(true)
-    setDrag(next)
+    if (moved.current >= 8) {
+      window.clearTimeout(longPressTimer.current)
+      window.clearTimeout(pressTimer.current)
+      setPress(false)
+      const next = Math.max(0, Math.min(BASE + 280, startOffset.current + delta))
+      latest.current = next
+      if (!live) setLive(true)
+      setDrag(next)
+    }
   }
 
   function finish(event: PointerEvent<HTMLDivElement>) {
+    window.clearTimeout(longPressTimer.current)
+    if (longPressed.current) {
+      longPressed.current = false
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        try { event.currentTarget.releasePointerCapture(event.pointerId) } catch {}
+      }
+      return
+    }
     if (event.type === 'pointercancel' && event.pointerType === 'touch') return
     if (pressingDelete.current) {
       pressingDelete.current = false

@@ -127,3 +127,72 @@ export type MetricDetail = {
   result: MetricResult
   evidence: EvidenceDeal[]
 }
+
+export type ComparisonStatus = 'positive' | 'negative' | 'neutral'
+
+export type DiffNumberItem = {
+  base: number
+  target: number
+  delta_abs: number
+  delta_pct: number
+  status: ComparisonStatus
+  unit: string
+}
+
+export type MetricDiffItem = {
+  metric_id: MetricId
+  name: string
+  base_value: number
+  target_value: number
+  base_impact: number
+  target_impact: number
+  delta_value: number
+  delta_pct: number
+  delta_impact: number
+  unit: string
+  status: ComparisonStatus
+  base_verdict: Verdict
+  target_verdict: Verdict
+}
+
+export type ManagerDiffItem = {
+  manager: string
+  base_amount: number
+  target_amount: number
+  delta_amount: number
+  delta_pct: number
+  base_deals: number
+  target_deals: number
+  base_won: number
+  target_won: number
+  status: ComparisonStatus
+}
+
+export type ComparisonSummary = {
+  headline: string
+  body: string
+  saved_money: number
+  trend: 'improved' | 'attention' | 'neutral'
+}
+
+export type SnapshotMetaItem = {
+  snapshot_id: string
+  filename?: string
+  created_at: string
+  headline?: string
+  totals?: Record<string, any>
+}
+
+export type ComparisonResult = {
+  base: SnapshotMetaItem
+  target: SnapshotMetaItem
+  summary: ComparisonSummary
+  totals_diff: {
+    amount: DiffNumberItem
+    deals: DiffNumberItem
+    avg_check: DiffNumberItem
+  }
+  metrics_diff: MetricDiffItem[]
+  managers_diff: ManagerDiffItem[]
+  total_saved_money: number
+}

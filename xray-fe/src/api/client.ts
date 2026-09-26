@@ -1,5 +1,5 @@
 import { downloadBlob, downloadByBridge, getGuestSessionId, getInitData } from '../bridge/index.ts'
-import type { Mapping, MetricId, SnapshotListItem, UploadResponse } from './types.ts'
+import type { ComparisonResult, Mapping, MetricId, SnapshotListItem, UploadResponse } from './types.ts'
 import { ApiError } from './errors.ts'
 import { fixtures } from './fixtures.ts'
 
@@ -164,6 +164,15 @@ export const api = {
   remove(snapshotId: string) {
     if (usesFixtures()) return fixtures.remove(snapshotId)
     return request<void>(`/api/snapshots/${snapshotId}`, { method: 'DELETE' }, false)
+  },
+
+  compare(baseId: string, targetId: string): Promise<ComparisonResult> {
+    if (usesFixtures()) return fixtures.compare(baseId, targetId)
+    return request<ComparisonResult>(
+      `/api/snapshots/compare?base_id=${encodeURIComponent(baseId)}&target_id=${encodeURIComponent(targetId)}`,
+      { method: 'GET' },
+      false,
+    )
   },
 }
 

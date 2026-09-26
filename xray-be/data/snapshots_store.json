@@ -41687,5 +41687,5601 @@
         ]
       }
     }
+  },
+  "2ee99e76-059e-4cd3-a0f5-e081b4be9eb3": {
+    "snapshot_id": "2ee99e76-059e-4cd3-a0f5-e081b4be9eb3",
+    "user_id": 18712527,
+    "guest_session": "",
+    "is_guest": false,
+    "scan_no": 29,
+    "status": "ready",
+    "progress": 100,
+    "error": "",
+    "created_at": "2026-09-27T01:20:33.515561",
+    "filename": "b2b_sales_before.csv",
+    "source": "miniapp",
+    "diagnosis": {
+      "snapshot_id": "2ee99e76-059e-4cd3-a0f5-e081b4be9eb3",
+      "headline": "Верните в работу 16 зависших сделок старше 57 дней на сумму 5 231 500 руб.",
+      "card_title": "B2B-продажи",
+      "body": "Проведите ревизию 16 сделок старше 57 дней на 5 231 500 руб.: согласуйте жесткий дедлайн следующего шага или закройте нецелевые. Разберите воронку на этапе «negotiation»: здесь теряется 41.6% конверсии на сумму 2 930 300 руб. — скорректируйте условия или технику переговоров. Назначьте звонки руководителей по 5 клиентам на 1 143 050 руб., с которыми нет контакта дольше 45 дней, чтобы вернуть диалог.",
+      "findings": [
+        {
+          "metric_id": "stagnation",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "critical",
+          "value": 16,
+          "unit": "deals",
+          "money_impact": "5231500.00",
+          "threshold_label": "Зависшей считаем сделку старше 57 дней",
+          "action": "Проведите ревизию 16 сделок старше 57 дней на 5 231 500 руб.: согласуйте жесткий дедлайн следующего шага или закройте нецелевые.",
+          "evidence": [
+            {
+              "deal_id": "B2B-06-025",
+              "client": "ООО \"ПромАльянс\"",
+              "amount": "680000.00",
+              "status": "negotiation",
+              "days_stale": 108,
+              "manager": "Алексей Громов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-026",
+              "client": "ООО \"ИнтерЛогистик\"",
+              "amount": "548000.00",
+              "status": "proposal",
+              "days_stale": 88,
+              "manager": "Мария Смирнова",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-027",
+              "client": "ООО \"МегаТрейд\"",
+              "amount": "215100.00",
+              "status": "proposal",
+              "days_stale": 92,
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-028",
+              "client": "ИП Васильев А.В.",
+              "amount": "377000.00",
+              "status": "negotiation",
+              "days_stale": 96,
+              "manager": "Алексей Громов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-029",
+              "client": "ИП Кузнецова С.М.",
+              "amount": "177300.00",
+              "status": "proposal",
+              "days_stale": 107,
+              "manager": "Мария Смирнова",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-030",
+              "client": "ООО \"АльфаТранс\"",
+              "amount": "90250.00",
+              "status": "negotiation",
+              "days_stale": 82,
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-031",
+              "client": "ООО \"Вектор Связи\"",
+              "amount": "157000.00",
+              "status": "proposal",
+              "days_stale": 110,
+              "manager": "Алексей Громов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-032",
+              "client": "АО \"УралНефтьГаз\"",
+              "amount": "417000.00",
+              "status": "proposal",
+              "days_stale": 98,
+              "manager": "Мария Смирнова",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-033",
+              "client": "ИП Пономарев К.Е.",
+              "amount": "701000.00",
+              "status": "negotiation",
+              "days_stale": 90,
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-034",
+              "client": "ООО \"КристаллГрупп\"",
+              "amount": "507300.00",
+              "status": "negotiation",
+              "days_stale": 105,
+              "manager": "Алексей Громов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-035",
+              "client": "ООО \"ЭнергоМонтаж\"",
+              "amount": "218500.00",
+              "status": "negotiation",
+              "days_stale": 94,
+              "manager": "Мария Смирнова",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-036",
+              "client": "ИП Григорьева Т.П.",
+              "amount": "356250.00",
+              "status": "negotiation",
+              "days_stale": 100,
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-037",
+              "client": "ООО \"БизнесКонсалт\"",
+              "amount": "193000.00",
+              "status": "proposal",
+              "days_stale": 92,
+              "manager": "Алексей Громов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-038",
+              "client": "ООО \"ОптимаСнаб\"",
+              "amount": "87300.00",
+              "status": "proposal",
+              "days_stale": 112,
+              "manager": "Мария Смирнова",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-039",
+              "client": "АО \"РосАрматура\"",
+              "amount": "142000.00",
+              "status": "proposal",
+              "days_stale": 84,
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-040",
+              "client": "ИП Морозов Д.А.",
+              "amount": "364500.00",
+              "status": "proposal",
+              "days_stale": 92,
+              "manager": "Алексей Громов",
+              "contact": ""
+            }
+          ]
+        },
+        {
+          "metric_id": "funnel_dropoff",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "watch",
+          "value": 41.6,
+          "unit": "pct",
+          "money_impact": "2930300.00",
+          "threshold_label": "этап теряет больше 40% суммы",
+          "action": "Разберите воронку на этапе «negotiation»: здесь теряется 41.6% конверсии на сумму 2 930 300 руб. — скорректируйте условия или технику переговоров.",
+          "evidence": [
+            {
+              "deal_id": "B2B-06-025",
+              "client": "ООО \"ПромАльянс\"",
+              "amount": "680000.00",
+              "status": "negotiation",
+              "manager": "Алексей Громов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-028",
+              "client": "ИП Васильев А.В.",
+              "amount": "377000.00",
+              "status": "negotiation",
+              "manager": "Алексей Громов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-030",
+              "client": "ООО \"АльфаТранс\"",
+              "amount": "90250.00",
+              "status": "negotiation",
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-033",
+              "client": "ИП Пономарев К.Е.",
+              "amount": "701000.00",
+              "status": "negotiation",
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-034",
+              "client": "ООО \"КристаллГрупп\"",
+              "amount": "507300.00",
+              "status": "negotiation",
+              "manager": "Алексей Громов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-035",
+              "client": "ООО \"ЭнергоМонтаж\"",
+              "amount": "218500.00",
+              "status": "negotiation",
+              "manager": "Мария Смирнова",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-036",
+              "client": "ИП Григорьева Т.П.",
+              "amount": "356250.00",
+              "status": "negotiation",
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            }
+          ]
+        },
+        {
+          "metric_id": "dormant",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "critical",
+          "value": 5,
+          "unit": "deals",
+          "money_impact": "1143050.00",
+          "threshold_label": "дольше 45 дней",
+          "action": "Назначьте звонки руководителей по 5 клиентам на 1 143 050 руб., с которыми нет контакта дольше 45 дней, чтобы вернуть диалог.",
+          "evidence": [
+            {
+              "deal_id": "B2B-06-036",
+              "client": "ИП Григорьева Т.П.",
+              "amount": "356250.00",
+              "status": "negotiation",
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-037",
+              "client": "ООО \"БизнесКонсалт\"",
+              "amount": "193000.00",
+              "status": "proposal",
+              "manager": "Алексей Громов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-038",
+              "client": "ООО \"ОптимаСнаб\"",
+              "amount": "87300.00",
+              "status": "proposal",
+              "manager": "Мария Смирнова",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-039",
+              "client": "АО \"РосАрматура\"",
+              "amount": "142000.00",
+              "status": "proposal",
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-06-040",
+              "client": "ИП Морозов Д.А.",
+              "amount": "364500.00",
+              "status": "proposal",
+              "manager": "Алексей Громов",
+              "contact": ""
+            }
+          ]
+        }
+      ],
+      "coverage": {
+        "available": [
+          "speed_to_lead",
+          "stagnation",
+          "discount_leakage",
+          "sales_cycle",
+          "key_account_risk",
+          "dormant",
+          "funnel_dropoff"
+        ],
+        "skipped": []
+      },
+      "period": {
+        "from": "2026-06-02",
+        "to": "2026-06-30"
+      },
+      "totals": {
+        "deals": 40,
+        "amount": "12461800.00",
+        "accepted": 40,
+        "rejected": 0
+      },
+      "ok": [
+        "key_account_risk"
+      ],
+      "low_sample": []
+    },
+    "all_metrics": {
+      "speed_to_lead": {
+        "metric_id": "speed_to_lead",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "critical",
+        "value": 5.25,
+        "unit": "hours",
+        "money_impact": null,
+        "threshold_label": "быстрее 30 минут",
+        "action": "Медиана первого контакта 5.25 ч. Ответьте новым заявкам быстрее 30 минут",
+        "evidence": [
+          {
+            "deal_id": "B2B-06-001",
+            "client": "ООО \"СтройКомплект\"",
+            "amount": "621350.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-002",
+            "client": "АО \"ТехноПром\"",
+            "amount": "433840.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-003",
+            "client": "ООО \"Северный Ветер\"",
+            "amount": "168480.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-004",
+            "client": "ООО \"ГлавСнаб\"",
+            "amount": "295800.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-005",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "167200.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-006",
+            "client": "ООО \"ИнтерЛогистик\"",
+            "amount": "83600.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-007",
+            "client": "ООО \"МегаТрейд\"",
+            "amount": "117260.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-008",
+            "client": "ИП Васильев А.В.",
+            "amount": "392480.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-009",
+            "client": "ИП Кузнецова С.М.",
+            "amount": "597520.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-010",
+            "client": "ООО \"АльфаТранс\"",
+            "amount": "441160.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-011",
+            "client": "ООО \"Вектор Связи\"",
+            "amount": "170040.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-012",
+            "client": "АО \"УралНефтьГаз\"",
+            "amount": "296650.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-013",
+            "client": "ИП Пономарев К.Е.",
+            "amount": "144800.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-014",
+            "client": "ООО \"КристаллГрупп\"",
+            "amount": "76800.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-015",
+            "client": "ООО \"ЭнергоМонтаж\"",
+            "amount": "112320.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-016",
+            "client": "ИП Григорьева Т.П.",
+            "amount": "427000.00",
+            "status": "lost",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-017",
+            "client": "ООО \"БизнесКонсалт\"",
+            "amount": "713000.00",
+            "status": "lost",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-018",
+            "client": "ООО \"ОптимаСнаб\"",
+            "amount": "500000.00",
+            "status": "lost",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-019",
+            "client": "АО \"РосАрматура\"",
+            "amount": "229000.00",
+            "status": "lost",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-020",
+            "client": "ИП Морозов Д.А.",
+            "amount": "376000.00",
+            "status": "lost",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-021",
+            "client": "ООО \"СтройКомплект\"",
+            "amount": "193000.00",
+            "status": "lost",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-022",
+            "client": "АО \"ТехноПром\"",
+            "amount": "99000.00",
+            "status": "lost",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-023",
+            "client": "ООО \"Северный Ветер\"",
+            "amount": "146000.00",
+            "status": "lost",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-024",
+            "client": "ООО \"ГлавСнаб\"",
+            "amount": "428000.00",
+            "status": "lost",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-025",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "680000.00",
+            "status": "negotiation",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-026",
+            "client": "ООО \"ИнтерЛогистик\"",
+            "amount": "548000.00",
+            "status": "proposal",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-027",
+            "client": "ООО \"МегаТрейд\"",
+            "amount": "215100.00",
+            "status": "proposal",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-028",
+            "client": "ИП Васильев А.В.",
+            "amount": "377000.00",
+            "status": "negotiation",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-029",
+            "client": "ИП Кузнецова С.М.",
+            "amount": "177300.00",
+            "status": "proposal",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-030",
+            "client": "ООО \"АльфаТранс\"",
+            "amount": "90250.00",
+            "status": "negotiation",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-031",
+            "client": "ООО \"Вектор Связи\"",
+            "amount": "157000.00",
+            "status": "proposal",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-032",
+            "client": "АО \"УралНефтьГаз\"",
+            "amount": "417000.00",
+            "status": "proposal",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-033",
+            "client": "ИП Пономарев К.Е.",
+            "amount": "701000.00",
+            "status": "negotiation",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-034",
+            "client": "ООО \"КристаллГрупп\"",
+            "amount": "507300.00",
+            "status": "negotiation",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-035",
+            "client": "ООО \"ЭнергоМонтаж\"",
+            "amount": "218500.00",
+            "status": "negotiation",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-036",
+            "client": "ИП Григорьева Т.П.",
+            "amount": "356250.00",
+            "status": "negotiation",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-037",
+            "client": "ООО \"БизнесКонсалт\"",
+            "amount": "193000.00",
+            "status": "proposal",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-038",
+            "client": "ООО \"ОптимаСнаб\"",
+            "amount": "87300.00",
+            "status": "proposal",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-039",
+            "client": "АО \"РосАрматура\"",
+            "amount": "142000.00",
+            "status": "proposal",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-040",
+            "client": "ИП Морозов Д.А.",
+            "amount": "364500.00",
+            "status": "proposal",
+            "manager": "Алексей Громов",
+            "contact": ""
+          }
+        ]
+      },
+      "stagnation": {
+        "metric_id": "stagnation",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "critical",
+        "value": 16,
+        "unit": "deals",
+        "money_impact": "5231500.00",
+        "threshold_label": "Зависшей считаем сделку старше 57 дней",
+        "action": "Разморозьте 16 сделок старше 57 дней на 5 231 500 руб.",
+        "evidence": [
+          {
+            "deal_id": "B2B-06-025",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "680000.00",
+            "status": "negotiation",
+            "days_stale": 108,
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-026",
+            "client": "ООО \"ИнтерЛогистик\"",
+            "amount": "548000.00",
+            "status": "proposal",
+            "days_stale": 88,
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-027",
+            "client": "ООО \"МегаТрейд\"",
+            "amount": "215100.00",
+            "status": "proposal",
+            "days_stale": 92,
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-028",
+            "client": "ИП Васильев А.В.",
+            "amount": "377000.00",
+            "status": "negotiation",
+            "days_stale": 96,
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-029",
+            "client": "ИП Кузнецова С.М.",
+            "amount": "177300.00",
+            "status": "proposal",
+            "days_stale": 107,
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-030",
+            "client": "ООО \"АльфаТранс\"",
+            "amount": "90250.00",
+            "status": "negotiation",
+            "days_stale": 82,
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-031",
+            "client": "ООО \"Вектор Связи\"",
+            "amount": "157000.00",
+            "status": "proposal",
+            "days_stale": 110,
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-032",
+            "client": "АО \"УралНефтьГаз\"",
+            "amount": "417000.00",
+            "status": "proposal",
+            "days_stale": 98,
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-033",
+            "client": "ИП Пономарев К.Е.",
+            "amount": "701000.00",
+            "status": "negotiation",
+            "days_stale": 90,
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-034",
+            "client": "ООО \"КристаллГрупп\"",
+            "amount": "507300.00",
+            "status": "negotiation",
+            "days_stale": 105,
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-035",
+            "client": "ООО \"ЭнергоМонтаж\"",
+            "amount": "218500.00",
+            "status": "negotiation",
+            "days_stale": 94,
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-036",
+            "client": "ИП Григорьева Т.П.",
+            "amount": "356250.00",
+            "status": "negotiation",
+            "days_stale": 100,
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-037",
+            "client": "ООО \"БизнесКонсалт\"",
+            "amount": "193000.00",
+            "status": "proposal",
+            "days_stale": 92,
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-038",
+            "client": "ООО \"ОптимаСнаб\"",
+            "amount": "87300.00",
+            "status": "proposal",
+            "days_stale": 112,
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-039",
+            "client": "АО \"РосАрматура\"",
+            "amount": "142000.00",
+            "status": "proposal",
+            "days_stale": 84,
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-040",
+            "client": "ИП Морозов Д.А.",
+            "amount": "364500.00",
+            "status": "proposal",
+            "days_stale": 92,
+            "manager": "Алексей Громов",
+            "contact": ""
+          }
+        ]
+      },
+      "discount_leakage": {
+        "metric_id": "discount_leakage",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "critical",
+        "value": 100.0,
+        "unit": "pct",
+        "money_impact": "747700.00",
+        "threshold_label": "скидка больше 10%",
+        "action": "100.0% выигранных сделок ушли со скидкой больше 10%",
+        "evidence": [
+          {
+            "deal_id": "B2B-06-001",
+            "client": "ООО \"СтройКомплект\"",
+            "amount": "621350.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-002",
+            "client": "АО \"ТехноПром\"",
+            "amount": "433840.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-003",
+            "client": "ООО \"Северный Ветер\"",
+            "amount": "168480.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-004",
+            "client": "ООО \"ГлавСнаб\"",
+            "amount": "295800.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-005",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "167200.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-006",
+            "client": "ООО \"ИнтерЛогистик\"",
+            "amount": "83600.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-007",
+            "client": "ООО \"МегаТрейд\"",
+            "amount": "117260.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-008",
+            "client": "ИП Васильев А.В.",
+            "amount": "392480.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-009",
+            "client": "ИП Кузнецова С.М.",
+            "amount": "597520.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-010",
+            "client": "ООО \"АльфаТранс\"",
+            "amount": "441160.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-011",
+            "client": "ООО \"Вектор Связи\"",
+            "amount": "170040.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-012",
+            "client": "АО \"УралНефтьГаз\"",
+            "amount": "296650.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-013",
+            "client": "ИП Пономарев К.Е.",
+            "amount": "144800.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-014",
+            "client": "ООО \"КристаллГрупп\"",
+            "amount": "76800.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-015",
+            "client": "ООО \"ЭнергоМонтаж\"",
+            "amount": "112320.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          }
+        ]
+      },
+      "sales_cycle": {
+        "metric_id": "sales_cycle",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "watch",
+        "value": 38.0,
+        "unit": "days",
+        "money_impact": null,
+        "threshold_label": "цикл вырос",
+        "action": "Цикл сделки вырос до 38.0 дней",
+        "evidence": [
+          {
+            "deal_id": "B2B-06-001",
+            "client": "ООО \"СтройКомплект\"",
+            "amount": "621350.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-003",
+            "client": "ООО \"Северный Ветер\"",
+            "amount": "168480.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-013",
+            "client": "ИП Пономарев К.Е.",
+            "amount": "144800.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-005",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "167200.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-015",
+            "client": "ООО \"ЭнергоМонтаж\"",
+            "amount": "112320.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-006",
+            "client": "ООО \"ИнтерЛогистик\"",
+            "amount": "83600.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-012",
+            "client": "АО \"УралНефтьГаз\"",
+            "amount": "296650.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-004",
+            "client": "ООО \"ГлавСнаб\"",
+            "amount": "295800.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-010",
+            "client": "ООО \"АльфаТранс\"",
+            "amount": "441160.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-002",
+            "client": "АО \"ТехноПром\"",
+            "amount": "433840.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-011",
+            "client": "ООО \"Вектор Связи\"",
+            "amount": "170040.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-009",
+            "client": "ИП Кузнецова С.М.",
+            "amount": "597520.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-008",
+            "client": "ИП Васильев А.В.",
+            "amount": "392480.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-014",
+            "client": "ООО \"КристаллГрупп\"",
+            "amount": "76800.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-007",
+            "client": "ООО \"МегаТрейд\"",
+            "amount": "117260.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          }
+        ]
+      },
+      "key_account_risk": {
+        "metric_id": "key_account_risk",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 29.6,
+        "unit": "pct",
+        "money_impact": "1218870.00",
+        "threshold_label": "два клиента больше 50%",
+        "action": "Два клиента дают 29.6% выручки",
+        "evidence": [
+          {
+            "deal_id": "B2B-06-001",
+            "client": "ООО \"СтройКомплект\"",
+            "amount": "621350.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-009",
+            "client": "ИП Кузнецова С.М.",
+            "amount": "597520.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          }
+        ]
+      },
+      "dormant": {
+        "metric_id": "dormant",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "critical",
+        "value": 5,
+        "unit": "deals",
+        "money_impact": "1143050.00",
+        "threshold_label": "дольше 45 дней",
+        "action": "5 клиентов молчат дольше 45 дней",
+        "evidence": [
+          {
+            "deal_id": "B2B-06-036",
+            "client": "ИП Григорьева Т.П.",
+            "amount": "356250.00",
+            "status": "negotiation",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-037",
+            "client": "ООО \"БизнесКонсалт\"",
+            "amount": "193000.00",
+            "status": "proposal",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-038",
+            "client": "ООО \"ОптимаСнаб\"",
+            "amount": "87300.00",
+            "status": "proposal",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-039",
+            "client": "АО \"РосАрматура\"",
+            "amount": "142000.00",
+            "status": "proposal",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-040",
+            "client": "ИП Морозов Д.А.",
+            "amount": "364500.00",
+            "status": "proposal",
+            "manager": "Алексей Громов",
+            "contact": ""
+          }
+        ]
+      },
+      "funnel_dropoff": {
+        "metric_id": "funnel_dropoff",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "watch",
+        "value": 41.6,
+        "unit": "pct",
+        "money_impact": "2930300.00",
+        "threshold_label": "этап теряет больше 40% суммы",
+        "action": "На этапе «negotiation» теряется 2 930 300 руб.",
+        "evidence": [
+          {
+            "deal_id": "B2B-06-025",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "680000.00",
+            "status": "negotiation",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-028",
+            "client": "ИП Васильев А.В.",
+            "amount": "377000.00",
+            "status": "negotiation",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-030",
+            "client": "ООО \"АльфаТранс\"",
+            "amount": "90250.00",
+            "status": "negotiation",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-033",
+            "client": "ИП Пономарев К.Е.",
+            "amount": "701000.00",
+            "status": "negotiation",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-034",
+            "client": "ООО \"КристаллГрупп\"",
+            "amount": "507300.00",
+            "status": "negotiation",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-035",
+            "client": "ООО \"ЭнергоМонтаж\"",
+            "amount": "218500.00",
+            "status": "negotiation",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-06-036",
+            "client": "ИП Григорьева Т.П.",
+            "amount": "356250.00",
+            "status": "negotiation",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          }
+        ]
+      }
+    }
+  },
+  "7e5da3eb-a9cb-41d7-9d81-1f328dc98a10": {
+    "snapshot_id": "7e5da3eb-a9cb-41d7-9d81-1f328dc98a10",
+    "user_id": 18712527,
+    "guest_session": "",
+    "is_guest": false,
+    "scan_no": 30,
+    "status": "ready",
+    "progress": 100,
+    "error": "",
+    "created_at": "2026-09-27T01:23:22.054284",
+    "filename": "b2b_sales_after.csv",
+    "source": "miniapp",
+    "diagnosis": {
+      "snapshot_id": "7e5da3eb-a9cb-41d7-9d81-1f328dc98a10",
+      "headline": "Разберите 2 зависшие сделки на 237 650 руб., чтобы не потерять выручку",
+      "card_title": "B2B-продажи",
+      "body": "Срочно подключитесь к 2 сделкам старше 28 дней: на кону 237 650 руб. Выясните причины задержки у менеджеров, предложите клиентам спецусловия или закройте нецелевые контакты. Проверьте этапы воронки: средний цикл сделки вырос до 19.0 дней. Найдите, где именно тормозят согласования, и регламентируйте сроки ответа клиенту.",
+      "findings": [
+        {
+          "metric_id": "stagnation",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "critical",
+          "value": 2,
+          "unit": "deals",
+          "money_impact": "237650.00",
+          "threshold_label": "Зависшей считаем сделку старше 28 дней",
+          "action": "Срочно подключитесь к 2 сделкам старше 28 дней: на кону 237 650 руб. Выясните причины задержки у менеджеров, предложите клиентам спецусловия или закройте нецелевые контакты.",
+          "evidence": [
+            {
+              "deal_id": "B2B-08-054",
+              "client": "ООО \"КристаллГрупп\"",
+              "amount": "92150.00",
+              "status": "proposal",
+              "days_stale": 36,
+              "manager": "Мария Смирнова",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-055",
+              "client": "ООО \"ЭнергоМонтаж\"",
+              "amount": "145500.00",
+              "status": "proposal",
+              "days_stale": 42,
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            }
+          ]
+        },
+        {
+          "metric_id": "sales_cycle",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "watch",
+          "value": 19.0,
+          "unit": "days",
+          "money_impact": null,
+          "threshold_label": "цикл вырос",
+          "action": "Проверьте этапы воронки: средний цикл сделки вырос до 19.0 дней. Найдите, где именно тормозят согласования, и регламентируйте сроки ответа клиенту.",
+          "evidence": [
+            {
+              "deal_id": "B2B-08-027",
+              "client": "ООО \"МегаТрейд\"",
+              "amount": "203300.00",
+              "status": "won",
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-016",
+              "client": "ИП Григорьева Т.П.",
+              "amount": "404000.00",
+              "status": "won",
+              "manager": "Кирилл Белов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-010",
+              "client": "ООО \"АльфаТранс\"",
+              "amount": "532530.00",
+              "status": "won",
+              "manager": "Мария Смирнова",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-020",
+              "client": "ИП Морозов Д.А.",
+              "amount": "336000.00",
+              "status": "won",
+              "manager": "Кирилл Белов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-006",
+              "client": "ООО \"ИнтерЛогистик\"",
+              "amount": "90250.00",
+              "status": "won",
+              "manager": "Мария Смирнова",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-012",
+              "client": "АО \"УралНефтьГаз\"",
+              "amount": "343900.00",
+              "status": "won",
+              "manager": "Кирилл Белов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-035",
+              "client": "ООО \"ЭнергоМонтаж\"",
+              "amount": "214000.00",
+              "status": "won",
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-013",
+              "client": "ИП Пономарев К.Е.",
+              "amount": "187000.00",
+              "status": "won",
+              "manager": "Алексей Громов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-015",
+              "client": "ООО \"ЭнергоМонтаж\"",
+              "amount": "155000.00",
+              "status": "won",
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-033",
+              "client": "ИП Пономарев К.Е.",
+              "amount": "746000.00",
+              "status": "won",
+              "manager": "Алексей Громов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-004",
+              "client": "ООО \"ГлавСнаб\"",
+              "amount": "364720.00",
+              "status": "won",
+              "manager": "Кирилл Белов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-034",
+              "client": "ООО \"КристаллГрупп\"",
+              "amount": "489000.00",
+              "status": "won",
+              "manager": "Мария Смирнова",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-026",
+              "client": "ООО \"ИнтерЛогистик\"",
+              "amount": "490000.00",
+              "status": "won",
+              "manager": "Мария Смирнова",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-002",
+              "client": "АО \"ТехноПром\"",
+              "amount": "511100.00",
+              "status": "won",
+              "manager": "Мария Смирнова",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-019",
+              "client": "АО \"РосАрматура\"",
+              "amount": "226010.00",
+              "status": "won",
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-011",
+              "client": "ООО \"Вектор Связи\"",
+              "amount": "219000.00",
+              "status": "won",
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-022",
+              "client": "АО \"ТехноПром\"",
+              "amount": "95000.00",
+              "status": "won",
+              "manager": "Мария Смирнова",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-008",
+              "client": "ИП Васильев А.В.",
+              "amount": "430000.00",
+              "status": "won",
+              "manager": "Кирилл Белов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-009",
+              "client": "ИП Кузнецова С.М.",
+              "amount": "670000.00",
+              "status": "won",
+              "manager": "Алексей Громов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-025",
+              "client": "ООО \"ПромАльянс\"",
+              "amount": "673550.00",
+              "status": "won",
+              "manager": "Алексей Громов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-030",
+              "client": "ООО \"АльфаТранс\"",
+              "amount": "100000.00",
+              "status": "won",
+              "manager": "Мария Смирнова",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-003",
+              "client": "ООО \"Северный Ветер\"",
+              "amount": "212000.00",
+              "status": "won",
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-024",
+              "client": "ООО \"ГлавСнаб\"",
+              "amount": "415000.00",
+              "status": "won",
+              "manager": "Кирилл Белов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-032",
+              "client": "АО \"УралНефтьГаз\"",
+              "amount": "429710.00",
+              "status": "won",
+              "manager": "Кирилл Белов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-018",
+              "client": "ООО \"ОптимаСнаб\"",
+              "amount": "476900.00",
+              "status": "won",
+              "manager": "Мария Смирнова",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-021",
+              "client": "ООО \"СтройКомплект\"",
+              "amount": "190000.00",
+              "status": "won",
+              "manager": "Алексей Громов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-028",
+              "client": "ИП Васильев А.В.",
+              "amount": "335620.00",
+              "status": "won",
+              "manager": "Кирилл Белов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-007",
+              "client": "ООО \"МегаТрейд\"",
+              "amount": "146000.00",
+              "status": "won",
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-005",
+              "client": "ООО \"ПромАльянс\"",
+              "amount": "199000.00",
+              "status": "won",
+              "manager": "Алексей Громов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-029",
+              "client": "ИП Кузнецова С.М.",
+              "amount": "178480.00",
+              "status": "won",
+              "manager": "Алексей Громов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-017",
+              "client": "ООО \"БизнесКонсалт\"",
+              "amount": "694000.00",
+              "status": "won",
+              "manager": "Алексей Громов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-014",
+              "client": "ООО \"КристаллГрупп\"",
+              "amount": "98000.00",
+              "status": "won",
+              "manager": "Мария Смирнова",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-001",
+              "client": "ООО \"СтройКомплект\"",
+              "amount": "655720.00",
+              "status": "won",
+              "manager": "Алексей Громов",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-031",
+              "client": "ООО \"Вектор Связи\"",
+              "amount": "146300.00",
+              "status": "won",
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            },
+            {
+              "deal_id": "B2B-08-023",
+              "client": "ООО \"Северный Ветер\"",
+              "amount": "145350.00",
+              "status": "won",
+              "manager": "Дмитрий Ковалев",
+              "contact": ""
+            }
+          ]
+        }
+      ],
+      "coverage": {
+        "available": [
+          "speed_to_lead",
+          "stagnation",
+          "discount_leakage",
+          "sales_cycle",
+          "key_account_risk",
+          "dormant",
+          "funnel_dropoff"
+        ],
+        "skipped": []
+      },
+      "period": {
+        "from": "2026-08-02",
+        "to": "2026-09-12"
+      },
+      "totals": {
+        "deals": 55,
+        "amount": "17830500.00",
+        "accepted": 55,
+        "rejected": 0
+      },
+      "ok": [
+        "speed_to_lead",
+        "discount_leakage",
+        "key_account_risk",
+        "dormant",
+        "funnel_dropoff"
+      ],
+      "low_sample": []
+    },
+    "all_metrics": {
+      "speed_to_lead": {
+        "metric_id": "speed_to_lead",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 0.32,
+        "unit": "hours",
+        "money_impact": null,
+        "threshold_label": "быстрее 30 минут",
+        "action": "Медиана первого контакта 0.32 ч. Ответьте новым заявкам быстрее 30 минут",
+        "evidence": [
+          {
+            "deal_id": "B2B-08-001",
+            "client": "ООО \"СтройКомплект\"",
+            "amount": "655720.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-002",
+            "client": "АО \"ТехноПром\"",
+            "amount": "511100.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-003",
+            "client": "ООО \"Северный Ветер\"",
+            "amount": "212000.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-004",
+            "client": "ООО \"ГлавСнаб\"",
+            "amount": "364720.00",
+            "status": "won",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-005",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "199000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-006",
+            "client": "ООО \"ИнтерЛогистик\"",
+            "amount": "90250.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-007",
+            "client": "ООО \"МегаТрейд\"",
+            "amount": "146000.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-008",
+            "client": "ИП Васильев А.В.",
+            "amount": "430000.00",
+            "status": "won",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-009",
+            "client": "ИП Кузнецова С.М.",
+            "amount": "670000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-010",
+            "client": "ООО \"АльфаТранс\"",
+            "amount": "532530.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-011",
+            "client": "ООО \"Вектор Связи\"",
+            "amount": "219000.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-012",
+            "client": "АО \"УралНефтьГаз\"",
+            "amount": "343900.00",
+            "status": "won",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-013",
+            "client": "ИП Пономарев К.Е.",
+            "amount": "187000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-014",
+            "client": "ООО \"КристаллГрупп\"",
+            "amount": "98000.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-015",
+            "client": "ООО \"ЭнергоМонтаж\"",
+            "amount": "155000.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-016",
+            "client": "ИП Григорьева Т.П.",
+            "amount": "404000.00",
+            "status": "won",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-017",
+            "client": "ООО \"БизнесКонсалт\"",
+            "amount": "694000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-018",
+            "client": "ООО \"ОптимаСнаб\"",
+            "amount": "476900.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-019",
+            "client": "АО \"РосАрматура\"",
+            "amount": "226010.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-020",
+            "client": "ИП Морозов Д.А.",
+            "amount": "336000.00",
+            "status": "won",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-021",
+            "client": "ООО \"СтройКомплект\"",
+            "amount": "190000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-022",
+            "client": "АО \"ТехноПром\"",
+            "amount": "95000.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-023",
+            "client": "ООО \"Северный Ветер\"",
+            "amount": "145350.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-024",
+            "client": "ООО \"ГлавСнаб\"",
+            "amount": "415000.00",
+            "status": "won",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-025",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "673550.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-026",
+            "client": "ООО \"ИнтерЛогистик\"",
+            "amount": "490000.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-027",
+            "client": "ООО \"МегаТрейд\"",
+            "amount": "203300.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-028",
+            "client": "ИП Васильев А.В.",
+            "amount": "335620.00",
+            "status": "won",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-029",
+            "client": "ИП Кузнецова С.М.",
+            "amount": "178480.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-030",
+            "client": "ООО \"АльфаТранс\"",
+            "amount": "100000.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-031",
+            "client": "ООО \"Вектор Связи\"",
+            "amount": "146300.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-032",
+            "client": "АО \"УралНефтьГаз\"",
+            "amount": "429710.00",
+            "status": "won",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-033",
+            "client": "ИП Пономарев К.Е.",
+            "amount": "746000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-034",
+            "client": "ООО \"КристаллГрупп\"",
+            "amount": "489000.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-035",
+            "client": "ООО \"ЭнергоМонтаж\"",
+            "amount": "214000.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-036",
+            "client": "ИП Григорьева Т.П.",
+            "amount": "346000.00",
+            "status": "lost",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-037",
+            "client": "ООО \"БизнесКонсалт\"",
+            "amount": "192000.00",
+            "status": "lost",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-038",
+            "client": "ООО \"ОптимаСнаб\"",
+            "amount": "97000.00",
+            "status": "lost",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-039",
+            "client": "АО \"РосАрматура\"",
+            "amount": "155000.00",
+            "status": "lost",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-040",
+            "client": "ИП Морозов Д.А.",
+            "amount": "411000.00",
+            "status": "lost",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-041",
+            "client": "ООО \"СтройКомплект\"",
+            "amount": "729000.00",
+            "status": "lost",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-042",
+            "client": "АО \"ТехноПром\"",
+            "amount": "490000.00",
+            "status": "lost",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-043",
+            "client": "ООО \"Северный Ветер\"",
+            "amount": "218000.00",
+            "status": "lost",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-044",
+            "client": "ООО \"ГлавСнаб\"",
+            "amount": "368000.00",
+            "status": "lost",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-045",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "195000.00",
+            "status": "lost",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-046",
+            "client": "ООО \"ИнтерЛогистик\"",
+            "amount": "100000.00",
+            "status": "lost",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-047",
+            "client": "ООО \"МегаТрейд\"",
+            "amount": "147000.00",
+            "status": "lost",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-048",
+            "client": "ИП Васильев А.В.",
+            "amount": "419000.00",
+            "status": "lost",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-049",
+            "client": "ИП Кузнецова С.М.",
+            "amount": "663000.00",
+            "status": "lost",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-050",
+            "client": "ООО \"АльфаТранс\"",
+            "amount": "530000.00",
+            "status": "lost",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          }
+        ]
+      },
+      "stagnation": {
+        "metric_id": "stagnation",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "critical",
+        "value": 2,
+        "unit": "deals",
+        "money_impact": "237650.00",
+        "threshold_label": "Зависшей считаем сделку старше 28 дней",
+        "action": "Разморозьте 2 сделок старше 28 дней на 237 650 руб.",
+        "evidence": [
+          {
+            "deal_id": "B2B-08-054",
+            "client": "ООО \"КристаллГрупп\"",
+            "amount": "92150.00",
+            "status": "proposal",
+            "days_stale": 36,
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-055",
+            "client": "ООО \"ЭнергоМонтаж\"",
+            "amount": "145500.00",
+            "status": "proposal",
+            "days_stale": 42,
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          }
+        ]
+      },
+      "discount_leakage": {
+        "metric_id": "discount_leakage",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 0.0,
+        "unit": "pct",
+        "money_impact": null,
+        "threshold_label": "скидка больше 10%",
+        "action": "0.0% выигранных сделок ушли со скидкой больше 10%",
+        "evidence": []
+      },
+      "sales_cycle": {
+        "metric_id": "sales_cycle",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "watch",
+        "value": 19.0,
+        "unit": "days",
+        "money_impact": null,
+        "threshold_label": "цикл вырос",
+        "action": "Цикл сделки вырос до 19.0 дней",
+        "evidence": [
+          {
+            "deal_id": "B2B-08-027",
+            "client": "ООО \"МегаТрейд\"",
+            "amount": "203300.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-016",
+            "client": "ИП Григорьева Т.П.",
+            "amount": "404000.00",
+            "status": "won",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-010",
+            "client": "ООО \"АльфаТранс\"",
+            "amount": "532530.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-020",
+            "client": "ИП Морозов Д.А.",
+            "amount": "336000.00",
+            "status": "won",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-006",
+            "client": "ООО \"ИнтерЛогистик\"",
+            "amount": "90250.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-012",
+            "client": "АО \"УралНефтьГаз\"",
+            "amount": "343900.00",
+            "status": "won",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-035",
+            "client": "ООО \"ЭнергоМонтаж\"",
+            "amount": "214000.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-013",
+            "client": "ИП Пономарев К.Е.",
+            "amount": "187000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-015",
+            "client": "ООО \"ЭнергоМонтаж\"",
+            "amount": "155000.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-033",
+            "client": "ИП Пономарев К.Е.",
+            "amount": "746000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-004",
+            "client": "ООО \"ГлавСнаб\"",
+            "amount": "364720.00",
+            "status": "won",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-034",
+            "client": "ООО \"КристаллГрупп\"",
+            "amount": "489000.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-026",
+            "client": "ООО \"ИнтерЛогистик\"",
+            "amount": "490000.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-002",
+            "client": "АО \"ТехноПром\"",
+            "amount": "511100.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-019",
+            "client": "АО \"РосАрматура\"",
+            "amount": "226010.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-011",
+            "client": "ООО \"Вектор Связи\"",
+            "amount": "219000.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-022",
+            "client": "АО \"ТехноПром\"",
+            "amount": "95000.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-008",
+            "client": "ИП Васильев А.В.",
+            "amount": "430000.00",
+            "status": "won",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-009",
+            "client": "ИП Кузнецова С.М.",
+            "amount": "670000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-025",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "673550.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-030",
+            "client": "ООО \"АльфаТранс\"",
+            "amount": "100000.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-003",
+            "client": "ООО \"Северный Ветер\"",
+            "amount": "212000.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-024",
+            "client": "ООО \"ГлавСнаб\"",
+            "amount": "415000.00",
+            "status": "won",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-032",
+            "client": "АО \"УралНефтьГаз\"",
+            "amount": "429710.00",
+            "status": "won",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-018",
+            "client": "ООО \"ОптимаСнаб\"",
+            "amount": "476900.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-021",
+            "client": "ООО \"СтройКомплект\"",
+            "amount": "190000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-028",
+            "client": "ИП Васильев А.В.",
+            "amount": "335620.00",
+            "status": "won",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-007",
+            "client": "ООО \"МегаТрейд\"",
+            "amount": "146000.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-005",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "199000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-029",
+            "client": "ИП Кузнецова С.М.",
+            "amount": "178480.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-017",
+            "client": "ООО \"БизнесКонсалт\"",
+            "amount": "694000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-014",
+            "client": "ООО \"КристаллГрупп\"",
+            "amount": "98000.00",
+            "status": "won",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-001",
+            "client": "ООО \"СтройКомплект\"",
+            "amount": "655720.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-031",
+            "client": "ООО \"Вектор Связи\"",
+            "amount": "146300.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-023",
+            "client": "ООО \"Северный Ветер\"",
+            "amount": "145350.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          }
+        ]
+      },
+      "key_account_risk": {
+        "metric_id": "key_account_risk",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 15.3,
+        "unit": "pct",
+        "money_impact": "1805550.00",
+        "threshold_label": "два клиента больше 50%",
+        "action": "Два клиента дают 15.3% выручки",
+        "evidence": [
+          {
+            "deal_id": "B2B-08-005",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "199000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-013",
+            "client": "ИП Пономарев К.Е.",
+            "amount": "187000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-025",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "673550.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-033",
+            "client": "ИП Пономарев К.Е.",
+            "amount": "746000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": ""
+          }
+        ]
+      },
+      "dormant": {
+        "metric_id": "dormant",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 0,
+        "unit": "deals",
+        "money_impact": null,
+        "threshold_label": "дольше 45 дней",
+        "action": "0 клиентов молчат дольше 45 дней",
+        "evidence": []
+      },
+      "funnel_dropoff": {
+        "metric_id": "funnel_dropoff",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 7.6,
+        "unit": "pct",
+        "money_impact": "968060.00",
+        "threshold_label": "этап теряет больше 40% суммы",
+        "action": "На этапе «proposal» теряется 968 060 руб.",
+        "evidence": [
+          {
+            "deal_id": "B2B-08-051",
+            "client": "ООО \"Вектор Связи\"",
+            "amount": "229890.00",
+            "status": "proposal",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-052",
+            "client": "АО \"УралНефтьГаз\"",
+            "amount": "310400.00",
+            "status": "proposal",
+            "manager": "Кирилл Белов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-053",
+            "client": "ИП Пономарев К.Е.",
+            "amount": "190120.00",
+            "status": "proposal",
+            "manager": "Алексей Громов",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-054",
+            "client": "ООО \"КристаллГрупп\"",
+            "amount": "92150.00",
+            "status": "proposal",
+            "manager": "Мария Смирнова",
+            "contact": ""
+          },
+          {
+            "deal_id": "B2B-08-055",
+            "client": "ООО \"ЭнергоМонтаж\"",
+            "amount": "145500.00",
+            "status": "proposal",
+            "manager": "Дмитрий Ковалев",
+            "contact": ""
+          }
+        ]
+      }
+    }
+  },
+  "c7fbcff8-a188-4974-9b7f-4c2e2a771034": {
+    "snapshot_id": "c7fbcff8-a188-4974-9b7f-4c2e2a771034",
+    "user_id": 18712527,
+    "guest_session": "",
+    "is_guest": false,
+    "scan_no": 31,
+    "status": "ready",
+    "progress": 100,
+    "error": "",
+    "created_at": "2026-09-27T01:35:00.154104",
+    "filename": "retail_q1_before.csv",
+    "source": "miniapp",
+    "diagnosis": {
+      "snapshot_id": "c7fbcff8-a188-4974-9b7f-4c2e2a771034",
+      "headline": "Срочно разберите 14 зависших сделок на 152 000 руб. и устраните потери на первом этапе воронки",
+      "card_title": "Розница за 1 квартал",
+      "body": "Поручите менеджерам связаться с клиентами по 14 сделкам старше 18 дней, чтобы вернуть 152 000 руб. в активную работу. Пересмотрите регламент квалификации на этапе «new»: здесь отваливается 49.6% суммы и бизнес теряет 152 000 руб. Ограничьте полномочия менеджеров по скидкам: 73.0% сделок закрыты со скидкой больше 10%, что сожгло 17070.00 руб. прибыли.",
+      "findings": [
+        {
+          "metric_id": "stagnation",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "critical",
+          "value": 14,
+          "unit": "deals",
+          "money_impact": "152000.00",
+          "threshold_label": "Зависшей считаем сделку старше 18 дней",
+          "action": "Поручите менеджерам связаться с клиентами по 14 сделкам старше 18 дней, чтобы вернуть 152 000 руб. в активную работу.",
+          "evidence": [
+            {
+              "deal_id": "ORD-05-037",
+              "client": "Кошелева Вероника",
+              "amount": "4100.00",
+              "status": "new",
+              "days_stale": 144,
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-038",
+              "client": "Борисов Галактион",
+              "amount": "1900.00",
+              "status": "new",
+              "days_stale": 132,
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-039",
+              "client": "Макар Павлов",
+              "amount": "4900.00",
+              "status": "new",
+              "days_stale": 133,
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-040",
+              "client": "Полякова Элеонора",
+              "amount": "7400.00",
+              "status": "new",
+              "days_stale": 121,
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-041",
+              "client": "Вадим Новиков",
+              "amount": "40500.00",
+              "status": "new",
+              "days_stale": 121,
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-042",
+              "client": "Лукин Епифан",
+              "amount": "12000.00",
+              "status": "new",
+              "days_stale": 141,
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-043",
+              "client": "Савельева София",
+              "amount": "3600.00",
+              "status": "new",
+              "days_stale": 126,
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-044",
+              "client": "Михайлов Владилен",
+              "amount": "1400.00",
+              "status": "new",
+              "days_stale": 139,
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-045",
+              "client": "Доронин Емельян",
+              "amount": "11700.00",
+              "status": "new",
+              "days_stale": 130,
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-046",
+              "client": "Лапина Евгения",
+              "amount": "1700.00",
+              "status": "new",
+              "days_stale": 129,
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-047",
+              "client": "Казаков Аникей",
+              "amount": "5200.00",
+              "status": "new",
+              "days_stale": 141,
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-048",
+              "client": "Федорова Таисия",
+              "amount": "7100.00",
+              "status": "new",
+              "days_stale": 120,
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-049",
+              "client": "Гурьев Ратмир",
+              "amount": "38100.00",
+              "status": "new",
+              "days_stale": 137,
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-050",
+              "client": "Шубина Нина",
+              "amount": "12400.00",
+              "status": "new",
+              "days_stale": 142,
+              "manager": "Максим Романов",
+              "contact": ""
+            }
+          ]
+        },
+        {
+          "metric_id": "funnel_dropoff",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "watch",
+          "value": 49.6,
+          "unit": "pct",
+          "money_impact": "152000.00",
+          "threshold_label": "этап теряет больше 40% суммы",
+          "action": "Пересмотрите регламент квалификации на этапе «new»: здесь отваливается 49.6% суммы и бизнес теряет 152 000 руб.",
+          "evidence": [
+            {
+              "deal_id": "ORD-05-037",
+              "client": "Кошелева Вероника",
+              "amount": "4100.00",
+              "status": "new",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-038",
+              "client": "Борисов Галактион",
+              "amount": "1900.00",
+              "status": "new",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-039",
+              "client": "Макар Павлов",
+              "amount": "4900.00",
+              "status": "new",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-040",
+              "client": "Полякова Элеонора",
+              "amount": "7400.00",
+              "status": "new",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-041",
+              "client": "Вадим Новиков",
+              "amount": "40500.00",
+              "status": "new",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-042",
+              "client": "Лукин Епифан",
+              "amount": "12000.00",
+              "status": "new",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-043",
+              "client": "Савельева София",
+              "amount": "3600.00",
+              "status": "new",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-044",
+              "client": "Михайлов Владилен",
+              "amount": "1400.00",
+              "status": "new",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-045",
+              "client": "Доронин Емельян",
+              "amount": "11700.00",
+              "status": "new",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-046",
+              "client": "Лапина Евгения",
+              "amount": "1700.00",
+              "status": "new",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-047",
+              "client": "Казаков Аникей",
+              "amount": "5200.00",
+              "status": "new",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-048",
+              "client": "Федорова Таисия",
+              "amount": "7100.00",
+              "status": "new",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-049",
+              "client": "Гурьев Ратмир",
+              "amount": "38100.00",
+              "status": "new",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-050",
+              "client": "Шубина Нина",
+              "amount": "12400.00",
+              "status": "new",
+              "manager": "Максим Романов",
+              "contact": ""
+            }
+          ]
+        },
+        {
+          "metric_id": "discount_leakage",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "critical",
+          "value": 73.0,
+          "unit": "pct",
+          "money_impact": "17070.00",
+          "threshold_label": "скидка больше 10%",
+          "action": "Ограничьте полномочия менеджеров по скидкам: 73.0% сделок закрыты со скидкой больше 10%, что сожгло 17070.00 руб. прибыли.",
+          "evidence": [
+            {
+              "deal_id": "ORD-05-001",
+              "client": "Гурьев Ратмир",
+              "amount": "10625.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-003",
+              "client": "Ковалев Галактион",
+              "amount": "3060.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-004",
+              "client": "Лукин Евстафий",
+              "amount": "2550.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-006",
+              "client": "Борисов Галактион",
+              "amount": "3060.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-007",
+              "client": "Макар Павлов",
+              "amount": "4080.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-008",
+              "client": "Полякова Элеонора",
+              "amount": "18870.00",
+              "status": "won",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-011",
+              "client": "Савельева София",
+              "amount": "2640.00",
+              "status": "won",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-012",
+              "client": "Михайлов Владилен",
+              "amount": "3825.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-013",
+              "client": "Доронин Емельян",
+              "amount": "3570.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-015",
+              "client": "Казаков Аникей",
+              "amount": "12480.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-016",
+              "client": "Федорова Таисия",
+              "amount": "5865.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-018",
+              "client": "Шубина Нина",
+              "amount": "5270.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-019",
+              "client": "Ковалев Галактион",
+              "amount": "2880.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-020",
+              "client": "Лукин Евстафий",
+              "amount": "960.00",
+              "status": "won",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-021",
+              "client": "Кошелева Вероника",
+              "amount": "3360.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-05-022",
+              "client": "Борисов Галактион",
+              "amount": "4335.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            }
+          ]
+        }
+      ],
+      "coverage": {
+        "available": [
+          "speed_to_lead",
+          "stagnation",
+          "discount_leakage",
+          "sales_cycle",
+          "key_account_risk",
+          "dormant",
+          "funnel_dropoff"
+        ],
+        "skipped": []
+      },
+      "period": {
+        "from": "2026-05-02",
+        "to": "2026-05-29"
+      },
+      "totals": {
+        "deals": 50,
+        "amount": "440710.00",
+        "accepted": 50,
+        "rejected": 0
+      },
+      "ok": [
+        "key_account_risk",
+        "dormant"
+      ],
+      "low_sample": []
+    },
+    "all_metrics": {
+      "speed_to_lead": {
+        "metric_id": "speed_to_lead",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "critical",
+        "value": 2.97,
+        "unit": "hours",
+        "money_impact": null,
+        "threshold_label": "быстрее 30 минут",
+        "action": "Медиана первого контакта 2.97 ч. Ответьте новым заявкам быстрее 30 минут",
+        "evidence": [
+          {
+            "deal_id": "ORD-05-001",
+            "client": "Гурьев Ратмир",
+            "amount": "10625.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-002",
+            "client": "Шубина Нина",
+            "amount": "17280.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-003",
+            "client": "Ковалев Галактион",
+            "amount": "3060.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-004",
+            "client": "Лукин Евстафий",
+            "amount": "2550.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-005",
+            "client": "Кошелева Вероника",
+            "amount": "7020.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-006",
+            "client": "Борисов Галактион",
+            "amount": "3060.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-007",
+            "client": "Макар Павлов",
+            "amount": "4080.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-008",
+            "client": "Полякова Элеонора",
+            "amount": "18870.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-009",
+            "client": "Вадим Новиков",
+            "amount": "12150.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-010",
+            "client": "Лукин Епифан",
+            "amount": "5580.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-011",
+            "client": "Савельева София",
+            "amount": "2640.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-012",
+            "client": "Михайлов Владилен",
+            "amount": "3825.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-013",
+            "client": "Доронин Емельян",
+            "amount": "3570.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-014",
+            "client": "Лапина Евгения",
+            "amount": "1530.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-015",
+            "client": "Казаков Аникей",
+            "amount": "12480.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-016",
+            "client": "Федорова Таисия",
+            "amount": "5865.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-017",
+            "client": "Гурьев Ратмир",
+            "amount": "23220.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-018",
+            "client": "Шубина Нина",
+            "amount": "5270.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-019",
+            "client": "Ковалев Галактион",
+            "amount": "2880.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-020",
+            "client": "Лукин Евстафий",
+            "amount": "960.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-021",
+            "client": "Кошелева Вероника",
+            "amount": "3360.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-022",
+            "client": "Борисов Галактион",
+            "amount": "4335.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-023",
+            "client": "Макар Павлов",
+            "amount": "5000.00",
+            "status": "lost",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-024",
+            "client": "Полякова Элеонора",
+            "amount": "22200.00",
+            "status": "lost",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-025",
+            "client": "Вадим Новиков",
+            "amount": "26600.00",
+            "status": "lost",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-026",
+            "client": "Лукин Епифан",
+            "amount": "6200.00",
+            "status": "lost",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-027",
+            "client": "Савельева София",
+            "amount": "3300.00",
+            "status": "lost",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-028",
+            "client": "Михайлов Владилен",
+            "amount": "1200.00",
+            "status": "lost",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-029",
+            "client": "Доронин Емельян",
+            "amount": "4200.00",
+            "status": "lost",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-030",
+            "client": "Лапина Евгения",
+            "amount": "1600.00",
+            "status": "lost",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-031",
+            "client": "Казаков Аникей",
+            "amount": "5100.00",
+            "status": "lost",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-032",
+            "client": "Федорова Таисия",
+            "amount": "7500.00",
+            "status": "lost",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-033",
+            "client": "Гурьев Ратмир",
+            "amount": "26800.00",
+            "status": "lost",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-034",
+            "client": "Шубина Нина",
+            "amount": "18900.00",
+            "status": "lost",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-035",
+            "client": "Ковалев Галактион",
+            "amount": "3500.00",
+            "status": "lost",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-036",
+            "client": "Лукин Евстафий",
+            "amount": "2400.00",
+            "status": "lost",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-037",
+            "client": "Кошелева Вероника",
+            "amount": "4100.00",
+            "status": "new",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-038",
+            "client": "Борисов Галактион",
+            "amount": "1900.00",
+            "status": "new",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-039",
+            "client": "Макар Павлов",
+            "amount": "4900.00",
+            "status": "new",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-040",
+            "client": "Полякова Элеонора",
+            "amount": "7400.00",
+            "status": "new",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-041",
+            "client": "Вадим Новиков",
+            "amount": "40500.00",
+            "status": "new",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-042",
+            "client": "Лукин Епифан",
+            "amount": "12000.00",
+            "status": "new",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-043",
+            "client": "Савельева София",
+            "amount": "3600.00",
+            "status": "new",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-044",
+            "client": "Михайлов Владилен",
+            "amount": "1400.00",
+            "status": "new",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-045",
+            "client": "Доронин Емельян",
+            "amount": "11700.00",
+            "status": "new",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-046",
+            "client": "Лапина Евгения",
+            "amount": "1700.00",
+            "status": "new",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-047",
+            "client": "Казаков Аникей",
+            "amount": "5200.00",
+            "status": "new",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-048",
+            "client": "Федорова Таисия",
+            "amount": "7100.00",
+            "status": "new",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-049",
+            "client": "Гурьев Ратмир",
+            "amount": "38100.00",
+            "status": "new",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-050",
+            "client": "Шубина Нина",
+            "amount": "12400.00",
+            "status": "new",
+            "manager": "Максим Романов",
+            "contact": ""
+          }
+        ]
+      },
+      "stagnation": {
+        "metric_id": "stagnation",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "critical",
+        "value": 14,
+        "unit": "deals",
+        "money_impact": "152000.00",
+        "threshold_label": "Зависшей считаем сделку старше 18 дней",
+        "action": "Разморозьте 14 сделок старше 18 дней на 152 000 руб.",
+        "evidence": [
+          {
+            "deal_id": "ORD-05-037",
+            "client": "Кошелева Вероника",
+            "amount": "4100.00",
+            "status": "new",
+            "days_stale": 144,
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-038",
+            "client": "Борисов Галактион",
+            "amount": "1900.00",
+            "status": "new",
+            "days_stale": 132,
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-039",
+            "client": "Макар Павлов",
+            "amount": "4900.00",
+            "status": "new",
+            "days_stale": 133,
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-040",
+            "client": "Полякова Элеонора",
+            "amount": "7400.00",
+            "status": "new",
+            "days_stale": 121,
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-041",
+            "client": "Вадим Новиков",
+            "amount": "40500.00",
+            "status": "new",
+            "days_stale": 121,
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-042",
+            "client": "Лукин Епифан",
+            "amount": "12000.00",
+            "status": "new",
+            "days_stale": 141,
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-043",
+            "client": "Савельева София",
+            "amount": "3600.00",
+            "status": "new",
+            "days_stale": 126,
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-044",
+            "client": "Михайлов Владилен",
+            "amount": "1400.00",
+            "status": "new",
+            "days_stale": 139,
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-045",
+            "client": "Доронин Емельян",
+            "amount": "11700.00",
+            "status": "new",
+            "days_stale": 130,
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-046",
+            "client": "Лапина Евгения",
+            "amount": "1700.00",
+            "status": "new",
+            "days_stale": 129,
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-047",
+            "client": "Казаков Аникей",
+            "amount": "5200.00",
+            "status": "new",
+            "days_stale": 141,
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-048",
+            "client": "Федорова Таисия",
+            "amount": "7100.00",
+            "status": "new",
+            "days_stale": 120,
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-049",
+            "client": "Гурьев Ратмир",
+            "amount": "38100.00",
+            "status": "new",
+            "days_stale": 137,
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-050",
+            "client": "Шубина Нина",
+            "amount": "12400.00",
+            "status": "new",
+            "days_stale": 142,
+            "manager": "Максим Романов",
+            "contact": ""
+          }
+        ]
+      },
+      "discount_leakage": {
+        "metric_id": "discount_leakage",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "critical",
+        "value": 73.0,
+        "unit": "pct",
+        "money_impact": "17070.00",
+        "threshold_label": "скидка больше 10%",
+        "action": "73.0% выигранных сделок ушли со скидкой больше 10%",
+        "evidence": [
+          {
+            "deal_id": "ORD-05-001",
+            "client": "Гурьев Ратмир",
+            "amount": "10625.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-003",
+            "client": "Ковалев Галактион",
+            "amount": "3060.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-004",
+            "client": "Лукин Евстафий",
+            "amount": "2550.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-006",
+            "client": "Борисов Галактион",
+            "amount": "3060.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-007",
+            "client": "Макар Павлов",
+            "amount": "4080.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-008",
+            "client": "Полякова Элеонора",
+            "amount": "18870.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-011",
+            "client": "Савельева София",
+            "amount": "2640.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-012",
+            "client": "Михайлов Владилен",
+            "amount": "3825.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-013",
+            "client": "Доронин Емельян",
+            "amount": "3570.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-015",
+            "client": "Казаков Аникей",
+            "amount": "12480.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-016",
+            "client": "Федорова Таисия",
+            "amount": "5865.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-018",
+            "client": "Шубина Нина",
+            "amount": "5270.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-019",
+            "client": "Ковалев Галактион",
+            "amount": "2880.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-020",
+            "client": "Лукин Евстафий",
+            "amount": "960.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-021",
+            "client": "Кошелева Вероника",
+            "amount": "3360.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-022",
+            "client": "Борисов Галактион",
+            "amount": "4335.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          }
+        ]
+      },
+      "sales_cycle": {
+        "metric_id": "sales_cycle",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "watch",
+        "value": 12.0,
+        "unit": "days",
+        "money_impact": null,
+        "threshold_label": "цикл вырос",
+        "action": "Цикл сделки вырос до 12.0 дней",
+        "evidence": [
+          {
+            "deal_id": "ORD-05-009",
+            "client": "Вадим Новиков",
+            "amount": "12150.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-001",
+            "client": "Гурьев Ратмир",
+            "amount": "10625.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-008",
+            "client": "Полякова Элеонора",
+            "amount": "18870.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-006",
+            "client": "Борисов Галактион",
+            "amount": "3060.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-005",
+            "client": "Кошелева Вероника",
+            "amount": "7020.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-011",
+            "client": "Савельева София",
+            "amount": "2640.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-014",
+            "client": "Лапина Евгения",
+            "amount": "1530.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-020",
+            "client": "Лукин Евстафий",
+            "amount": "960.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-007",
+            "client": "Макар Павлов",
+            "amount": "4080.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-016",
+            "client": "Федорова Таисия",
+            "amount": "5865.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-015",
+            "client": "Казаков Аникей",
+            "amount": "12480.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-003",
+            "client": "Ковалев Галактион",
+            "amount": "3060.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-004",
+            "client": "Лукин Евстафий",
+            "amount": "2550.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-018",
+            "client": "Шубина Нина",
+            "amount": "5270.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-012",
+            "client": "Михайлов Владилен",
+            "amount": "3825.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-010",
+            "client": "Лукин Епифан",
+            "amount": "5580.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-019",
+            "client": "Ковалев Галактион",
+            "amount": "2880.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-022",
+            "client": "Борисов Галактион",
+            "amount": "4335.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-002",
+            "client": "Шубина Нина",
+            "amount": "17280.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-021",
+            "client": "Кошелева Вероника",
+            "amount": "3360.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-013",
+            "client": "Доронин Емельян",
+            "amount": "3570.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-017",
+            "client": "Гурьев Ратмир",
+            "amount": "23220.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          }
+        ]
+      },
+      "key_account_risk": {
+        "metric_id": "key_account_risk",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 36.6,
+        "unit": "pct",
+        "money_impact": "56395.00",
+        "threshold_label": "два клиента больше 50%",
+        "action": "Два клиента дают 36.6% выручки",
+        "evidence": [
+          {
+            "deal_id": "ORD-05-001",
+            "client": "Гурьев Ратмир",
+            "amount": "10625.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-002",
+            "client": "Шубина Нина",
+            "amount": "17280.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-017",
+            "client": "Гурьев Ратмир",
+            "amount": "23220.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-018",
+            "client": "Шубина Нина",
+            "amount": "5270.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          }
+        ]
+      },
+      "dormant": {
+        "metric_id": "dormant",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 0,
+        "unit": "deals",
+        "money_impact": null,
+        "threshold_label": "дольше 45 дней",
+        "action": "0 клиентов молчат дольше 45 дней",
+        "evidence": []
+      },
+      "funnel_dropoff": {
+        "metric_id": "funnel_dropoff",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "watch",
+        "value": 49.6,
+        "unit": "pct",
+        "money_impact": "152000.00",
+        "threshold_label": "этап теряет больше 40% суммы",
+        "action": "На этапе «new» теряется 152 000 руб.",
+        "evidence": [
+          {
+            "deal_id": "ORD-05-037",
+            "client": "Кошелева Вероника",
+            "amount": "4100.00",
+            "status": "new",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-038",
+            "client": "Борисов Галактион",
+            "amount": "1900.00",
+            "status": "new",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-039",
+            "client": "Макар Павлов",
+            "amount": "4900.00",
+            "status": "new",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-040",
+            "client": "Полякова Элеонора",
+            "amount": "7400.00",
+            "status": "new",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-041",
+            "client": "Вадим Новиков",
+            "amount": "40500.00",
+            "status": "new",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-042",
+            "client": "Лукин Епифан",
+            "amount": "12000.00",
+            "status": "new",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-043",
+            "client": "Савельева София",
+            "amount": "3600.00",
+            "status": "new",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-044",
+            "client": "Михайлов Владилен",
+            "amount": "1400.00",
+            "status": "new",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-045",
+            "client": "Доронин Емельян",
+            "amount": "11700.00",
+            "status": "new",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-046",
+            "client": "Лапина Евгения",
+            "amount": "1700.00",
+            "status": "new",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-047",
+            "client": "Казаков Аникей",
+            "amount": "5200.00",
+            "status": "new",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-048",
+            "client": "Федорова Таисия",
+            "amount": "7100.00",
+            "status": "new",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-049",
+            "client": "Гурьев Ратмир",
+            "amount": "38100.00",
+            "status": "new",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-05-050",
+            "client": "Шубина Нина",
+            "amount": "12400.00",
+            "status": "new",
+            "manager": "Максим Романов",
+            "contact": ""
+          }
+        ]
+      }
+    }
+  },
+  "5b99faec-3ae9-471c-9e3e-d103001f6d22": {
+    "snapshot_id": "5b99faec-3ae9-471c-9e3e-d103001f6d22",
+    "user_id": 18712527,
+    "guest_session": "",
+    "is_guest": false,
+    "scan_no": 32,
+    "status": "ready",
+    "progress": 100,
+    "error": "",
+    "created_at": "2026-09-27T01:36:40.007421",
+    "filename": "retail_q2_after.csv",
+    "source": "miniapp",
+    "diagnosis": {
+      "snapshot_id": "5b99faec-3ae9-471c-9e3e-d103001f6d22",
+      "headline": "Разберите 7 зависших сделок старше 9 дней и верните в оборот 80 500 руб.",
+      "card_title": "Розница Q2",
+      "body": "Свяжитесь с клиентами по 7 сделкам старше 9 дней: продвиньте их к оплате или закройте как неактуальные, чтобы вернуть 80 500 руб. Проверьте этапы воронки на узкие места: средний цикл сделки вырос до 6.0 дней, клиенты стали принимать решения дольше.",
+      "findings": [
+        {
+          "metric_id": "stagnation",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "critical",
+          "value": 7,
+          "unit": "deals",
+          "money_impact": "80500.00",
+          "threshold_label": "Зависшей считаем сделку старше 9 дней",
+          "action": "Свяжитесь с клиентами по 7 сделкам старше 9 дней: продвиньте их к оплате или закройте как неактуальные, чтобы вернуть 80 500 руб.",
+          "evidence": [
+            {
+              "deal_id": "ORD-07-064",
+              "client": "Федорова Таисия",
+              "amount": "22200.00",
+              "status": "new",
+              "days_stale": 58,
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-065",
+              "client": "Гурьев Ратмир",
+              "amount": "26000.00",
+              "status": "new",
+              "days_stale": 79,
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-066",
+              "client": "Шубина Нина",
+              "amount": "6300.00",
+              "status": "new",
+              "days_stale": 54,
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-067",
+              "client": "Ковалев Галактион",
+              "amount": "10500.00",
+              "status": "new",
+              "days_stale": 55,
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-068",
+              "client": "Лукин Евстафий",
+              "amount": "3900.00",
+              "status": "new",
+              "days_stale": 65,
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-069",
+              "client": "Кошелева Вероника",
+              "amount": "8400.00",
+              "status": "new",
+              "days_stale": 72,
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-070",
+              "client": "Борисов Галактион",
+              "amount": "3200.00",
+              "status": "new",
+              "days_stale": 81,
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            }
+          ]
+        },
+        {
+          "metric_id": "sales_cycle",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "watch",
+          "value": 6.0,
+          "unit": "days",
+          "money_impact": null,
+          "threshold_label": "цикл вырос",
+          "action": "Проверьте этапы воронки на узкие места: средний цикл сделки вырос до 6.0 дней, клиенты стали принимать решения дольше.",
+          "evidence": [
+            {
+              "deal_id": "ORD-07-004",
+              "client": "Лукин Евстафий",
+              "amount": "4200.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-016",
+              "client": "Федорова Таисия",
+              "amount": "7030.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-052",
+              "client": "Лукин Евстафий",
+              "amount": "2850.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-022",
+              "client": "Борисов Галактион",
+              "amount": "1900.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-002",
+              "client": "Шубина Нина",
+              "amount": "6100.00",
+              "status": "won",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-023",
+              "client": "Макар Павлов",
+              "amount": "15300.00",
+              "status": "won",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-028",
+              "client": "Михайлов Владилен",
+              "amount": "3420.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-030",
+              "client": "Лапина Евгения",
+              "amount": "3600.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-014",
+              "client": "Лапина Евгения",
+              "amount": "3230.00",
+              "status": "won",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-018",
+              "client": "Шубина Нина",
+              "amount": "13000.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-036",
+              "client": "Лукин Евстафий",
+              "amount": "1200.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-027",
+              "client": "Савельева София",
+              "amount": "7000.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-047",
+              "client": "Казаков Аникей",
+              "amount": "10000.00",
+              "status": "won",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-015",
+              "client": "Казаков Аникей",
+              "amount": "10200.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-005",
+              "client": "Кошелева Вероника",
+              "amount": "8200.00",
+              "status": "won",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-017",
+              "client": "Гурьев Ратмир",
+              "amount": "24890.00",
+              "status": "won",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-040",
+              "client": "Полякова Элеонора",
+              "amount": "15000.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-003",
+              "client": "Ковалев Галактион",
+              "amount": "6460.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-013",
+              "client": "Доронин Емельян",
+              "amount": "12300.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-033",
+              "client": "Гурьев Ратмир",
+              "amount": "25000.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-049",
+              "client": "Гурьев Ратмир",
+              "amount": "26410.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-043",
+              "client": "Савельева София",
+              "amount": "10800.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-048",
+              "client": "Федорова Таисия",
+              "amount": "21600.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-045",
+              "client": "Доронин Емельян",
+              "amount": "8200.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-019",
+              "client": "Ковалев Галактион",
+              "amount": "3400.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-031",
+              "client": "Казаков Аникей",
+              "amount": "4900.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-001",
+              "client": "Гурьев Ратмир",
+              "amount": "39600.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-029",
+              "client": "Доронин Емельян",
+              "amount": "10830.00",
+              "status": "won",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-046",
+              "client": "Лапина Евгения",
+              "amount": "3400.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-041",
+              "client": "Вадим Новиков",
+              "amount": "24700.00",
+              "status": "won",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-024",
+              "client": "Полякова Элеонора",
+              "amount": "14200.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-034",
+              "client": "Шубина Нина",
+              "amount": "13000.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-026",
+              "client": "Лукин Епифан",
+              "amount": "19500.00",
+              "status": "won",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-007",
+              "client": "Макар Павлов",
+              "amount": "9800.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-039",
+              "client": "Макар Павлов",
+              "amount": "9600.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-020",
+              "client": "Лукин Евстафий",
+              "amount": "2400.00",
+              "status": "won",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-044",
+              "client": "Михайлов Владилен",
+              "amount": "1330.00",
+              "status": "won",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-038",
+              "client": "Борисов Галактион",
+              "amount": "3200.00",
+              "status": "won",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-037",
+              "client": "Кошелева Вероника",
+              "amount": "12000.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-021",
+              "client": "Кошелева Вероника",
+              "amount": "4200.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-010",
+              "client": "Лукин Епифан",
+              "amount": "6400.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-035",
+              "client": "Ковалев Галактион",
+              "amount": "10800.00",
+              "status": "won",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-008",
+              "client": "Полякова Элеонора",
+              "amount": "6935.00",
+              "status": "won",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-009",
+              "client": "Вадим Новиков",
+              "amount": "25600.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-006",
+              "client": "Борисов Галактион",
+              "amount": "3400.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-011",
+              "client": "Савельева София",
+              "amount": "6270.00",
+              "status": "won",
+              "manager": "Максим Романов",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-012",
+              "client": "Михайлов Владилен",
+              "amount": "3000.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-051",
+              "client": "Ковалев Галактион",
+              "amount": "10260.00",
+              "status": "won",
+              "manager": "Елена Васильева",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-025",
+              "client": "Вадим Новиков",
+              "amount": "12800.00",
+              "status": "won",
+              "manager": "Ольга Кузнецова",
+              "contact": ""
+            },
+            {
+              "deal_id": "ORD-07-032",
+              "client": "Федорова Таисия",
+              "amount": "22500.00",
+              "status": "won",
+              "manager": "Максим Романов",
+              "contact": ""
+            }
+          ]
+        }
+      ],
+      "coverage": {
+        "available": [
+          "speed_to_lead",
+          "stagnation",
+          "discount_leakage",
+          "sales_cycle",
+          "key_account_risk",
+          "dormant",
+          "funnel_dropoff"
+        ],
+        "skipped": []
+      },
+      "period": {
+        "from": "2026-07-03",
+        "to": "2026-08-05"
+      },
+      "totals": {
+        "deals": 70,
+        "amount": "749415.00",
+        "accepted": 70,
+        "rejected": 0
+      },
+      "ok": [
+        "speed_to_lead",
+        "discount_leakage",
+        "key_account_risk",
+        "dormant",
+        "funnel_dropoff"
+      ],
+      "low_sample": []
+    },
+    "all_metrics": {
+      "speed_to_lead": {
+        "metric_id": "speed_to_lead",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 0.13,
+        "unit": "hours",
+        "money_impact": null,
+        "threshold_label": "быстрее 30 минут",
+        "action": "Медиана первого контакта 0.13 ч. Ответьте новым заявкам быстрее 30 минут",
+        "evidence": [
+          {
+            "deal_id": "ORD-07-001",
+            "client": "Гурьев Ратмир",
+            "amount": "39600.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-002",
+            "client": "Шубина Нина",
+            "amount": "6100.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-003",
+            "client": "Ковалев Галактион",
+            "amount": "6460.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-004",
+            "client": "Лукин Евстафий",
+            "amount": "4200.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-005",
+            "client": "Кошелева Вероника",
+            "amount": "8200.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-006",
+            "client": "Борисов Галактион",
+            "amount": "3400.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-007",
+            "client": "Макар Павлов",
+            "amount": "9800.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-008",
+            "client": "Полякова Элеонора",
+            "amount": "6935.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-009",
+            "client": "Вадим Новиков",
+            "amount": "25600.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-010",
+            "client": "Лукин Епифан",
+            "amount": "6400.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-011",
+            "client": "Савельева София",
+            "amount": "6270.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-012",
+            "client": "Михайлов Владилен",
+            "amount": "3000.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-013",
+            "client": "Доронин Емельян",
+            "amount": "12300.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-014",
+            "client": "Лапина Евгения",
+            "amount": "3230.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-015",
+            "client": "Казаков Аникей",
+            "amount": "10200.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-016",
+            "client": "Федорова Таисия",
+            "amount": "7030.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-017",
+            "client": "Гурьев Ратмир",
+            "amount": "24890.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-018",
+            "client": "Шубина Нина",
+            "amount": "13000.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-019",
+            "client": "Ковалев Галактион",
+            "amount": "3400.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-020",
+            "client": "Лукин Евстафий",
+            "amount": "2400.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-021",
+            "client": "Кошелева Вероника",
+            "amount": "4200.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-022",
+            "client": "Борисов Галактион",
+            "amount": "1900.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-023",
+            "client": "Макар Павлов",
+            "amount": "15300.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-024",
+            "client": "Полякова Элеонора",
+            "amount": "14200.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-025",
+            "client": "Вадим Новиков",
+            "amount": "12800.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-026",
+            "client": "Лукин Епифан",
+            "amount": "19500.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-027",
+            "client": "Савельева София",
+            "amount": "7000.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-028",
+            "client": "Михайлов Владилен",
+            "amount": "3420.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-029",
+            "client": "Доронин Емельян",
+            "amount": "10830.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-030",
+            "client": "Лапина Евгения",
+            "amount": "3600.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-031",
+            "client": "Казаков Аникей",
+            "amount": "4900.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-032",
+            "client": "Федорова Таисия",
+            "amount": "22500.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-033",
+            "client": "Гурьев Ратмир",
+            "amount": "25000.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-034",
+            "client": "Шубина Нина",
+            "amount": "13000.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-035",
+            "client": "Ковалев Галактион",
+            "amount": "10800.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-036",
+            "client": "Лукин Евстафий",
+            "amount": "1200.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-037",
+            "client": "Кошелева Вероника",
+            "amount": "12000.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-038",
+            "client": "Борисов Галактион",
+            "amount": "3200.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-039",
+            "client": "Макар Павлов",
+            "amount": "9600.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-040",
+            "client": "Полякова Элеонора",
+            "amount": "15000.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-041",
+            "client": "Вадим Новиков",
+            "amount": "24700.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-042",
+            "client": "Лукин Епифан",
+            "amount": "17700.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-043",
+            "client": "Савельева София",
+            "amount": "10800.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-044",
+            "client": "Михайлов Владилен",
+            "amount": "1330.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-045",
+            "client": "Доронин Емельян",
+            "amount": "8200.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-046",
+            "client": "Лапина Евгения",
+            "amount": "3400.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-047",
+            "client": "Казаков Аникей",
+            "amount": "10000.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-048",
+            "client": "Федорова Таисия",
+            "amount": "21600.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-049",
+            "client": "Гурьев Ратмир",
+            "amount": "26410.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-050",
+            "client": "Шубина Нина",
+            "amount": "18600.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          }
+        ]
+      },
+      "stagnation": {
+        "metric_id": "stagnation",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "critical",
+        "value": 7,
+        "unit": "deals",
+        "money_impact": "80500.00",
+        "threshold_label": "Зависшей считаем сделку старше 9 дней",
+        "action": "Разморозьте 7 сделок старше 9 дней на 80 500 руб.",
+        "evidence": [
+          {
+            "deal_id": "ORD-07-064",
+            "client": "Федорова Таисия",
+            "amount": "22200.00",
+            "status": "new",
+            "days_stale": 58,
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-065",
+            "client": "Гурьев Ратмир",
+            "amount": "26000.00",
+            "status": "new",
+            "days_stale": 79,
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-066",
+            "client": "Шубина Нина",
+            "amount": "6300.00",
+            "status": "new",
+            "days_stale": 54,
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-067",
+            "client": "Ковалев Галактион",
+            "amount": "10500.00",
+            "status": "new",
+            "days_stale": 55,
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-068",
+            "client": "Лукин Евстафий",
+            "amount": "3900.00",
+            "status": "new",
+            "days_stale": 65,
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-069",
+            "client": "Кошелева Вероника",
+            "amount": "8400.00",
+            "status": "new",
+            "days_stale": 72,
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-070",
+            "client": "Борисов Галактион",
+            "amount": "3200.00",
+            "status": "new",
+            "days_stale": 81,
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          }
+        ]
+      },
+      "discount_leakage": {
+        "metric_id": "discount_leakage",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 0.0,
+        "unit": "pct",
+        "money_impact": null,
+        "threshold_label": "скидка больше 10%",
+        "action": "0.0% выигранных сделок ушли со скидкой больше 10%",
+        "evidence": []
+      },
+      "sales_cycle": {
+        "metric_id": "sales_cycle",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "watch",
+        "value": 6.0,
+        "unit": "days",
+        "money_impact": null,
+        "threshold_label": "цикл вырос",
+        "action": "Цикл сделки вырос до 6.0 дней",
+        "evidence": [
+          {
+            "deal_id": "ORD-07-004",
+            "client": "Лукин Евстафий",
+            "amount": "4200.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-016",
+            "client": "Федорова Таисия",
+            "amount": "7030.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-052",
+            "client": "Лукин Евстафий",
+            "amount": "2850.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-022",
+            "client": "Борисов Галактион",
+            "amount": "1900.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-002",
+            "client": "Шубина Нина",
+            "amount": "6100.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-023",
+            "client": "Макар Павлов",
+            "amount": "15300.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-028",
+            "client": "Михайлов Владилен",
+            "amount": "3420.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-030",
+            "client": "Лапина Евгения",
+            "amount": "3600.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-014",
+            "client": "Лапина Евгения",
+            "amount": "3230.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-018",
+            "client": "Шубина Нина",
+            "amount": "13000.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-036",
+            "client": "Лукин Евстафий",
+            "amount": "1200.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-027",
+            "client": "Савельева София",
+            "amount": "7000.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-047",
+            "client": "Казаков Аникей",
+            "amount": "10000.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-015",
+            "client": "Казаков Аникей",
+            "amount": "10200.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-005",
+            "client": "Кошелева Вероника",
+            "amount": "8200.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-017",
+            "client": "Гурьев Ратмир",
+            "amount": "24890.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-040",
+            "client": "Полякова Элеонора",
+            "amount": "15000.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-003",
+            "client": "Ковалев Галактион",
+            "amount": "6460.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-013",
+            "client": "Доронин Емельян",
+            "amount": "12300.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-033",
+            "client": "Гурьев Ратмир",
+            "amount": "25000.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-049",
+            "client": "Гурьев Ратмир",
+            "amount": "26410.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-043",
+            "client": "Савельева София",
+            "amount": "10800.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-048",
+            "client": "Федорова Таисия",
+            "amount": "21600.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-045",
+            "client": "Доронин Емельян",
+            "amount": "8200.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-019",
+            "client": "Ковалев Галактион",
+            "amount": "3400.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-031",
+            "client": "Казаков Аникей",
+            "amount": "4900.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-001",
+            "client": "Гурьев Ратмир",
+            "amount": "39600.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-029",
+            "client": "Доронин Емельян",
+            "amount": "10830.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-046",
+            "client": "Лапина Евгения",
+            "amount": "3400.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-041",
+            "client": "Вадим Новиков",
+            "amount": "24700.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-024",
+            "client": "Полякова Элеонора",
+            "amount": "14200.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-034",
+            "client": "Шубина Нина",
+            "amount": "13000.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-026",
+            "client": "Лукин Епифан",
+            "amount": "19500.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-007",
+            "client": "Макар Павлов",
+            "amount": "9800.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-039",
+            "client": "Макар Павлов",
+            "amount": "9600.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-020",
+            "client": "Лукин Евстафий",
+            "amount": "2400.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-044",
+            "client": "Михайлов Владилен",
+            "amount": "1330.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-038",
+            "client": "Борисов Галактион",
+            "amount": "3200.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-037",
+            "client": "Кошелева Вероника",
+            "amount": "12000.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-021",
+            "client": "Кошелева Вероника",
+            "amount": "4200.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-010",
+            "client": "Лукин Епифан",
+            "amount": "6400.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-035",
+            "client": "Ковалев Галактион",
+            "amount": "10800.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-008",
+            "client": "Полякова Элеонора",
+            "amount": "6935.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-009",
+            "client": "Вадим Новиков",
+            "amount": "25600.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-006",
+            "client": "Борисов Галактион",
+            "amount": "3400.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-011",
+            "client": "Савельева София",
+            "amount": "6270.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-012",
+            "client": "Михайлов Владилен",
+            "amount": "3000.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-051",
+            "client": "Ковалев Галактион",
+            "amount": "10260.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-025",
+            "client": "Вадим Новиков",
+            "amount": "12800.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-032",
+            "client": "Федорова Таисия",
+            "amount": "22500.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          }
+        ]
+      },
+      "key_account_risk": {
+        "metric_id": "key_account_risk",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 31.5,
+        "unit": "pct",
+        "money_impact": "179000.00",
+        "threshold_label": "два клиента больше 50%",
+        "action": "Два клиента дают 31.5% выручки",
+        "evidence": [
+          {
+            "deal_id": "ORD-07-001",
+            "client": "Гурьев Ратмир",
+            "amount": "39600.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-009",
+            "client": "Вадим Новиков",
+            "amount": "25600.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-017",
+            "client": "Гурьев Ратмир",
+            "amount": "24890.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-025",
+            "client": "Вадим Новиков",
+            "amount": "12800.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-033",
+            "client": "Гурьев Ратмир",
+            "amount": "25000.00",
+            "status": "won",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-041",
+            "client": "Вадим Новиков",
+            "amount": "24700.00",
+            "status": "won",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-049",
+            "client": "Гурьев Ратмир",
+            "amount": "26410.00",
+            "status": "won",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          }
+        ]
+      },
+      "dormant": {
+        "metric_id": "dormant",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 0,
+        "unit": "deals",
+        "money_impact": null,
+        "threshold_label": "дольше 45 дней",
+        "action": "0 клиентов молчат дольше 45 дней",
+        "evidence": []
+      },
+      "funnel_dropoff": {
+        "metric_id": "funnel_dropoff",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 12.4,
+        "unit": "pct",
+        "money_impact": "80500.00",
+        "threshold_label": "этап теряет больше 40% суммы",
+        "action": "На этапе «new» теряется 80 500 руб.",
+        "evidence": [
+          {
+            "deal_id": "ORD-07-064",
+            "client": "Федорова Таисия",
+            "amount": "22200.00",
+            "status": "new",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-065",
+            "client": "Гурьев Ратмир",
+            "amount": "26000.00",
+            "status": "new",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-066",
+            "client": "Шубина Нина",
+            "amount": "6300.00",
+            "status": "new",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-067",
+            "client": "Ковалев Галактион",
+            "amount": "10500.00",
+            "status": "new",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-068",
+            "client": "Лукин Евстафий",
+            "amount": "3900.00",
+            "status": "new",
+            "manager": "Максим Романов",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-069",
+            "client": "Кошелева Вероника",
+            "amount": "8400.00",
+            "status": "new",
+            "manager": "Елена Васильева",
+            "contact": ""
+          },
+          {
+            "deal_id": "ORD-07-070",
+            "client": "Борисов Галактион",
+            "amount": "3200.00",
+            "status": "new",
+            "manager": "Ольга Кузнецова",
+            "contact": ""
+          }
+        ]
+      }
+    }
   }
 }
