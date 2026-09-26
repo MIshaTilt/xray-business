@@ -131,7 +131,9 @@ export function ChartCard({
                 <tr>
                   <th>Позиция</th>
                   <th className="align-right">Значение</th>
-                  <th className="align-right">Доля</th>
+                  <th className="align-right is-auto-calc-th">
+                    Доля <span className="auto-calc-tag" title="Автоматический расчет">авто</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -145,7 +147,9 @@ export function ChartCard({
                       <span>{item.label}</span>
                     </td>
                     <td className="align-right font-mono">{item.formatted_value}</td>
-                    <td className="align-right font-mono font-bold">{item.percentage}%</td>
+                    <td className="align-right font-mono font-bold is-auto-calc-td">
+                      <span className="auto-calc-val">{item.percentage}%</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>

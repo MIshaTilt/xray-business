@@ -27,12 +27,16 @@ def calculate_metrics_and_findings(deals: List[NormalizedDeal], mapping: Dict[st
     def has_f(f: str) -> bool:
         return bool(mapping.get(f))
 
-    # Ready check per TZ
+    # Ready check per TZ (with support for dynamically derived fields during normalization)
+    has_disc_data = any(d.discount_pct is not None or d.list_price is not None for d in deals)
+    has_first_contact = any(d.created_at and d.first_contact_at for d in deals)
+    has_closed = any(d.created_at and d.closed_at for d in deals)
+
     available_map = {
-        'speed_to_lead': has_f('created_at') and has_f('first_contact_at'),
+        'speed_to_lead': (has_f('created_at') and has_f('first_contact_at')) or has_first_contact,
         'stagnation': has_f('status') and (has_f('status_changed_at') or has_f('created_at')),
-        'discount_leakage': has_f('amount') and (has_f('discount_pct') or has_f('list_price')),
-        'sales_cycle': has_f('created_at') and has_f('closed_at'),
+        'discount_leakage': has_f('amount') and (has_f('discount_pct') or has_f('list_price') or has_disc_data),
+        'sales_cycle': (has_f('created_at') and has_f('closed_at')) or has_closed,
         'key_account_risk': has_f('client') and has_f('status'),
         'dormant': has_f('client') and (has_f('last_activity_at') or has_f('created_at')),
         'funnel_dropoff': has_f('status') and has_f('amount'),

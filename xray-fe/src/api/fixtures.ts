@@ -4,6 +4,7 @@ import type {
   DiagnosisResponse,
   EvidenceDeal,
   Mapping,
+  MappingResponse,
   MetricDetail,
   MetricId,
   SnapshotListItem,
@@ -138,7 +139,7 @@ export const fixtures = {
     }
   },
 
-  async saveMapping(mapping: Mapping): Promise<{ coverage: Coverage; warnings: string[] }> {
+  async saveMapping(mapping: Mapping): Promise<MappingResponse> {
     const coverage = coverageFromMapping(mapping)
     const warnings: string[] = []
     if (!mapping.created_at) warnings.push('Колонка даты не выбрана. Часть метрик останется закрытой.')

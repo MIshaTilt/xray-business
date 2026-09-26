@@ -23,6 +23,7 @@ export function MappingScreen({
 }) {
   const [mapping, setMapping] = useState<MappingValue>(upload.suggested_mapping)
   const [coverage, setCoverage] = useState<Coverage>(upload.coverage)
+  const [autoCols, setAutoCols] = useState<string[]>(upload.auto_computed_columns || [])
   const [warnings, setWarnings] = useState<string[]>([])
   const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -45,6 +46,9 @@ export function MappingScreen({
         .then((result) => {
           setCoverage(result.coverage)
           setWarnings(result.warnings)
+          if (result.auto_computed_columns) {
+            setAutoCols(result.auto_computed_columns)
+          }
         })
         .catch((reason: unknown) => setError(errorText(reason)))
     }, 400)
@@ -54,6 +58,12 @@ export function MappingScreen({
   function roleOf(column: string): CanonicalField | '' {
     const field = MAPPING_FIELDS.find((item) => mapping[item.id] === column)
     return field?.id ?? ''
+  }
+
+  function isAutoComputed(column: string): boolean {
+    if (autoCols.includes(column)) return true
+    const lower = column.toLowerCase()
+    return lower.includes('(авто)') || lower.includes('(расчет)') || lower.includes('(авторасчет)')
   }
 
   function assignRole(column: string, fieldId: string) {
@@ -186,15 +196,19 @@ export function MappingScreen({
                 {upload.columns.map((column) => {
                   const role = roleOf(column)
                   const field = MAPPING_FIELDS.find((item) => item.id === role)
+                  const isAuto = isAutoComputed(column)
                   return (
-                    <th key={column} className={role ? 'is-mapped' : undefined}>
+                    <th
+                      key={column}
+                      className={`${role ? 'is-mapped' : ''} ${isAuto ? 'is-auto-computed' : ''}`.trim() || undefined}
+                    >
                       <FlyoutSelect
                         value={role}
                         placeholder="Не назначено"
                         emptyLabel="Назначить"
                         caption={column}
                         minMenuWidth={240}
-                        triggerClassName={`map-col flyout-trigger${role ? ' is-set' : ' is-empty'}`}
+                        triggerClassName={`map-col flyout-trigger${role ? ' is-set' : ' is-empty'}${isAuto ? ' is-auto-trigger' : ''}`}
                         options={MAPPING_FIELDS.filter((item) => item.id === role || !takenFields.has(item.id)).map(
                           (item) => ({ value: item.id, label: item.label }),
                         )}
@@ -203,6 +217,12 @@ export function MappingScreen({
                         onToggle={() => toggleFlyout(column)}
                         onChange={(fieldId) => assignRole(column, fieldId)}
                       />
+                      {isAuto ? (
+                        <span className="auto-computed-badge" title="Колонка автоматически рассчитана сервисом X-Ray">
+                          <span className="auto-computed-dot" />
+                          Авторасчет
+                        </span>
+                      ) : null}
                       {field ? <span className="map-col-hint">{field.badge}</span> : null}
                     </th>
                   )
@@ -212,9 +232,18 @@ export function MappingScreen({
             <tbody>
               {upload.sample_rows.map((row, index) => (
                 <tr key={index}>
-                  {upload.columns.map((column) => (
-                    <td key={column}>{row[column] || '—'}</td>
-                  ))}
+                  {upload.columns.map((column) => {
+                    const isAuto = isAutoComputed(column)
+                    return (
+                      <td key={column} className={isAuto ? 'is-auto-computed' : undefined}>
+                        {isAuto ? (
+                          <span className="auto-computed-cell-val">{row[column] || '—'}</span>
+                        ) : (
+                          row[column] || '—'
+                        )}
+                      </td>
+                    )
+                  })}
                 </tr>
               ))}
             </tbody>

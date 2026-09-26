@@ -39,11 +39,13 @@ export type UploadResponse = {
   sample_rows: Record<string, string>[]
   suggested_mapping: Mapping
   coverage: Coverage
+  auto_computed_columns?: string[]
 }
 
 export type MappingResponse = {
   coverage: Coverage
   warnings: string[]
+  auto_computed_columns?: string[]
 }
 
 export type SnapshotStatus = 'processing' | 'ready' | 'failed'

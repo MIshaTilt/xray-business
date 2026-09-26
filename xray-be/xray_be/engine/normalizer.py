@@ -1,7 +1,8 @@
 import hashlib
-from decimal import Decimal
+import datetime
+from decimal import Decimal, ROUND_HALF_UP
 from typing import List, Dict, Any, Tuple, Optional
-from .mapping import parse_money, parse_date, map_status
+from .mapping import parse_money, parse_date, map_status, normalize_string
 
 
 class NormalizedDeal:
@@ -47,6 +48,8 @@ def normalize_records(
 ) -> Tuple[List[NormalizedDeal], List[Dict[str, Any]]]:
     """
     Normalizes rows into valid deals and quality.rejected list.
+    Intelligently derives missing fields (e.g. discount_pct, list_price, first_contact_at)
+    from available raw columns if not directly mapped.
     """
     deals: List[NormalizedDeal] = []
     rejected: List[Dict[str, Any]] = []
@@ -104,12 +107,87 @@ def normalize_records(
         last_activity_at = get_dt('last_activity_at')
         closed_at = get_dt('closed_at')
 
-        # 5. Pricing & Discounts
-        lp_col = mapping.get('list_price')
-        list_price = parse_money(row.get(lp_col)) if lp_col and row.get(lp_col) else None
+        # Auto-derive first_contact_at from response delay if available
+        if not first_contact_at and created_at:
+            for k, v in row.items():
+                if v and any(w in normalize_string(k) for w in ['delay', 'задержк', 'минут']):
+                    d_min = parse_money(v)
+                    if d_min and d_min > 0:
+                        first_contact_at = created_at + datetime.timedelta(minutes=float(d_min))
+                        break
 
+        # Auto-derive closed_at from delivery/payment dates if available
+        if not closed_at:
+            for k, v in row.items():
+                if v and any(w in normalize_string(k) for w in ['дата доставки', 'доставлен', 'дата оплаты', 'completion_date', 'дата завершения']):
+                    closed_at = parse_date(v)
+                    if closed_at:
+                        break
+
+        # 5. Pricing & Discounts (with intelligent derivation of missing columns)
+        lp_col = mapping.get('list_price')
         disc_col = mapping.get('discount_pct')
-        discount_pct = parse_money(row.get(disc_col)) if disc_col and row.get(disc_col) else None
+
+        # Auto-detect unmapped discount and unit price / quantity columns if not explicitly mapped
+        if not disc_col:
+            for k in row.keys():
+                norm_k = normalize_string(k)
+                if any(w in norm_k for w in ['скидк', 'скинули', 'discount']):
+                    disc_col = k
+                    break
+
+        qty_col = None
+        for k in row.keys():
+            norm_k = normalize_string(k)
+            if norm_k in ['количество', 'кол-во', 'штук', 'количество штук', 'quantity', 'qty', 'шт']:
+                qty_col = k
+                break
+
+        qty = parse_money(row.get(qty_col)) if qty_col else None
+        raw_lp = parse_money(row.get(lp_col)) if lp_col and row.get(lp_col) else None
+
+        # Auto-detect unit price if list_price is not mapped
+        if not raw_lp:
+            for k in row.keys():
+                norm_k = normalize_string(k)
+                if any(w in norm_k for w in ['розничная цена', 'цена без скидки', 'прайс', 'unit_price', 'цена за шт']):
+                    raw_lp = parse_money(row.get(k))
+                    if raw_lp:
+                        break
+
+        # If list_price is per-unit and quantity > 1 and list_price < amount, scale to total list price
+        if raw_lp and qty and qty > 1 and raw_lp < amount:
+            list_price = (raw_lp * qty).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        else:
+            list_price = raw_lp
+
+        raw_disc = parse_money(row.get(disc_col)) if disc_col and row.get(disc_col) else None
+        discount_pct = None
+
+        if raw_disc is not None:
+            disc_col_norm = normalize_string(disc_col or '')
+            is_money_discount = (
+                any(w in disc_col_norm for w in ['руб', 'rub', 'amount', 'рублей']) or
+                raw_disc > 100
+            )
+            if is_money_discount:
+                discount_money = raw_disc
+                if list_price is None:
+                    list_price = (amount + discount_money).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                if list_price and list_price > 0:
+                    discount_pct = ((discount_money / list_price) * Decimal(100)).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+                else:
+                    discount_pct = Decimal('0.0')
+            else:
+                discount_pct = raw_disc.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+                if list_price is None and discount_pct < 100 and discount_pct >= 0:
+                    list_price = (amount / (Decimal(1) - discount_pct / Decimal(100))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+        elif list_price is not None:
+            if list_price > amount:
+                discount_pct = (((list_price - amount) / list_price) * Decimal(100)).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+            else:
+                discount_pct = Decimal('0.0')
 
         client_col = mapping.get('client')
         client = str(row.get(client_col, '')).strip() if client_col else ''

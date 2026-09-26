@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from engine.parsers import read_table_file
-from engine.mapping import guess_column_mapping, CANONICAL_FIELDS
+from engine.mapping import guess_column_mapping, derive_computed_columns, CANONICAL_FIELDS
 from pathlib import Path
 from engine.normalizer import normalize_records
 from engine.analyzer import calculate_metrics_and_findings
@@ -178,12 +178,21 @@ def next_scan_no() -> int:
     return max(nums, default=0) + 1
 
 
-def get_coverage(mapping: dict) -> dict:
+def get_coverage(mapping: dict, columns: list = None) -> dict:
     has_f = lambda f: bool(mapping.get(f))
+    has_col_disc = False
+    if columns:
+        from engine.mapping import normalize_string
+        for c in columns:
+            nc = normalize_string(c)
+            if any(w in nc for w in ['скидк', 'скинули', 'discount', 'цена без скидки', 'розничная цена']):
+                has_col_disc = True
+                break
+
     checks = {
         'speed_to_lead': has_f('created_at') and has_f('first_contact_at'),
         'stagnation': has_f('status') and (has_f('status_changed_at') or has_f('created_at')),
-        'discount_leakage': has_f('amount') and (has_f('discount_pct') or has_f('list_price')),
+        'discount_leakage': has_f('amount') and (has_f('discount_pct') or has_f('list_price') or has_col_disc),
         'sales_cycle': has_f('created_at') and has_f('closed_at'),
         'key_account_risk': has_f('client') and has_f('status'),
         'dormant': has_f('client') and (has_f('last_activity_at') or has_f('created_at')),
@@ -245,7 +254,12 @@ class UploadView(APIView):
             if unique_statuses:
                 status_map = ai_smart_status_mapping(unique_statuses, sample_rows)
 
-        coverage = get_coverage(suggested_mapping)
+        # Automatically derive missing computed columns (e.g. 'Скидка, % (авто)', 'Прайс до скидки (авто)')
+        cols, sample_rows, all_rows, suggested_mapping, auto_computed_columns = derive_computed_columns(
+            cols, sample_rows, all_rows, suggested_mapping
+        )
+
+        coverage = get_coverage(suggested_mapping, cols)
         upload_id = str(uuid.uuid4())
         ident = get_request_identity(request)
 
@@ -260,6 +274,7 @@ class UploadView(APIView):
             'all_rows': all_rows,
             'mapping': suggested_mapping,
             'status_map': status_map,
+            'auto_computed_columns': auto_computed_columns,
         }
 
         try:
@@ -284,7 +299,8 @@ class UploadView(APIView):
             'columns': cols,
             'sample_rows': sample_rows,
             'suggested_mapping': suggested_mapping,
-            'coverage': coverage
+            'coverage': coverage,
+            'auto_computed_columns': auto_computed_columns,
         }, status=status.HTTP_201_CREATED)
 
 
@@ -315,11 +331,12 @@ class SaveMappingView(APIView):
         upload['mapping'] = mapping
         upload['status_map'] = status_map
         persist_upload_mapping(upload_id, mapping, status_map)
-        coverage = get_coverage(mapping)
+        coverage = get_coverage(mapping, upload.get('columns'))
 
         return Response({
             'coverage': coverage,
-            'warnings': []
+            'warnings': [],
+            'auto_computed_columns': upload.get('auto_computed_columns', []),
         }, status=status.HTTP_200_OK)
 
 
@@ -623,7 +640,12 @@ class LoadTemplateView(APIView):
             if unique_statuses:
                 status_map = ai_smart_status_mapping(unique_statuses, sample_rows)
 
-        coverage = get_coverage(suggested_mapping)
+        # Automatically derive missing computed columns (e.g. 'Скидка, % (авто)', 'Прайс до скидки (авто)')
+        cols, sample_rows, all_rows, suggested_mapping, auto_computed_columns = derive_computed_columns(
+            cols, sample_rows, all_rows, suggested_mapping
+        )
+
+        coverage = get_coverage(suggested_mapping, cols)
         upload_id = str(uuid.uuid4())
         ident = get_request_identity(request)
 
@@ -638,6 +660,7 @@ class LoadTemplateView(APIView):
             'all_rows': all_rows,
             'mapping': suggested_mapping,
             'status_map': status_map,
+            'auto_computed_columns': auto_computed_columns,
         }
 
         try:
@@ -663,7 +686,8 @@ class LoadTemplateView(APIView):
             'columns': cols,
             'sample_rows': sample_rows,
             'suggested_mapping': suggested_mapping,
-            'coverage': coverage
+            'coverage': coverage,
+            'auto_computed_columns': auto_computed_columns,
         }, status=status.HTTP_201_CREATED)
 
 

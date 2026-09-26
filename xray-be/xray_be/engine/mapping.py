@@ -6,20 +6,61 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import List, Dict, Tuple, Any, Optional
 
 SYNONYMS = {
-    'amount': ['сумма', 'бюджет', 'цена', 'цена со скидкой', 'итого', 'сумма сделки', 'amount', 'price', 'чек', 'total_amount', 'выручка', 'к перечислению (выручка)'],
-    'status': ['статус', 'этап', 'стадия', 'воронка', 'status', 'состояние'],
-    'created_at': ['дата', 'дата создания', 'создано', 'дата заявки', 'created', 'created_at', 'когда', 'время создания', 'дата заказа', 'order_date'],
-    'client': ['клиент', 'компания', 'контрагент', 'заказчик', 'client', 'кто купил', 'покупатель', 'фио', 'customer_name'],
-    'contact': ['телефон', 'контакт', 'email', 'почта', 'phone'],
-    'manager': ['менеджер', 'ответственный', 'владелец', 'manager'],
-    'list_price': ['прайс', 'цена без скидки', 'list_price', 'цена до скидки', 'base_price'],
-    'discount_pct': ['скидка', 'скидка %', 'discount', 'скинули', 'скидка, %', 'discount_pct'],
-    'first_contact_at': ['дата первого контакта', 'первый звонок', 'first_contact', 'первый контакт', 'first_response_time'],
-    'status_changed_at': ['дата смены статуса', 'на этапе с', 'status_changed'],
-    'last_activity_at': ['дата последней активности', 'последний контакт', 'last_activity'],
-    'closed_at': ['дата закрытия', 'дата оплаты', 'closed', 'closed_at', 'дата завершения', 'completion_date'],
-    'source': ['канал', 'источник', 'source', 'канал продаж', 'channel'],
-    'deal_id': ['id', 'номер', 'номер сделки', 'deal_id', 'номер заказа', 'id заказа', 'order_id', 'id отправления'],
+    'amount': [
+        'сумма', 'бюджет', 'цена', 'цена со скидкой', 'итого', 'сумма сделки',
+        'amount', 'price', 'чек', 'total_amount', 'выручка', 'к перечислению (выручка)',
+        'сумма документа (итого)', 'итого к оплате', 'к оплате', 'сумма к оплате', 'всего'
+    ],
+    'status': [
+        'статус', 'этап', 'стадия', 'воронка', 'status', 'состояние',
+        'текущее состояние', 'статус заказа', 'стадия заказа'
+    ],
+    'created_at': [
+        'дата', 'дата создания', 'создано', 'дата заявки', 'created', 'created_at',
+        'когда', 'время создания', 'дата заказа', 'order_date', 'дата оформления',
+        'дата и время создания'
+    ],
+    'client': [
+        'клиент', 'компания', 'контрагент', 'заказчик', 'client', 'кто купил',
+        'покупатель', 'фио', 'customer_name', 'контрагент (покупатель)'
+    ],
+    'contact': [
+        'телефон', 'контакт', 'email', 'почта', 'phone', 'телефон покупателя', 'телефон клиента'
+    ],
+    'manager': [
+        'менеджер', 'ответственный', 'владелец', 'manager', 'ответственный менеджер'
+    ],
+    'list_price': [
+        'прайс', 'цена без скидки', 'list_price', 'цена до скидки', 'base_price',
+        'розничная цена', 'цена без скидки (руб.)', 'цена без скидки (руб)',
+        'базовая цена', 'исходная цена', 'unit_price', 'цена за шт'
+    ],
+    'discount_pct': [
+        'скидка', 'скидка %', 'discount', 'скинули', 'скидка, %', 'discount_pct',
+        'скидка продавца, руб.', 'скидка продавца', 'скидка клиента (руб)',
+        'скидка клиента', 'скидка, руб.', 'скидка, руб', 'скидка (руб)',
+        'discount_amount'
+    ],
+    'first_contact_at': [
+        'дата первого контакта', 'первый звонок', 'first_contact', 'первый контакт',
+        'first_response_time', 'первый контакт (авто)'
+    ],
+    'status_changed_at': [
+        'дата смены статуса', 'на этапе с', 'status_changed', 'дней на этапе',
+        'дней без движения', 'days_in_stage', 'дата смены статуса (авто)'
+    ],
+    'last_activity_at': [
+        'дата последней активности', 'последний контакт', 'last_activity',
+        'дата последнего звонка', 'последний звонок', 'дата задачи',
+        'updated_at', 'дата обновления', 'последняя активность (авто)'
+    ],
+    'closed_at': [
+        'дата закрытия', 'дата оплаты', 'closed', 'closed_at', 'дата завершения',
+        'completion_date', 'дата доставки', 'дата отгрузки', 'дата чека',
+        'дата вручения', 'delivery_date', 'paid_at', 'shipped_at', 'дата закрытия (авто)'
+    ],
+    'source': ['канал', 'источник', 'source', 'канал продаж', 'channel', 'склад / канал', 'канал сбыта', 'точка продажи'],
+    'deal_id': ['id', 'номер', 'номер сделки', 'deal_id', 'номер заказа', 'id заказа', 'order_id', 'id отправления', 'код', '\ufeffномер заказа'],
 }
 
 STATUS_MAP_DEFAULT = {
@@ -219,6 +260,11 @@ def guess_column_mapping(columns: List[str], sample_rows: List[Dict[str, Any]]) 
             continue
 
         # Check money
+        norm_col = normalize_string(col)
+        # Exclude obvious non-money numeric columns (counts, delays, minutes, ids)
+        if any(w in norm_col for w in ['кол-во', 'количество', 'штук', 'минут', 'секунд', 'дней', 'delay', 'qty', 'count', 'id', 'номер']):
+            continue
+
         money_count = sum(1 for v in vals if parse_money(v) is not None)
         if money_count / len(vals) >= 0.8:
             if 'amount' not in mapping:
@@ -320,3 +366,313 @@ def build_status_map(
             continue
         result[st] = map_status(st, user_status_map)
     return result
+
+
+def derive_computed_columns(
+    cols: List[str],
+    sample_rows: List[Dict[str, Any]],
+    all_rows: List[Dict[str, Any]],
+    mapping: Dict[str, str]
+) -> Tuple[List[str], List[Dict[str, Any]], List[Dict[str, Any]], Dict[str, str], List[str]]:
+    """
+    Synthesizes missing columns (e.g. 'Скидка, % (авто)', 'Прайс до скидки (авто)', 'Первый контакт (авто)')
+    from available raw data when direct canonical fields are absent.
+    Returns: (updated_cols, updated_sample_rows, updated_all_rows, updated_mapping, auto_computed_columns)
+    """
+    updated_cols = list(cols)
+    auto_computed: List[str] = []
+
+    amount_col = mapping.get('amount')
+    created_col = mapping.get('created_at')
+
+    # --- 1. DISCOUNT % & LIST PRICE ---
+    existing_disc = mapping.get('discount_pct')
+    is_real_pct = False
+    if existing_disc:
+        norm_disc_name = normalize_string(existing_disc)
+        if 'руб' in norm_disc_name or 'amount' in norm_disc_name:
+            is_real_pct = False
+        else:
+            # Check values: if any > 100, it's money, not percentage
+            sample_disc_vals = [parse_money(r.get(existing_disc)) for r in sample_rows[:15] if r.get(existing_disc)]
+            if any(v is not None and v > 100 for v in sample_disc_vals):
+                is_real_pct = False
+            elif sample_disc_vals:
+                is_real_pct = True
+
+    # Identify potential raw columns for discount in rubles, unit price, quantity
+    money_disc_col = None
+    unit_price_col = mapping.get('list_price')
+    qty_col = None
+
+    for c in cols:
+        norm = normalize_string(c)
+        if not money_disc_col and any(w in norm for w in ['скидк', 'скинули', 'дисконт', 'discount', 'disc']) and 'без скидк' not in norm:
+            if not is_real_pct:
+                money_disc_col = c
+        if not unit_price_col and any(w in norm for w in ['цена за шт', 'розничная цена', 'цена без скидки', 'прайс', 'regular_price', 'цена товара']):
+            unit_price_col = c
+        if not qty_col and any(w in norm for w in ['кол-во', 'количество', 'штук', 'шт', 'qty', 'count']):
+            qty_col = c
+
+    # 1a. Synthesize 'Скидка, % (авто)'
+    if not is_real_pct and amount_col and (money_disc_col or (unit_price_col and unit_price_col != amount_col)):
+        auto_disc_name = 'Скидка, % (авто)'
+        if auto_disc_name not in updated_cols:
+            updated_cols.append(auto_disc_name)
+        auto_computed.append(auto_disc_name)
+        mapping['discount_pct'] = auto_disc_name
+
+        for r_list in (all_rows, sample_rows):
+            for r in r_list:
+                amt = parse_money(r.get(amount_col)) or Decimal(0)
+                pct_val = Decimal(0)
+                if money_disc_col:
+                    disc_m = parse_money(r.get(money_disc_col)) or Decimal(0)
+                    lp = amt + disc_m
+                    if lp > 0 and disc_m > 0:
+                        pct_val = (disc_m / lp) * Decimal(100)
+                elif unit_price_col:
+                    up = parse_money(r.get(unit_price_col)) or Decimal(0)
+                    qty = parse_money(r.get(qty_col)) if qty_col else Decimal(1)
+                    if not qty or qty <= 0:
+                        qty = Decimal(1)
+                    lp = up * qty
+                    if lp > amt and lp > 0:
+                        pct_val = ((lp - amt) / lp) * Decimal(100)
+                pct_val = min(Decimal(100), max(Decimal(0), pct_val)).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+                r[auto_disc_name] = f"{pct_val}%"
+
+    # 1b. Synthesize 'Прайс до скидки (авто)'
+    has_lp = bool(mapping.get('list_price')) and mapping.get('list_price') not in auto_computed
+    if not has_lp and amount_col and (money_disc_col or (unit_price_col and qty_col)):
+        auto_lp_name = 'Прайс до скидки (авто)'
+        if auto_lp_name not in updated_cols:
+            updated_cols.append(auto_lp_name)
+        auto_computed.append(auto_lp_name)
+        mapping['list_price'] = auto_lp_name
+
+        for r_list in (all_rows, sample_rows):
+            for r in r_list:
+                amt = parse_money(r.get(amount_col)) or Decimal(0)
+                lp_val = amt
+                if money_disc_col:
+                    disc_m = parse_money(r.get(money_disc_col)) or Decimal(0)
+                    lp_val = amt + disc_m
+                elif unit_price_col:
+                    up = parse_money(r.get(unit_price_col)) or Decimal(0)
+                    qty = parse_money(r.get(qty_col)) if qty_col else Decimal(1)
+                    if not qty or qty <= 0:
+                        qty = Decimal(1)
+                    lp_val = up * qty
+                r[auto_lp_name] = f"{int(lp_val):,} ₽".replace(',', ' ')
+
+    # --- 2. FIRST CONTACT AT DERIVATION ---
+    if not mapping.get('first_contact_at') and created_col:
+        delay_col = None
+        for c in cols:
+            norm = normalize_string(c)
+            if any(w in norm for w in ['delay', 'опоздан', 'задержк', 'минут', 'время первого ответа', 'время ответа', 'скорость ответа']) and 'ответствен' not in norm:
+                delay_col = c
+                break
+        if delay_col:
+            auto_fc_name = 'Первый контакт (авто)'
+            if auto_fc_name not in updated_cols:
+                updated_cols.append(auto_fc_name)
+            auto_computed.append(auto_fc_name)
+            mapping['first_contact_at'] = auto_fc_name
+
+            for r_list in (all_rows, sample_rows):
+                for r in r_list:
+                    c_dt = parse_date(r.get(created_col))
+                    raw_delay = r.get(delay_col)
+                    if c_dt and raw_delay is not None:
+                        delay_num = re.sub(r'[^\d.]', '', str(raw_delay))
+                        try:
+                            d_min = float(delay_num)
+                            fc_dt = c_dt + datetime.timedelta(minutes=d_min)
+                            r[auto_fc_name] = fc_dt.strftime('%d.%m.%Y %H:%M')
+                        except Exception:
+                            r[auto_fc_name] = '—'
+                    else:
+                        r[auto_fc_name] = '—'
+
+    # --- 3. CLOSED AT DERIVATION ---
+    if not mapping.get('closed_at'):
+        closed_date_col = None
+        duration_col = None
+        for c in cols:
+            norm = normalize_string(c)
+            if not closed_date_col and any(w in norm for w in [
+                'дата доставки', 'дата отгрузки', 'дата оплаты', 'дата чека',
+                'дата завершения', 'дата закрытия', 'дата вручения',
+                'delivery_date', 'closed_at', 'completion_date', 'paid_at', 'shipped_at'
+            ]) and 'способ' not in norm and 'type' not in norm and 'город' not in norm:
+                closed_date_col = c
+            if not duration_col and any(w in norm for w in [
+                'дней в сделке', 'дней до закрытия', 'цикл (дни)', 'длительность',
+                'срок (дни)', 'duration_days', 'cycle_days'
+            ]):
+                duration_col = c
+
+        if closed_date_col or (duration_col and created_col):
+            auto_cl_name = 'Дата закрытия (авто)'
+            if auto_cl_name not in updated_cols:
+                updated_cols.append(auto_cl_name)
+            auto_computed.append(auto_cl_name)
+            mapping['closed_at'] = auto_cl_name
+
+            for r_list in (all_rows, sample_rows):
+                for r in r_list:
+                    if closed_date_col:
+                        val = parse_date(r.get(closed_date_col))
+                        r[auto_cl_name] = val.strftime('%d.%m.%Y %H:%M') if val else '—'
+                    elif duration_col and created_col:
+                        c_dt = parse_date(r.get(created_col))
+                        raw_dur = r.get(duration_col)
+                        if c_dt and raw_dur is not None:
+                            try:
+                                dur_days = float(re.sub(r'[^\d.]', '', str(raw_dur)) or 0)
+                                cl_dt = c_dt + datetime.timedelta(days=dur_days)
+                                r[auto_cl_name] = cl_dt.strftime('%d.%m.%Y %H:%M')
+                            except Exception:
+                                r[auto_cl_name] = '—'
+                        else:
+                            r[auto_cl_name] = '—'
+
+    # --- 4. STATUS CHANGED AT DERIVATION ---
+    if not mapping.get('status_changed_at'):
+        stale_days_col = None
+        for c in cols:
+            norm = normalize_string(c)
+            if any(w in norm for w in [
+                'дней на этапе', 'дней без движения', 'время простоя',
+                'days_in_stage', 'простой (дней)', 'дней в статусе', 'stale_days'
+            ]):
+                stale_days_col = c
+                break
+        if stale_days_col:
+            auto_sc_name = 'Дата смены статуса (авто)'
+            if auto_sc_name not in updated_cols:
+                updated_cols.append(auto_sc_name)
+            auto_computed.append(auto_sc_name)
+            mapping['status_changed_at'] = auto_sc_name
+            now_dt = datetime.datetime.now()
+
+            for r_list in (all_rows, sample_rows):
+                for r in r_list:
+                    raw_stale = r.get(stale_days_col)
+                    if raw_stale is not None:
+                        try:
+                            s_days = float(re.sub(r'[^\d.]', '', str(raw_stale)) or 0)
+                            sc_dt = now_dt - datetime.timedelta(days=s_days)
+                            r[auto_sc_name] = sc_dt.strftime('%d.%m.%Y %H:%M')
+                        except Exception:
+                            r[auto_sc_name] = '—'
+                    else:
+                        r[auto_sc_name] = '—'
+
+    # --- 5. LAST ACTIVITY AT DERIVATION ---
+    if not mapping.get('last_activity_at'):
+        act_col = None
+        for c in cols:
+            norm = normalize_string(c)
+            if any(w in norm for w in [
+                'дата последнего контакта', 'последний звонок', 'дата задачи',
+                'последняя активность', 'updated_at', 'last_contact', 'дата обновления'
+            ]):
+                act_col = c
+                break
+        if act_col:
+            auto_act_name = 'Последняя активность (авто)'
+            if auto_act_name not in updated_cols:
+                updated_cols.append(auto_act_name)
+            auto_computed.append(auto_act_name)
+            mapping['last_activity_at'] = auto_act_name
+
+            for r_list in (all_rows, sample_rows):
+                for r in r_list:
+                    val = parse_date(r.get(act_col))
+                    r[auto_act_name] = val.strftime('%d.%m.%Y %H:%M') if val else '—'
+
+    # --- 6. REALIZED UNIT PRICE ---
+    if amount_col and qty_col:
+        auto_unit_price = 'Цена за шт. факт (авто)'
+        if auto_unit_price not in updated_cols:
+            updated_cols.append(auto_unit_price)
+        auto_computed.append(auto_unit_price)
+
+        for r_list in (all_rows, sample_rows):
+            for r in r_list:
+                amt = parse_money(r.get(amount_col)) or Decimal(0)
+                qty = parse_money(r.get(qty_col)) if qty_col else Decimal(1)
+                if qty and qty > 0 and amt > 0:
+                    unit_p = (amt / qty).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                    r[auto_unit_price] = f"{float(unit_p):,.2f} ₽".replace(',', ' ')
+                else:
+                    r[auto_unit_price] = '—'
+
+    # --- 7. GROSS MARGIN & PROFIT DERIVATION ---
+    cost_col = None
+    for c in cols:
+        norm = normalize_string(c)
+        if any(w in norm for w in ['себестоимость', 'закупка', 'цена закупки', 'входная цена', 'cost_price', 'cogs', 'себес']):
+            cost_col = c
+            break
+
+    if cost_col and amount_col:
+        auto_profit_name = 'Валовая прибыль (авто)'
+        auto_margin_name = 'Маржинальность, % (авто)'
+        if auto_profit_name not in updated_cols:
+            updated_cols.append(auto_profit_name)
+        if auto_margin_name not in updated_cols:
+            updated_cols.append(auto_margin_name)
+        auto_computed.extend([auto_profit_name, auto_margin_name])
+
+        for r_list in (all_rows, sample_rows):
+            for r in r_list:
+                amt = parse_money(r.get(amount_col)) or Decimal(0)
+                c_val = parse_money(r.get(cost_col)) or Decimal(0)
+                qty = parse_money(r.get(qty_col)) if qty_col else Decimal(1)
+                if not qty or qty <= 0:
+                    qty = Decimal(1)
+                total_cost = c_val * qty
+                profit = amt - total_cost
+                margin = (profit / amt * Decimal(100)) if amt > 0 else Decimal(0)
+                margin = margin.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+                r[auto_profit_name] = f"{int(profit):,} ₽".replace(',', ' ')
+                r[auto_margin_name] = f"{margin}%"
+
+    # --- 8. MARKETPLACE COMMISSION DERIVATION ---
+    comm_col = None
+    for c in cols:
+        norm = normalize_string(c)
+        if any(w in norm for w in [
+            'комиссия', 'удержания', 'вознаграждение wb', 'вознаграждение ozon',
+            'комиссия маркетплейса', 'эквайринг', 'логистика маркетплейса', 'marketplace_fee'
+        ]) and 'ответствен' not in norm:
+            comm_col = c
+            break
+
+    if comm_col and amount_col:
+        auto_comm_name = 'Удержания площадки (авто)'
+        auto_comm_pct = 'Комиссия маркетплейса, % (авто)'
+        if auto_comm_name not in updated_cols:
+            updated_cols.append(auto_comm_name)
+        if auto_comm_pct not in updated_cols:
+            updated_cols.append(auto_comm_pct)
+        auto_computed.extend([auto_comm_name, auto_comm_pct])
+
+        for r_list in (all_rows, sample_rows):
+            for r in r_list:
+                amt = parse_money(r.get(amount_col)) or Decimal(0)
+                fee = parse_money(r.get(comm_col)) or Decimal(0)
+                base = amt + fee
+                fee_pct = (fee / base * Decimal(100)) if base > 0 else Decimal(0)
+                fee_pct = fee_pct.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+                r[auto_comm_name] = f"{int(fee):,} ₽".replace(',', ' ')
+                r[auto_comm_pct] = f"{fee_pct}%"
+
+    return updated_cols, sample_rows, all_rows, mapping, auto_computed
+
+
