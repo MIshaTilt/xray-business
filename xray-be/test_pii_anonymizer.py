@@ -150,10 +150,34 @@ def test_tool_execution_anonymization():
     print("✓ Tool execution output anonymization tests passed!")
 
 
+def test_manager_column_exemption():
+    anon = PIIAnonymizer(start_id=142)
+    anon.register_exempt_name("Алексей Смирнов")
+    anon.register_exempt_name("Ольга Кузнецова")
+
+    # Manager SQL grouping query result must NOT be masked as 'Клиент #...'
+    mgr_rows = [
+        {"manager": "Алексей Смирнов", "COUNT(*)": 6, "SUM(amount)": 1630000, "won_amt": 705000},
+        {"manager": "Ольга Кузнецова", "COUNT(*)": 4, "SUM(amount)": 74500, "won_amt": 28000},
+    ]
+
+    cleaned = anon.anonymize_records(mgr_rows)
+    assert cleaned[0]["manager"] == "Алексей Смирнов", f"Manager name was altered: {cleaned[0]['manager']}"
+    assert cleaned[1]["manager"] == "Ольга Кузнецова", f"Manager name was altered: {cleaned[1]['manager']}"
+
+    # In free text prompt
+    prompt = "Сравни менеджеров Алексея Смирнова и Ольгу Кузнецову"
+    cleaned_prompt = anon.anonymize_text(prompt)
+    assert "Клиент #" not in cleaned_prompt, f"Manager in prompt was turned into client: {cleaned_prompt}"
+
+    print("✓ Manager column exemption tests passed!")
+
+
 if __name__ == '__main__':
     test_phone_masking()
     test_email_masking()
     test_client_name_pseudonymization()
     test_record_and_messages_anonymization()
     test_tool_execution_anonymization()
+    test_manager_column_exemption()
     print("\n🎉 ALL 152-ФЗ PII ANONYMIZATION TESTS PASSED SUCCESSFULLY!")

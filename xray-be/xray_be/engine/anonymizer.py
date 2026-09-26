@@ -46,6 +46,24 @@ CONTACT_COL_KEYWORDS = {
     'email', 'почта', 'e-mail', 'mail', 'whatsapp', 'telegram', 'номер_телефона'
 }
 
+# Keywords indicating manager / employee columns (MUST NEVER BE MASKED!)
+MANAGER_COL_KEYWORDS = {
+    'manager', 'менеджер', 'менеджеры', 'сотрудник', 'сотрудники',
+    'ответственный', 'ответственные', 'продавец', 'продавцы', 'курьер',
+    'курьеры', 'оператор', 'операторы', 'автор', 'assigned_to', 'sales_rep',
+    'rep', 'created_by', 'user_name', 'специалист', 'консультант',
+    'имя_менеджера', 'фио_менеджера', 'менеджер_фио'
+}
+
+# Known non-client metric / analytical / business columns that should never be masked
+SAFE_EXEMPT_COLUMNS = {
+    'deal_id', 'id', 'status', 'status_raw', 'amount', 'list_price',
+    'discount_pct', 'created_at', 'closed_at', 'first_contact_at',
+    'status_changed_at', 'last_activity_at', 'source', 'product', 'item',
+    'category', 'city', 'region', 'count', 'sum', 'avg', 'total',
+    'quantity', 'qty', 'price', 'revenue', 'won_amt', 'lost_amt', 'stagnant_amt'
+}
+
 # Surnames / Patronymics endings for detecting Russian names in free text
 PATRONYMIC_ENDINGS = ('ович', 'евич', 'ич', 'овна', 'евна', 'ична')
 SURNAME_ENDINGS = ('ов', 'ова', 'ев', 'ева', 'ин', 'ина', 'ский', 'ская', 'ын', 'ына', 'их', 'ых')
@@ -129,11 +147,40 @@ def mask_contact_value(val: str) -> str:
 
 
 
+def is_manager_column_name(col_name: str) -> bool:
+    """Checks if a column name represents a manager/employee/rep."""
+    if not col_name:
+        return False
+    clean = re.sub(r'[^a-zA-Zа-яА-ЯёЁ_]', '', col_name.strip().lower())
+    if clean in MANAGER_COL_KEYWORDS:
+        return True
+    for kw in MANAGER_COL_KEYWORDS:
+        if kw in clean:
+            return True
+    return False
+
+
+def is_safe_exempt_column_name(col_name: str) -> bool:
+    """Checks if a column name represents standard non-client data (metrics, dates, statuses)."""
+    if not col_name:
+        return False
+    clean = re.sub(r'[^a-zA-Zа-яА-ЯёЁ_]', '', col_name.strip().lower())
+    if clean in SAFE_EXEMPT_COLUMNS:
+        return True
+    for kw in SAFE_EXEMPT_COLUMNS:
+        if kw == clean:
+            return True
+    return False
+
+
 def is_client_column_name(col_name: str) -> bool:
     """Checks if a column name represents a client/customer name."""
     if not col_name:
         return False
     clean = re.sub(r'[^a-zA-Zа-яА-ЯёЁ_]', '', col_name.strip().lower())
+    # Managers must never be classified as clients!
+    if is_manager_column_name(clean):
+        return False
     if clean in CLIENT_COL_KEYWORDS:
         return True
     for kw in CLIENT_COL_KEYWORDS:
@@ -193,6 +240,22 @@ class PIIAnonymizer:
         self._name_to_pseudo: Dict[str, str] = {}
         self._pseudo_to_name: Dict[str, str] = {}
         self._used_ids: Set[int] = set()
+        self._exempt_names: Set[str] = set()
+
+    def register_exempt_name(self, name: Any):
+        """
+        Registers a name (e.g. manager, salesperson, employee) that must NEVER be masked or pseudonymized.
+        """
+        if not name:
+            return
+        s = str(name).strip()
+        if not s:
+            return
+        norm = re.sub(r'\s+', ' ', s.lower())
+        self._exempt_names.add(norm)
+        for w in norm.split():
+            if len(w) >= 3 and w not in NON_NAME_WORDS:
+                self._exempt_names.add(w)
 
     def get_pseudonym(self, name: Any) -> str:
         """
@@ -210,6 +273,9 @@ class PIIAnonymizer:
             return name_str
 
         norm_key = re.sub(r'\s+', ' ', name_str.lower())
+        if norm_key in self._exempt_names:
+            return name_str
+
         if norm_key in self._name_to_pseudo:
             return self._name_to_pseudo[norm_key]
 
@@ -233,9 +299,23 @@ class PIIAnonymizer:
         """Pre-registers a known client name to ensure consistent pseudonym mapping."""
         return self.get_pseudonym(name)
 
+    def _is_exempt_word(self, word: str) -> bool:
+        """Checks if a word matches any exempt manager name stem (handling grammatical cases)."""
+        w_low = word.lower()
+        if w_low in self._exempt_names:
+            return True
+        for ex in self._exempt_names:
+            if len(ex) < 4:
+                continue
+            stem_len = max(3, len(ex) - 2)
+            if len(w_low) >= stem_len and ex[:stem_len] == w_low[:stem_len]:
+                return True
+        return False
+
     def anonymize_text(self, text: str) -> str:
         """
         Masks phones, emails, registered client names, and Russian names in arbitrary text.
+        Exempts registered manager names.
         """
         if not text or not isinstance(text, str):
             return text
@@ -250,7 +330,7 @@ class PIIAnonymizer:
         # Sort by length descending to match longest names first
         sorted_names = sorted(self._name_to_pseudo.keys(), key=len, reverse=True)
         for norm_name in sorted_names:
-            if len(norm_name) < 3:
+            if len(norm_name) < 3 or norm_name in self._exempt_names or self._is_exempt_word(norm_name):
                 continue
             pseudo = self._name_to_pseudo[norm_name]
             # Word boundary regex with case insensitivity
@@ -260,7 +340,15 @@ class PIIAnonymizer:
         # 4. Detect Russian full names in free text (2 or 3 capitalized words)
         def _check_name_match(m):
             phrase = m.group(0)
+            norm_phrase = re.sub(r'\s+', ' ', phrase.lower())
+            if norm_phrase in self._exempt_names:
+                return phrase
+
             words = phrase.split()
+            # If any word matches an exempt manager's name stem, NEVER mask!
+            if any(self._is_exempt_word(w) for w in words):
+                return phrase
+
             if is_russian_full_name(words):
                 return self.get_pseudonym(phrase)
             return phrase
@@ -271,6 +359,9 @@ class PIIAnonymizer:
         # Match "ИП <Фамилия>"
         def _check_ip_match(m):
             ip_str = m.group(0)
+            norm_ip = re.sub(r'\s+', ' ', ip_str.lower())
+            if norm_ip in self._exempt_names:
+                return ip_str
             return self.get_pseudonym(ip_str)
 
         res = re.sub(r'\bИП\s+[А-ЯЁ][а-яё]+(?:\s+[А-ЯЁ]\.?\s*[А-ЯЁ]\.?)?\b', _check_ip_match, res)
@@ -280,6 +371,7 @@ class PIIAnonymizer:
     def anonymize_record(self, record: Dict[str, Any]) -> Dict[str, Any]:
         """
         Anonymizes a single record/row dict (e.g. from deals table or sample rows).
+        Explicitly preserves manager/employee names.
         """
         if not isinstance(record, dict):
             return record
@@ -291,12 +383,22 @@ class PIIAnonymizer:
                 continue
 
             k_str = str(k)
-            # If column is client name
+
+            # 1. EXPLICIT EXEMPTION: Managers / Employees must NEVER be masked!
+            if is_manager_column_name(k_str):
+                cleaned[k] = v
+                continue
+
+            # 2. Client / Customer columns -> mask as 'Клиент #XXX'
             if is_client_column_name(k_str):
                 cleaned[k] = self.get_pseudonym(v)
-            # If column is contact info
+            # 3. Contact info (phone/email) columns -> mask phone & email
             elif is_contact_column_name(k_str):
                 cleaned[k] = mask_contact_value(str(v))
+            # 4. Known safe analytical columns (deal_id, status, amount, won_amt, product, source, date)
+            elif is_safe_exempt_column_name(k_str):
+                cleaned[k] = v
+            # 5. Free-form text fields (e.g. comments, notes)
             elif isinstance(v, str):
                 cleaned[k] = self.anonymize_text(v)
             elif isinstance(v, dict):

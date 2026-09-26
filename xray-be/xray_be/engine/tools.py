@@ -816,6 +816,15 @@ def execute_tool_call(tool_name: str, arguments: dict, snapshot_id: str) -> str:
     try:
         from engine.anonymizer import PIIAnonymizer
         anon = PIIAnonymizer()
+        if snapshot_id:
+            try:
+                from engine.models import Deal
+                known_managers = Deal.objects.filter(snapshot_id=snapshot_id).exclude(manager='').values_list('manager', flat=True).distinct()[:150]
+                for m in known_managers:
+                    anon.register_exempt_name(m)
+            except Exception:
+                pass
+
         data = json.loads(raw_res)
         if isinstance(data, dict):
             if "rows" in data and isinstance(data["rows"], list):

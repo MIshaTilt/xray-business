@@ -29,6 +29,10 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
     if snapshot_id:
         try:
             from engine.models import Deal
+            known_managers = Deal.objects.filter(snapshot_id=snapshot_id).exclude(manager='').values_list('manager', flat=True).distinct()[:150]
+            for m in known_managers:
+                anonymizer.register_exempt_name(m)
+
             known_clients = Deal.objects.filter(snapshot_id=snapshot_id).exclude(client='').values_list('client', flat=True).distinct()[:150]
             for c in known_clients:
                 anonymizer.register_client(c)
