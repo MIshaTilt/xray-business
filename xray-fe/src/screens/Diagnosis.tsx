@@ -139,7 +139,7 @@ export function Diagnosis({
   const findings = diagnosis.findings
   const visible = showAll ? findings : findings.slice(0, 3)
   const hidden = Math.max(0, findings.length - 3)
-  const exportBase = (import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '')
+  const exportBase = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
 
   return (
     <div className="stack diagnosis">

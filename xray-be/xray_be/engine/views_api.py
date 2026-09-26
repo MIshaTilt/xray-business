@@ -19,7 +19,14 @@ from engine.narrator import generate_llm_narrative
 from engine.models import Upload, Snapshot, ChatMessage, Deal
 from engine.ai_mapper import ai_smart_column_mapping
 from engine.reports import generate_excel_report, generate_pdf_report
-from django.http import HttpResponse
+from engine.auth import (
+    get_request_identity,
+    cleanup_expired_guest_data,
+    start_background_cleanup_thread,
+)
+
+# Start 5-minute guest cleaner in background
+start_background_cleanup_thread()
 
 # Persistent storage for MVP snapshots on disk
 DATA_DIR = Path(__file__).resolve().parent.parent.parent / 'data'
@@ -30,25 +37,102 @@ UPLOADS_STORE = {}
 SNAPSHOTS_STORE = {}
 
 
-def get_upload(upload_id) -> dict | None:
+def get_upload(upload_id, request=None) -> dict | None:
+    cleanup_expired_guest_data()
     key = str(upload_id)
     cached = UPLOADS_STORE.get(key)
+    row = Upload.objects.filter(pk=key).first()
+    if not cached and not row:
+        return None
+
+    if request:
+        ident = get_request_identity(request)
+        owner_uid = row.user.max_user_id if (row and row.user) else (cached.get('user_id') if cached else None)
+        is_guest = (row.user is None) if row else (cached.get('is_guest', True) if cached else True)
+        guest_sess = row.guest_session if row else (cached.get('guest_session', '') if cached else '')
+
+        if owner_uid is not None:
+            if not ident.user or ident.user.max_user_id != owner_uid:
+                return None
+        elif is_guest:
+            if not ident.is_guest or ident.guest_session != guest_sess:
+                return None
+
     if cached:
         return cached
-    row = Upload.objects.filter(pk=key).first()
-    if not row:
-        return None
+
     entry = {
         'upload_id': key,
-        'filename': row.filename,
-        'columns': row.columns or [],
-        'sample_rows': row.sample_rows or [],
-        'all_rows': row.all_rows or [],
-        'mapping': row.mapping or row.suggested_mapping or {},
-        'status_map': row.status_map or {},
+        'user_id': row.user.max_user_id if (row and row.user) else None,
+        'guest_session': row.guest_session if row else '',
+        'is_guest': (row.user is None) if row else True,
+        'filename': row.filename if row else '',
+        'columns': (row.columns if row else []) or [],
+        'sample_rows': (row.sample_rows if row else []) or [],
+        'all_rows': (row.all_rows if row else []) or [],
+        'mapping': (row.mapping or row.suggested_mapping if row else {}) or {},
+        'status_map': (row.status_map if row else {}) or {},
     }
     UPLOADS_STORE[key] = entry
     return entry
+
+
+def get_snapshot_for_request(snapshot_id, request) -> tuple[dict | None, Snapshot | None]:
+    cleanup_expired_guest_data()
+    ident = get_request_identity(request)
+    s_key = str(snapshot_id)
+
+    snap_obj = Snapshot.objects.filter(id=s_key).first()
+    snap_dict = SNAPSHOTS_STORE.get(s_key)
+
+    if not snap_obj and not snap_dict:
+        return None, None
+
+    owner_uid = snap_obj.user.max_user_id if (snap_obj and snap_obj.user) else (snap_dict.get('user_id') if snap_dict else None)
+    is_guest = snap_obj.is_guest if snap_obj else (snap_dict.get('is_guest', False) if snap_dict else False)
+    guest_sess = snap_obj.guest_session if snap_obj else (snap_dict.get('guest_session', '') if snap_dict else '')
+
+    if owner_uid is not None:
+        if not ident.user or ident.user.max_user_id != owner_uid:
+            return None, None
+    elif is_guest:
+        if not ident.is_guest or ident.guest_session != guest_sess:
+            return None, None
+
+    # Reconstruct snap_dict from snap_obj if missing from in-memory cache
+    if not snap_dict and snap_obj:
+        diag = {
+            'snapshot_id': s_key,
+            'headline': snap_obj.headline,
+            'body': snap_obj.body,
+            'findings': snap_obj.findings,
+            'coverage': snap_obj.coverage,
+            'period': {
+                'from': snap_obj.period_from.isoformat() if snap_obj.period_from else None,
+                'to': snap_obj.period_to.isoformat() if snap_obj.period_to else None,
+            },
+            'totals': snap_obj.totals,
+            'ok': snap_obj.ok_list,
+            'low_sample': snap_obj.low_sample,
+        }
+        snap_dict = {
+            'snapshot_id': s_key,
+            'user_id': owner_uid,
+            'guest_session': guest_sess,
+            'is_guest': is_guest,
+            'scan_no': snap_obj.scan_no,
+            'status': snap_obj.status,
+            'progress': snap_obj.progress,
+            'error': snap_obj.error,
+            'created_at': snap_obj.created_at.isoformat(),
+            'filename': snap_obj.filename,
+            'source': snap_obj.archetype,
+            'diagnosis': diag,
+            'all_metrics': snap_obj.all_metrics,
+        }
+        SNAPSHOTS_STORE[s_key] = snap_dict
+
+    return snap_dict, snap_obj
 
 
 def persist_upload_mapping(upload_id, mapping: dict, status_map: dict) -> None:
@@ -151,9 +235,13 @@ class UploadView(APIView):
 
         coverage = get_coverage(suggested_mapping)
         upload_id = str(uuid.uuid4())
+        ident = get_request_identity(request)
 
         UPLOADS_STORE[upload_id] = {
             'upload_id': upload_id,
+            'user_id': ident.user.max_user_id if ident.user else None,
+            'guest_session': ident.guest_session if ident.is_guest else "",
+            'is_guest': ident.is_guest,
             'filename': filename,
             'columns': cols,
             'sample_rows': sample_rows,
@@ -165,6 +253,8 @@ class UploadView(APIView):
         try:
             Upload.objects.create(
                 id=upload_id,
+                user=ident.user,
+                guest_session=ident.guest_session if ident.is_guest else "",
                 filename=filename,
                 columns=cols,
                 sample_rows=sample_rows,
@@ -187,9 +277,9 @@ class UploadView(APIView):
 
 class SaveMappingView(APIView):
     def put(self, request, upload_id):
-        upload = get_upload(upload_id)
+        upload = get_upload(upload_id, request=request)
         if not upload:
-            return Response({'code': 'not_found', 'message': 'Сессия загрузки не найдена'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'code': 'not_found', 'message': 'Сессия загрузки не найдена или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
 
         mapping = request.data.get('mapping', {})
         status_map = request.data.get('status_map', {})
@@ -211,9 +301,26 @@ class SaveMappingView(APIView):
 
 class SnapshotCreateView(APIView):
     def get(self, request):
+        cleanup_expired_guest_data()
         ensure_scan_numbers()
+        ident = get_request_identity(request)
         items = []
+
         for snap in reversed(list(SNAPSHOTS_STORE.values())):
+            owner_uid = snap.get('user_id')
+            is_guest = snap.get('is_guest', False)
+            guest_sess = snap.get('guest_session', '')
+
+            # Isolation check:
+            if ident.user:
+                if owner_uid != ident.user.max_user_id:
+                    continue
+            elif ident.is_guest:
+                if not is_guest or guest_sess != ident.guest_session:
+                    continue
+            else:
+                continue
+
             diag = snap.get('diagnosis')
             crit = 'ok'
             if diag and diag.get('findings'):
@@ -233,16 +340,18 @@ class SnapshotCreateView(APIView):
                 'period': diag.get('period') if diag else None,
                 'headline': diag.get('headline') if diag else None,
                 'verdict': crit,
-                'coverage_ready': len(diag['coverage']['available']) if diag else 0,
+                'coverage_ready': len(diag.get('coverage', {}).get('available', [])) if (diag and isinstance(diag.get('coverage'), dict)) else 0,
                 'coverage_total': 7,
             })
         return Response({'items': items, 'next_cursor': None})
 
     def post(self, request):
+        cleanup_expired_guest_data()
+        ident = get_request_identity(request)
         upload_id = request.data.get('upload_id')
-        upload = get_upload(upload_id)
+        upload = get_upload(upload_id, request=request)
         if not upload:
-            return Response({'code': 'not_found', 'message': 'Файл загрузки не найден'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'code': 'not_found', 'message': 'Файл загрузки не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
 
         mapping = upload.get('mapping', {})
         status_map = upload.get('status_map', {})
@@ -269,6 +378,9 @@ class SnapshotCreateView(APIView):
 
         SNAPSHOTS_STORE[snapshot_id] = {
             'snapshot_id': snapshot_id,
+            'user_id': ident.user.max_user_id if ident.user else None,
+            'guest_session': ident.guest_session if ident.is_guest else "",
+            'is_guest': ident.is_guest,
             'scan_no': scan_no,
             'status': 'ready',
             'progress': 100,
@@ -300,6 +412,11 @@ class SnapshotCreateView(APIView):
         try:
             snap_instance = Snapshot.objects.create(
                 id=snapshot_id,
+                user=ident.user,
+                upload=Upload.objects.filter(id=upload_id).first(),
+                scan_no=scan_no,
+                guest_session=ident.guest_session if ident.is_guest else "",
+                is_guest=ident.is_guest,
                 filename=upload['filename'],
                 headline=headline,
                 body=body,
@@ -350,9 +467,9 @@ class SnapshotCreateView(APIView):
 
 class SnapshotPollView(APIView):
     def get(self, request, snapshot_id):
-        snap = SNAPSHOTS_STORE.get(str(snapshot_id))
+        snap, _ = get_snapshot_for_request(snapshot_id, request)
         if not snap:
-            return Response({'code': 'not_found', 'message': 'Снимок не найден'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
         return Response({
             'snapshot_id': snap['snapshot_id'],
             'status': snap['status'],
@@ -361,19 +478,23 @@ class SnapshotPollView(APIView):
         })
 
     def delete(self, request, snapshot_id):
+        snap, snap_obj = get_snapshot_for_request(snapshot_id, request)
+        if not snap:
+            return Response({'code': 'not_found', 'message': 'Снимок не найден'}, status=status.HTTP_404_NOT_FOUND)
         s_id = str(snapshot_id)
         if s_id in SNAPSHOTS_STORE:
             del SNAPSHOTS_STORE[s_id]
             save_disk_store()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response({'code': 'not_found', 'message': 'Снимок не найден'}, status=status.HTTP_404_NOT_FOUND)
+        if snap_obj:
+            snap_obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class SnapshotDiagnosisView(APIView):
     def get(self, request, snapshot_id):
-        snap = SNAPSHOTS_STORE.get(str(snapshot_id))
+        snap, _ = get_snapshot_for_request(snapshot_id, request)
         if not snap:
-            return Response({'code': 'not_found', 'message': 'Снимок не найден'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
         ensure_scan_numbers()
         payload = dict(snap.get('diagnosis') or {})
         payload['scan_no'] = snap.get('scan_no')
@@ -383,11 +504,11 @@ class SnapshotDiagnosisView(APIView):
 
 class SnapshotMetricDetailView(APIView):
     def get(self, request, snapshot_id, metric_id):
-        snap = SNAPSHOTS_STORE.get(str(snapshot_id))
+        snap, _ = get_snapshot_for_request(snapshot_id, request)
         if not snap:
-            return Response({'code': 'not_found', 'message': 'Снимок не найден'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
 
-        metric_data = snap['all_metrics'].get(metric_id)
+        metric_data = snap.get('all_metrics', {}).get(metric_id)
         if not metric_data:
             return Response({'code': 'not_found', 'message': 'Метрика не найдена'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -399,32 +520,7 @@ class SnapshotMetricDetailView(APIView):
 
 class SnapshotsListView(APIView):
     def get(self, request):
-        ensure_scan_numbers()
-        items = []
-        for snap in reversed(list(SNAPSHOTS_STORE.values())):
-            diag = snap.get('diagnosis')
-            crit = 'ok'
-            if diag and diag.get('findings'):
-                v_set = {f['verdict'] for f in diag['findings']}
-                if 'critical' in v_set:
-                    crit = 'critical'
-                elif 'watch' in v_set:
-                    crit = 'watch'
-
-            items.append({
-                'snapshot_id': snap['snapshot_id'],
-                'scan_no': snap.get('scan_no'),
-                'status': snap['status'],
-                'created_at': snap['created_at'],
-                'filename': snap['filename'],
-                'source': snap['source'],
-                'period': diag.get('period') if diag else None,
-                'headline': diag.get('headline') if diag else None,
-                'verdict': crit,
-                'coverage_ready': len(diag['coverage']['available']) if diag else 0,
-                'coverage_total': 7,
-            })
-        return Response({'items': items, 'next_cursor': None})
+        return SnapshotCreateView().get(request)
 
 
 class TemplatesListView(APIView):
@@ -480,9 +576,13 @@ class LoadTemplateView(APIView):
 
         coverage = get_coverage(suggested_mapping)
         upload_id = str(uuid.uuid4())
+        ident = get_request_identity(request)
 
         UPLOADS_STORE[upload_id] = {
             'upload_id': upload_id,
+            'user_id': ident.user.max_user_id if ident.user else None,
+            'guest_session': ident.guest_session if ident.is_guest else "",
+            'is_guest': ident.is_guest,
             'filename': target_file.name,
             'columns': cols,
             'sample_rows': sample_rows,
@@ -494,6 +594,8 @@ class LoadTemplateView(APIView):
         try:
             Upload.objects.create(
                 id=upload_id,
+                user=ident.user,
+                guest_session=ident.guest_session if ident.is_guest else "",
                 filename=target_file.name,
                 columns=cols,
                 sample_rows=sample_rows,
@@ -521,8 +623,11 @@ class SnapshotChatHistoryView(APIView):
     DELETE: Clears chat history for a snapshot.
     """
     def get(self, request, snapshot_id):
-        s_id = str(snapshot_id)
-        messages_qs = ChatMessage.objects.filter(snapshot_id=s_id).order_by('created_at')
+        _, snap_obj = get_snapshot_for_request(snapshot_id, request)
+        if not snap_obj:
+            return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
+
+        messages_qs = ChatMessage.objects.filter(snapshot=snap_obj).order_by('created_at')
         items = []
         for m in messages_qs:
             items.append({
@@ -535,8 +640,11 @@ class SnapshotChatHistoryView(APIView):
         return Response({'messages': items})
 
     def delete(self, request, snapshot_id):
-        s_id = str(snapshot_id)
-        ChatMessage.objects.filter(snapshot_id=s_id).delete()
+        _, snap_obj = get_snapshot_for_request(snapshot_id, request)
+        if not snap_obj:
+            return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
+
+        ChatMessage.objects.filter(snapshot=snap_obj).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -546,11 +654,11 @@ class SnapshotExportExcelView(APIView):
     Generates beautiful multi-sheet Excel spreadsheet with audit summary and stagnant deals registry.
     """
     def get(self, request, snapshot_id):
-        s_id = str(snapshot_id)
-        snap = Snapshot.objects.filter(id=s_id).first()
+        _, snap = get_snapshot_for_request(snapshot_id, request)
         if not snap:
-            return Response({'code': 'not_found', 'message': 'Снимок не найден'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
 
+        s_id = str(snapshot_id)
         deals_qs = Deal.objects.filter(snapshot=snap)
         excel_buffer = generate_excel_report(snap, deals_qs)
 
@@ -569,11 +677,11 @@ class SnapshotExportPdfView(APIView):
     Generates branded PDF audit report with health score, threats and action plan.
     """
     def get(self, request, snapshot_id):
-        s_id = str(snapshot_id)
-        snap = Snapshot.objects.filter(id=s_id).first()
+        _, snap = get_snapshot_for_request(snapshot_id, request)
         if not snap:
-            return Response({'code': 'not_found', 'message': 'Снимок не найден'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
 
+        s_id = str(snapshot_id)
         deals_qs = Deal.objects.filter(snapshot=snap)
         pdf_buffer = generate_pdf_report(snap, deals_qs)
 

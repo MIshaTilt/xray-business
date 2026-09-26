@@ -1,4 +1,4 @@
-import { downloadBlob, downloadByBridge, getInitData } from '../bridge/index.ts'
+import { downloadBlob, downloadByBridge, getGuestSessionId, getInitData } from '../bridge/index.ts'
 import type { Mapping, MetricId, SnapshotListItem, UploadResponse } from './types.ts'
 import { ApiError } from './errors.ts'
 import { fixtures } from './fixtures.ts'
@@ -14,15 +14,13 @@ function apiUrl(path: string): string {
   return `${base}${path}`
 }
 
-function authHeaders(json: boolean): Headers {
+export function authHeaders(json: boolean): Headers {
   const headers = new Headers()
   const initData = getInitData()
-  if (initData) headers.set('X-Max-Init-Data', initData)
-  if (import.meta.env.DEV) {
-    const token = import.meta.env.VITE_DEBUG_TOKEN
-    const user = import.meta.env.VITE_DEBUG_USER
-    if (token) headers.set('X-Debug-Token', token)
-    if (user) headers.set('X-Debug-User', user)
+  if (initData) {
+    headers.set('X-Max-Init-Data', initData)
+  } else {
+    headers.set('X-Guest-Session', getGuestSessionId())
   }
   if (json) headers.set('Content-Type', 'application/json')
   return headers

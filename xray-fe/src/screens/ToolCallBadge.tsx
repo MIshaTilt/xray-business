@@ -10,6 +10,7 @@ export function ToolCallBadge({ toolCall }: { toolCall: ToolCallData }) {
     search_deals: 'Поиск сделок в базе',
     get_manager_stats: 'Анализ работы менеджеров',
     get_top_clients: 'Выборка ключевых клиентов',
+    render_chart: 'Построение интерактивного графика',
   }
 
   const label = toolLabels[toolCall.tool_name] || toolCall.tool_name

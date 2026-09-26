@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom'
 import { marked } from 'marked'
 import type { Diagnosis as DiagnosisData } from '../api/types.ts'
 import { ToolCallBadge } from './ToolCallBadge.tsx'
-import { api } from '../api/client.ts'
+import { ChartCard } from '../widgets/ChartCard.tsx'
+import { api, authHeaders } from '../api/client.ts'
 
 // Configure marked for clean inline rendering with breaks
 marked.setOptions({
@@ -53,7 +54,22 @@ export function ChatScreen({
             dbMsgs.map((m: any) => ({
               role: m.role,
               content: m.content,
-              toolCalls: m.tool_calls && m.tool_calls.length > 0 ? m.tool_calls : undefined,
+              toolCalls:
+                m.tool_calls && m.tool_calls.length > 0
+                  ? m.tool_calls.map((t: any) => ({
+                      ...t,
+                      result:
+                        typeof t.result === 'string'
+                          ? (() => {
+                              try {
+                                return JSON.parse(t.result)
+                              } catch {
+                                return t.result
+                              }
+                            })()
+                          : t.result,
+                    }))
+                  : undefined,
             }))
           )
           return
@@ -188,10 +204,13 @@ export function ChatScreen({
       `- Общая сумма: ${diagnosis.totals.amount} руб.\n` +
       `- Период: с ${diagnosis.period.from || 'начала'} по ${diagnosis.period.to || 'конец'}\n\n` +
       `Ключевые найденные угрозы и утечки:\n${threatsText}\n\n` +
-      'ВАЖНО О ДОСТУПЕ К ДАННЫМ:\n' +
-      'У тебя есть доступ к базе сделок через инструменты (tools): search_deals, get_manager_stats, get_top_clients.\n' +
+      'ВАЖНО ОБ ИНСТРУМЕНТАХ И ГРАФИКАХ:\n' +
+      'У тебя есть доступ к базе сделок через инструменты (tools): search_deals, get_manager_stats, get_top_clients, render_chart.\n' +
+      '- render_chart: ОБЯЗАТЕЛЬНО вызывай этот инструмент, когда пользователь просит "построй график", "нарисуй диаграмму", "покажи воронку", "сравни менеджеров визуально", "распределение выручки/сделок" или "сделай чарт". Поддерживаются chart_type: "bar" (столбчатая диаграмма), "donut" (круговая диаграмма долей), "funnel" (воронка этапов), "line" (линейный тренд). Для воронки используй chart_type="funnel" и dimension="status". Для менеджеров: dimension="manager". Для клиентов: dimension="client".\n' +
+      '- search_deals, get_manager_stats, get_top_clients: вызывай для поиска конкретных сделок и табличной аналитики по менеджерам и клиентам.\n' +
       'Если пользователь спрашивает о конкретных сделках, клиентах, менеджерах или о том, кто косячит — ОБЯЗАТЕЛЬНО вызывай соответствующий инструмент, получай реальные имена и цифры и отвечай с опорой на них!\n' +
-      'Никогда не отвечай "в отчете нет имен менеджеров", так как все имена и сделки доступны через вызовы инструментов.\n\n' +
+      'Никогда не отвечай "в отчете нет имен менеджеров", так как все имена и сделки доступны через вызовы инструментов.\n' +
+      'Когда строишь график через render_chart, в тексте своего ответа кратко поясни данные графика, отметь лидеров, проблемные места и дай рекомендации.\n\n' +
       'ПРАВИЛА ОБЩЕНИЯ:\n' +
       '1. Опирайся на эти конкретные цифры и факты из отчета. Не придумывай новые финансовые показатели.\n' +
       '2. Отвечай кратко, емко, дружелюбно, языком опытного предпринимателя и трекера.\n' +
@@ -215,7 +234,7 @@ export function ChatScreen({
       ...newMessages.map((m) => ({ role: m.role, content: m.content })),
     ]
 
-    const apiUrl = (import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '')
+    const apiUrl = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
 
     setActiveToolCalls([])
     const currentTools: ToolCallData[] = []
@@ -223,9 +242,7 @@ export function ChatScreen({
     try {
       const response = await fetch(`${apiUrl}/api/chat/stream/`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authHeaders(true),
         body: JSON.stringify({
           snapshot_id: snapshotId,
           messages: payloadMessages,
@@ -393,9 +410,13 @@ export function ChatScreen({
 
             {m.toolCalls && m.toolCalls.length > 0 && (
               <div className="chat-tool-calls-list">
-                {m.toolCalls.map((tc, tcIdx) => (
-                  <ToolCallBadge key={tcIdx} toolCall={tc} />
-                ))}
+                {m.toolCalls.map((tc, tcIdx) =>
+                  tc.tool_name === 'render_chart' && tc.result ? (
+                    <ChartCard key={tcIdx} chartData={tc.result} toolCall={tc} />
+                  ) : (
+                    <ToolCallBadge key={tcIdx} toolCall={tc} />
+                  )
+                )}
               </div>
             )}
 
@@ -416,9 +437,13 @@ export function ChatScreen({
 
             {activeToolCalls.length > 0 && (
               <div className="chat-tool-calls-list">
-                {activeToolCalls.map((tc, tcIdx) => (
-                  <ToolCallBadge key={tcIdx} toolCall={tc} />
-                ))}
+                {activeToolCalls.map((tc, tcIdx) =>
+                  tc.tool_name === 'render_chart' && tc.result ? (
+                    <ChartCard key={tcIdx} chartData={tc.result} toolCall={tc} />
+                  ) : (
+                    <ToolCallBadge key={tcIdx} toolCall={tc} />
+                  )
+                )}
               </div>
             )}
 

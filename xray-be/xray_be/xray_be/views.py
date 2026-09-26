@@ -16,6 +16,7 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
     """
     base_url = os.environ.get('OPENAI_BASE_URL', 'http://144.31.157.209:8317/v1').rstrip('/')
     api_key = os.environ.get('OPENAI_API_KEY', '')
+    model_name = os.environ.get('OPENAI_MODEL', 'gemini-3.8-flash-high')
 
     target_url = f"{base_url}/chat/completions"
     headers = {
@@ -30,7 +31,7 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
     if snapshot_id:
         try:
             tool_payload = {
-                "model": "gemini-3.8-flash-high",
+                "model": model_name,
                 "messages": current_messages,
                 "tools": AI_TOOLS_DEFINITIONS,
                 "tool_choice": "auto",
@@ -77,7 +78,7 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
 
     # 2. Step 2: Stream final synthesized answer with SSE
     payload = {
-        "model": "gemini-3.8-flash-high",
+        "model": model_name,
         "messages": current_messages,
         "stream": True
     }
@@ -160,6 +161,9 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
         yield "data: [DONE]\n\n"
 
 
+from engine.views_api import get_snapshot_for_request
+
+
 @csrf_exempt
 def chat_stream(request):
     """
@@ -171,6 +175,10 @@ def chat_stream(request):
         try:
             body = json.loads(request.body.decode('utf-8'))
             snapshot_id = body.get('snapshot_id')
+            if snapshot_id:
+                snap_dict, snap_obj = get_snapshot_for_request(snapshot_id, request)
+                if not snap_obj and not snap_dict:
+                    return JsonResponse({'error': 'Снимок не найден или доступ ограничен'}, status=403)
             if 'messages' in body and isinstance(body['messages'], list):
                 messages_list = body['messages']
             else:

@@ -29,6 +29,7 @@ class Upload(models.Model):
     suggested_mapping = models.JSONField(default=dict)
     mapping = models.JSONField(null=True, blank=True)
     status_map = models.JSONField(null=True, blank=True)
+    guest_session = models.CharField(max_length=128, blank=True, default="", db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
 
@@ -41,6 +42,9 @@ class Snapshot(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(MaxUser, on_delete=models.CASCADE, null=True, blank=True)
     upload = models.ForeignKey(Upload, on_delete=models.CASCADE, null=True, blank=True)
+    scan_no = models.PositiveIntegerField(null=True, blank=True, db_index=True)
+    guest_session = models.CharField(max_length=128, blank=True, default="", db_index=True)
+    is_guest = models.BooleanField(default=False, db_index=True)
     filename = models.CharField(max_length=255, blank=True)
     archetype = models.CharField(max_length=32, default="deals")
     engine_version = models.CharField(max_length=32, default="1")

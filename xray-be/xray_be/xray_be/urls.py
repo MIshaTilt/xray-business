@@ -43,7 +43,6 @@ urlpatterns = [
     path('api/snapshots/<uuid:snapshot_id>', SnapshotPollView.as_view(), name='api_snapshot_poll'),
     path('api/snapshots/<uuid:snapshot_id>/diagnosis', SnapshotDiagnosisView.as_view(), name='api_snapshot_diagnosis'),
     path('api/snapshots/<uuid:snapshot_id>/metrics/<str:metric_id>', SnapshotMetricDetailView.as_view(), name='api_snapshot_metric_detail'),
-    path('api/snapshots', SnapshotsListView.as_view(), name='api_snapshots_list'),
 
     # Chat history endpoints
     path('api/snapshots/<uuid:snapshot_id>/chat', SnapshotChatHistoryView.as_view(), name='api_snapshot_chat_history'),

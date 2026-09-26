@@ -77,13 +77,15 @@ def ai_smart_column_mapping(
 
     base_url = os.environ.get("OPENAI_BASE_URL", "http://144.31.157.209:8317/v1").rstrip("/")
     api_key = os.environ.get("OPENAI_API_KEY", "")
+    model_name = os.environ.get("OPENAI_MODEL", "gemini-3.8-flash-high")
+
     target_url = f"{base_url}/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
     payload = {
-        "model": "gemini-3.8-flash-high",
+        "model": model_name,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": json.dumps(user_prompt, ensure_ascii=False, indent=2)}

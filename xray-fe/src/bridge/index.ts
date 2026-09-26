@@ -1,4 +1,4 @@
-import type { MaxUser, Platform } from './types.ts'
+import type { MaxUser, MaxWebApp, Platform } from './types.ts'
 
 const KNOWN_PLATFORMS = new Set<Platform>(['ios', 'android', 'desktop', 'web'])
 
@@ -25,6 +25,15 @@ export function initBridge(): void {
 
 export function getInitData(): string {
   return hostApp()?.initData ?? ''
+}
+
+export function getGuestSessionId(): string {
+  let id = localStorage.getItem('xray_guest_session_id')
+  if (!id) {
+    id = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36)
+    localStorage.setItem('xray_guest_session_id', id)
+  }
+  return id
 }
 
 export function getMaxUser(): MaxUser | null {

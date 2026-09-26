@@ -98,8 +98,10 @@ def generate_llm_narrative(findings: List[Dict[str, Any]], default_headline: str
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
+        model_name = os.environ.get("OPENAI_MODEL", "gemini-3.8-flash-high")
+
         payload = {
-            "model": "gemini-3.8-flash-high",
+            "model": model_name,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
