@@ -334,6 +334,13 @@ export function SwipeScan({
     const gestureStartedOpen = startedOpen.current
     window.clearTimeout(pressTimer.current)
     if (moved.current < 8) {
+      if (selectingRef.current) {
+        setLive(false)
+        setDrag(null)
+        setPress(false)
+        onActivate()
+        return
+      }
       if (!gestureStartedOpen) {
         setLive(false)
         setDrag(null)

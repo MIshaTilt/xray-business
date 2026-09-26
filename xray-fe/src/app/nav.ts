@@ -19,11 +19,18 @@ export function go(navigate: NavigateFunction, to: To | number, options?: GoOpti
   })
 }
 
-export function tabOf(pathname: string): 'home' | 'scans' | 'chat' | 'menu' {
+export type TabName = 'home' | 'scans' | 'chat' | 'menu'
+
+export function tabOf(pathname: string): TabName {
   if (pathname.startsWith('/menu') || pathname.startsWith('/settings')) return 'menu'
-  if (pathname.startsWith('/templates')) return 'home'
-  if (pathname === '/scans' || pathname.startsWith('/scans/')) return 'scans'
   if (pathname.endsWith('/chat') || pathname === '/chat') return 'chat'
-  if (pathname === '/') return 'home'
+  if (
+    pathname === '/' ||
+    pathname.startsWith('/templates') ||
+    pathname.startsWith('/mapping') ||
+    pathname.startsWith('/processing')
+  ) {
+    return 'home'
+  }
   return 'scans'
 }

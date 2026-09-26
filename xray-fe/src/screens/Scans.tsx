@@ -1,5 +1,5 @@
 import { Button } from '@maxhub/max-ui'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { api, usesFixtures } from '../api/client.ts'
 import { errorText } from '../api/errors.ts'
@@ -336,7 +336,12 @@ export function Scans({
                       }}
                       onDelete={() => void removeSnapshot(item.snapshot_id)}
                     >
-                      <ScanFace item={item} picking={picking} checked={picked.includes(item.snapshot_id)} />
+                      <ScanFace
+                        item={item}
+                        picking={picking}
+                        checked={picked.includes(item.snapshot_id)}
+                        onToggle={() => togglePicked(item.snapshot_id)}
+                      />
                     </SwipeScan>
                   </li>
                 ))}
@@ -353,18 +358,40 @@ function ScanFace({
   item,
   picking = false,
   checked = false,
+  onToggle,
 }: {
   item: SnapshotListItem
   picking?: boolean
   checked?: boolean
+  onToggle?: () => void
 }) {
+  const [drop, setDrop] = useState(false)
+
+  function onCheckDown(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (!picking) return
+    event.stopPropagation()
+    setDrop(false)
+    window.requestAnimationFrame(() => setDrop(true))
+    onToggle?.()
+  }
+
   return (
     <>
-      <span className={`scan-check${picking ? ' is-shown' : ''}${checked ? ' is-on' : ''}`} aria-hidden="true">
+      <button
+        type="button"
+        className={`scan-check${picking ? ' is-shown' : ''}${checked ? ' is-on' : ''}${drop ? ' is-drop' : ''}`}
+        aria-label={checked ? 'Снять выбор' : 'Выбрать скан'}
+        aria-pressed={checked}
+        tabIndex={picking ? 0 : -1}
+        onPointerDown={onCheckDown}
+        onPointerUp={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
+        onAnimationEnd={() => setDrop(false)}
+      >
         <svg viewBox="0 0 24 24">
           <path d="M5 12.6 9.2 16.8 19 7.2" />
         </svg>
-      </span>
+      </button>
       <span className="scan-top">
         <span className="scan-meta">
           {shortWhen(item.created_at)}

@@ -1,5 +1,5 @@
 import { Panel } from '@maxhub/max-ui'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
 import type { Diagnosis as DiagnosisData, MetricId } from '../api/types.ts'
 import { api } from '../api/client.ts'
@@ -17,7 +17,14 @@ import { Templates } from '../screens/Templates.tsx'
 import { AnalyzeVeil } from '../widgets/AnalyzeVeil.tsx'
 import { LiveWallpaper } from '../widgets/LiveWallpaper.tsx'
 import { FlowProvider, useFlow } from './flow.tsx'
-import { go, tabOf } from './nav.ts'
+import { go, tabOf, type TabName } from './nav.ts'
+
+const TAB_ROOT: Record<TabName, string> = {
+  home: '/',
+  scans: '/scans',
+  chat: '/chat',
+  menu: '/menu',
+}
 
 const METRICS: MetricId[] = [
   'speed_to_lead',
@@ -44,12 +51,21 @@ function Shell() {
   const [hostBack, setHostBack] = useState(false)
   const tab = tabOf(location.pathname)
   const inChat = location.pathname.endsWith('/chat')
+  const onDiagnosis = /^\/scan\/[^/]+$/.test(location.pathname)
   const nested =
     /\/scan\/[^/]+\/(metric|missing|chat)/.test(location.pathname) ||
     location.pathname.startsWith('/processing/')
   const showBackBtn =
-    !hostBack && (nested || location.pathname.startsWith('/mapping') || location.pathname.startsWith('/templates'))
+    !hostBack &&
+    (nested || onDiagnosis || location.pathname.startsWith('/mapping') || location.pathname.startsWith('/templates'))
   const showTabs = true
+  const lastTabPath = useRef<Record<TabName, string>>({ ...TAB_ROOT })
+  const skipBack = useRef(false)
+
+  useEffect(() => {
+    if (location.pathname.startsWith('/processing/')) return
+    lastTabPath.current[tab] = location.pathname
+  }, [location.pathname, tab])
 
   useEffect(() => {
     document.documentElement.dataset.scene = inChat ? 'chat' : 'home'
@@ -75,12 +91,31 @@ function Shell() {
   }, [location.pathname])
 
   const pop = useCallback(() => {
+    if (skipBack.current) return
+    if (/^\/scan\/[^/]+$/.test(location.pathname)) {
+      go(navigate, '/scans')
+      return
+    }
     if (location.key === 'default') {
       go(navigate, '/')
       return
     }
     go(navigate, -1)
-  }, [location.key, navigate])
+  }, [location.pathname, location.key, navigate])
+
+  const openTab = useCallback(
+    (name: TabName) => {
+      let next = lastTabPath.current[name] || TAB_ROOT[name]
+      if (next.startsWith('/processing/') || tabOf(next) !== name) next = TAB_ROOT[name]
+      if (next === location.pathname) return
+      skipBack.current = true
+      window.setTimeout(() => {
+        skipBack.current = false
+      }, 500)
+      go(navigate, next)
+    },
+    [location.pathname, navigate],
+  )
 
   useEffect(() => {
     if (!showBackBtn) {
@@ -145,7 +180,7 @@ function Shell() {
 
         {showTabs ? (
           <nav className="tab-bar" aria-label="Навигация">
-            <button type="button" className={`tab-item${tab === 'home' ? ' is-on' : ''}`} onClick={() => go(navigate, '/')}>
+            <button type="button" className={`tab-item${tab === 'home' ? ' is-on' : ''}`} onClick={() => openTab('home')}>
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 11.2 12 5l8 6.2" />
                 <path d="M7.5 10.8V19h9v-8.2" />
@@ -155,7 +190,7 @@ function Shell() {
             <button
               type="button"
               className={`tab-item${tab === 'scans' ? ' is-on' : ''}`}
-              onClick={() => go(navigate, '/scans')}
+              onClick={() => openTab('scans')}
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <rect x="5" y="4.5" width="14" height="15" rx="2.2" />
@@ -166,7 +201,7 @@ function Shell() {
             <button
               type="button"
               className={`tab-item tab-chat${tab === 'chat' ? ' is-on' : ''}`}
-              onClick={() => go(navigate, flow.lastScanId ? `/scan/${flow.lastScanId}/chat` : '/chat')}
+              onClick={() => openTab('chat')}
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M5 6.5h14v9.5H9.2L5 19.2V6.5Z" />
@@ -177,7 +212,7 @@ function Shell() {
             <button
               type="button"
               className={`tab-item${tab === 'menu' ? ' is-on' : ''}`}
-              onClick={() => go(navigate, '/menu')}
+              onClick={() => openTab('menu')}
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M5 7h14M5 12h14M5 17h14" />
