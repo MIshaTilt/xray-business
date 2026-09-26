@@ -810,6 +810,9 @@ html[data-theme="dark"] .app-shell .file-card-remove:hover {
 }
 
 .flyout-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   overflow-x: hidden;
   overflow-y: auto;
   max-height: min(264px, calc(50vh - 16px));
@@ -900,6 +903,39 @@ html[data-theme="dark"] .template-dropdown-menu.is-portal .template-item-btn {
 html[data-theme="dark"] .template-dropdown-menu.is-portal .template-item-btn:hover,
 html[data-theme="dark"] .template-dropdown-menu.is-portal .template-item-btn.is-current {
   background: rgb(45 212 191 / 16%);
+}
+
+.template-dropdown-menu.is-portal .template-dropdown-header {
+  margin: 0;
+  padding: 6px 10px 4px;
+  color: #667085;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  animation: item-drop 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.02s;
+}
+
+.template-dropdown-menu.is-portal .template-item-label {
+  color: inherit;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.template-dropdown-menu.is-portal .template-item-filename {
+  color: #667085;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+html[data-theme="dark"] .template-dropdown-menu.is-portal .template-dropdown-header,
+html[data-theme="dark"] .template-dropdown-menu.is-portal .template-item-filename {
+  color: #d4d4d4;
 }
 
 .app-shell .field-select-btn {
@@ -1543,7 +1579,9 @@ html[data-theme="dark"] .app-shell .template-item-btn.is-current {
   .scans li.is-entering .swipe,
   .live-cloud,
   .live-shimmer,
+  .ai-veil,
   .ai-veil-scan,
+  .diagnosis,
   .chat-scan,
   .template-dropdown-menu,
   .template-item-btn,
@@ -1565,8 +1603,12 @@ html[data-theme="dark"] .app-shell .template-item-btn.is-current {
   transition: transform 0.18s ease, background 0.18s ease;
 }
 
-.app-shell .action:active {
+.app-shell .action:active:not(.flyout-trigger) {
   transform: scale(0.985);
+}
+
+.app-shell .flyout-trigger {
+  transition: background 0.18s ease, border-color 0.45s ease, box-shadow 0.45s ease;
 }
 
 .app-shell .action-primary {
@@ -1860,7 +1902,6 @@ html[data-theme="dark"] .field,
 html[data-theme="dark"] .deal-card,
 html[data-theme="dark"] .notice,
 html[data-theme="dark"] .stat-row article,
-html[data-theme="dark"] .template-dropdown-menu,
 html[data-theme="dark"] .app-shell .template-item-btn,
 html[data-theme="dark"] .app-shell .action-secondary,
 html[data-theme="dark"] .app-shell .action-quiet,
@@ -2229,6 +2270,8 @@ html[data-theme="dark"] .app-shell .action-primary {
 }
 
 .home-actions {
+  position: relative;
+  z-index: 8;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -2691,8 +2734,7 @@ html[data-theme="dark"] .history-delete.is-sealed .is-done {
 }
 
 .history-delete:active .history-delete-face,
-.history-delete.is-twitch .history-delete-face,
-.swipe:has(.scan-card:active) .history-delete-face {
+.history-delete.is-twitch .history-delete-face {
   animation: drop-twitch 0.32s ease;
 }
 
@@ -3332,9 +3374,34 @@ html[data-theme="dark"] .copy-action.is-copied .is-done {
   user-select: none;
 }
 
+.diagnosis {
+  animation: diagnosis-in 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ai-veil.is-leaving {
+  pointer-events: none;
+  animation: veil-out 0.5s ease forwards;
+}
+
 @keyframes veil-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes veil-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes diagnosis-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @keyframes veil-scan {
@@ -3967,7 +4034,7 @@ html[data-theme="dark"] .chat-clear-btn.is-on:hover {
   z-index: 50;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   max-height: min(280px, 50vh);
   overflow: hidden;
   padding: 8px;
@@ -3981,6 +4048,14 @@ html[data-theme="dark"] .chat-clear-btn.is-on:hover {
     0 8px 16px rgb(23 32 51 / 16%),
     0 22px 48px rgb(23 32 51 / 28%);
   font-family: inherit;
+}
+
+html[data-theme="dark"] .template-dropdown-menu {
+  background: linear-gradient(180deg, rgb(14 14 14 / 86%), rgb(8 8 8 / 78%));
+  border-color: rgb(255 255 255 / 14%);
+  color: #fff;
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
 }
 
 .app-shell .template-dropdown-header {
@@ -4013,13 +4088,24 @@ html[data-theme="dark"] .chat-clear-btn.is-on:hover {
   background: rgb(243 251 249 / 42%);
 }
 
-.app-shell button:active:not(.history-delete),
+.app-shell button:active:not(.history-delete):not(.flyout-trigger),
 .finding:active,
-.scan-card:active,
+.swipe.is-press .scan-card,
 .home-btn:active,
 .theme-btn:active,
 .back:active {
   animation: drop-twitch 0.32s ease;
+}
+
+.swipe.is-dragging .scan-card,
+.swipe.is-dragging .scan-card:active,
+.swipe.is-dragging .scan-card.is-press {
+  animation: none;
+  transform: none;
+}
+
+.app-shell .flyout-trigger:active {
+  animation: drop-twitch-field 0.32s ease;
 }
 
 .missing-list .finding,
@@ -4101,6 +4187,13 @@ html[data-theme="dark"] .chat-clear-btn.is-on:hover {
   0% { transform: scale(1); }
   30% { transform: scale(0.95); }
   60% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+@keyframes drop-twitch-field {
+  0% { transform: scale(1); }
+  30% { transform: scale(0.98); }
+  60% { transform: scale(1.008); }
   100% { transform: scale(1); }
 }
 

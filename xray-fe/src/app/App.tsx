@@ -29,6 +29,7 @@ export function App() {
   const [homeKey, setHomeKey] = useState(0)
   const [hostBack, setHostBack] = useState(false)
   const [veil, setVeil] = useState(false)
+  const [veilLeaving, setVeilLeaving] = useState(false)
   const [homeSplash, setHomeSplash] = useState(false)
   const [dark, setDark] = useState(() => window.localStorage.getItem('xray-theme') === 'dark')
   const [themePlayed, setThemePlayed] = useState(false)
@@ -62,11 +63,17 @@ export function App() {
   }, [])
 
   const beginVeil = useCallback(() => {
+    setVeilLeaving(false)
     setVeil(true)
   }, [])
 
-  const stopVeil = useCallback(() => {
+  const hideVeil = useCallback(() => {
     setVeil(false)
+    setVeilLeaving(false)
+  }, [])
+
+  const stopVeil = useCallback(() => {
+    setVeilLeaving(true)
   }, [])
 
   const goHome = useCallback(() => {
@@ -75,13 +82,20 @@ export function App() {
     window.setTimeout(() => {
       reset()
       setVeil(false)
+      setVeilLeaving(false)
       setHomeSplash(false)
     }, 900)
   }, [homeSplash, reset])
 
   const finishVeil = useCallback(() => {
-    window.setTimeout(() => setVeil(false), 280)
+    window.setTimeout(() => setVeilLeaving(true), 480)
   }, [])
+
+  useEffect(() => {
+    if (!veilLeaving) return
+    const id = window.setTimeout(hideVeil, 520)
+    return () => window.clearTimeout(id)
+  }, [hideVeil, veilLeaving])
 
   useEffect(() => {
     if (!veil) return
@@ -199,8 +213,9 @@ export function App() {
             </div>
           </div>
         ) : null}
-        {veil ? (
+        {veil || veilLeaving ? (
           <AnalyzeVeil
+            leaving={veilLeaving}
             phase={
               current.name === 'processing'
                 ? 'processing'

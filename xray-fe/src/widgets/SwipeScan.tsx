@@ -22,6 +22,7 @@ export function SwipeScan({
   const [sealed, setSealed] = useState(false)
   const [twitch, setTwitch] = useState(false)
   const [closing, setClosing] = useState(false)
+  const [press, setPress] = useState(false)
   const [cardWidth, setCardWidth] = useState(0)
   const rootRef = useRef<HTMLDivElement>(null)
   const onOpenChangeRef = useRef(onOpenChange)
@@ -39,14 +40,21 @@ export function SwipeScan({
   const latest = useRef(0)
   const deleteTap = useRef<{ x: number; y: number } | null>(null)
   const twitchTimer = useRef(0)
+  const pressTimer = useRef(0)
   const wheelTimer = useRef(0)
   const wheelActive = useRef(false)
+  const wheelPendingX = useRef(0)
+  const wheelPendingY = useRef(0)
+  const wheelIgnoreUntil = useRef(0)
+  const closingRef = useRef(false)
   const releaseTimer = useRef(0)
   const closeTimer = useRef(0)
   const sealTimer = useRef(0)
   const deleteTimer = useRef(0)
   const pressingDelete = useRef(false)
+  const activating = useRef(false)
   const finishRef = useRef<(event: PointerEvent<HTMLDivElement>) => void>(() => {})
+  const settleWheelRef = useRef<() => void>(() => {})
 
   const shown = full ? BASE : drag ?? (open ? BASE : 0)
   const progress = Math.min(1, Math.max(0, shown / BASE))
@@ -62,6 +70,13 @@ export function SwipeScan({
     observer.observe(node)
     return () => observer.disconnect()
   }, [])
+
+  useEffect(() => {
+    if (open || closingRef.current || confirming.current || full) return
+    if (dragging.current || wheelActive.current) return
+    if (latest.current <= 0) return
+    slideAway()
+  }, [open])
 
   function deleteFace() {
     return rootRef.current?.querySelector('.history-delete-face') ?? null
@@ -79,16 +94,25 @@ export function SwipeScan({
 
   function slideAway() {
     dragging.current = false
+    wheelActive.current = false
+    wheelPendingX.current = 0
+    wheelPendingY.current = 0
+    closingRef.current = true
+    wheelIgnoreUntil.current = Date.now() + 480
     setLive(false)
-    setDrag(BASE)
+    setDrag(latest.current)
     window.clearTimeout(releaseTimer.current)
     window.clearTimeout(closeTimer.current)
     releaseTimer.current = window.setTimeout(() => {
       setClosing(true)
+      latest.current = 0
       setDrag(null)
       onOpenChangeRef.current(false)
-      closeTimer.current = window.setTimeout(() => setClosing(false), 460)
-    }, 48)
+      closeTimer.current = window.setTimeout(() => {
+        setClosing(false)
+        closingRef.current = false
+      }, 460)
+    }, 16)
   }
 
   function release(pull: number) {
@@ -96,13 +120,25 @@ export function SwipeScan({
       slideAway()
       return
     }
+    wheelActive.current = false
+    latest.current = BASE
     setLive(false)
     window.clearTimeout(releaseTimer.current)
     releaseTimer.current = window.setTimeout(() => {
       setDrag(null)
       onOpenChangeRef.current(true)
-    }, 32)
+    }, 16)
   }
+
+  function settleWheel() {
+    wheelActive.current = false
+    wheelPendingX.current = 0
+    wheelPendingY.current = 0
+    setPress(false)
+    release(latest.current)
+  }
+
+  settleWheelRef.current = settleWheel
 
   function confirm() {
     if (confirming.current) return
@@ -120,22 +156,33 @@ export function SwipeScan({
     const node = rootRef.current
     if (!node) return
     const onWheel = (event: WheelEvent) => {
-      if (confirming.current || dragging.current) return
-      if (Math.abs(event.deltaX) < 12 || Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return
-      event.preventDefault()
+      if (confirming.current || dragging.current || closingRef.current) return
+      if (Date.now() < wheelIgnoreUntil.current) return
       if (!wheelActive.current) {
+        wheelPendingX.current += event.deltaX
+        wheelPendingY.current += event.deltaY
+        if (
+          Math.abs(wheelPendingX.current) < 8 ||
+          Math.abs(wheelPendingX.current) <= Math.abs(wheelPendingY.current)
+        ) {
+          return
+        }
+        event.preventDefault()
         wheelActive.current = true
-        latest.current = openRef.current ? BASE : 0
+        latest.current = Math.max(0, Math.min(BASE, latest.current + wheelPendingX.current))
+        wheelPendingX.current = 0
+        wheelPendingY.current = 0
         setLive(true)
+        setDrag(latest.current)
+      } else {
+        event.preventDefault()
+        latest.current = Math.max(0, Math.min(BASE, latest.current + event.deltaX))
+        setDrag(latest.current)
       }
-      const next = Math.max(0, Math.min(BASE + 280, latest.current + event.deltaX))
-      latest.current = next
-      setDrag(next)
       window.clearTimeout(wheelTimer.current)
       wheelTimer.current = window.setTimeout(() => {
-        wheelActive.current = false
-        release(latest.current)
-      }, 380)
+        settleWheelRef.current()
+      }, 16)
     }
     let originX = 0
     let originY = 0
@@ -192,6 +239,7 @@ export function SwipeScan({
       window.clearTimeout(wheelTimer.current)
       window.clearTimeout(releaseTimer.current)
       window.clearTimeout(twitchTimer.current)
+      window.clearTimeout(pressTimer.current)
       window.clearTimeout(sealTimer.current)
       window.clearTimeout(deleteTimer.current)
       window.clearTimeout(closeTimer.current)
@@ -210,7 +258,7 @@ export function SwipeScan({
   }
 
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
-    if (confirming.current) return
+    if (confirming.current || activating.current) return
     const target = event.target as HTMLElement
     if (target.closest('.history-delete') || overDelete(event.clientX, event.clientY)) {
       if (!target.closest('.history-delete')) {
@@ -220,13 +268,13 @@ export function SwipeScan({
       return
     }
     dragging.current = true
-    setLive(true)
-    startedOpen.current = open
+    setPress(false)
+    window.clearTimeout(pressTimer.current)
+    startedOpen.current = open || latest.current > 8
     startX.current = event.clientX
-    startOffset.current = open ? BASE : 0
+    startOffset.current = drag ?? (open ? BASE : latest.current)
     moved.current = 0
     latest.current = startOffset.current
-    setDrag(startOffset.current)
     event.currentTarget.setPointerCapture(event.pointerId)
   }
 
@@ -234,8 +282,12 @@ export function SwipeScan({
     if (!dragging.current) return
     const delta = startX.current - event.clientX
     moved.current = Math.max(moved.current, Math.abs(delta))
+    if (moved.current < 8) return
+    window.clearTimeout(pressTimer.current)
+    setPress(false)
     const next = Math.max(0, Math.min(BASE + 280, startOffset.current + delta))
     latest.current = next
+    if (!live) setLive(true)
     setDrag(next)
   }
 
@@ -260,16 +312,24 @@ export function SwipeScan({
     }
     const pull = latest.current
     const gestureStartedOpen = startedOpen.current
+    window.clearTimeout(pressTimer.current)
     if (moved.current < 8) {
       if (!gestureStartedOpen) {
         setLive(false)
         setDrag(null)
-        onActivate()
+        activating.current = true
+        setPress(true)
+        pressTimer.current = window.setTimeout(() => {
+          setPress(false)
+          onActivate()
+        }, 300)
         return
       }
+      setPress(false)
       slideAway()
       return
     }
+    setPress(false)
     release(pull)
   }
 
@@ -278,7 +338,7 @@ export function SwipeScan({
   return (
     <div
       ref={rootRef}
-      className={`swipe${live ? ' is-dragging' : ''}`}
+      className={`swipe${live ? ' is-dragging' : ''}${press ? ' is-press' : ''}`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={finish}

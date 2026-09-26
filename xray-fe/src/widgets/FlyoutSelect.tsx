@@ -40,7 +40,9 @@ export function FlyoutSelect({
     const node = wrapRef.current
     if (!node) return
     function place() {
-      const trigger = (node.querySelector('.field-select-btn') ?? node) as HTMLElement
+      const host = wrapRef.current
+      if (!host) return
+      const trigger = (host.querySelector('.field-select-btn') ?? host) as HTMLElement
       const rect = trigger.getBoundingClientRect()
       const style = window.getComputedStyle(trigger)
       setBox({
@@ -97,7 +99,7 @@ export function FlyoutSelect({
     <div ref={wrapRef} className="template-dropdown-wrapper field-dropdown">
       <button
         type="button"
-        className="action action-secondary field-select-btn"
+        className="action action-secondary field-select-btn flyout-trigger"
         aria-expanded={open && !closing}
         onClick={onToggle}
       >

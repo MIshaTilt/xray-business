@@ -29,6 +29,35 @@ STORE_FILE = DATA_DIR / 'snapshots_store.json'
 UPLOADS_STORE = {}
 SNAPSHOTS_STORE = {}
 
+
+def get_upload(upload_id) -> dict | None:
+    key = str(upload_id)
+    cached = UPLOADS_STORE.get(key)
+    if cached:
+        return cached
+    row = Upload.objects.filter(pk=key).first()
+    if not row:
+        return None
+    entry = {
+        'upload_id': key,
+        'filename': row.filename,
+        'columns': row.columns or [],
+        'sample_rows': row.sample_rows or [],
+        'all_rows': row.all_rows or [],
+        'mapping': row.mapping or row.suggested_mapping or {},
+        'status_map': row.status_map or {},
+    }
+    UPLOADS_STORE[key] = entry
+    return entry
+
+
+def persist_upload_mapping(upload_id, mapping: dict, status_map: dict) -> None:
+    try:
+        Upload.objects.filter(pk=str(upload_id)).update(mapping=mapping, status_map=status_map)
+    except Exception as e:
+        print(f"[DB ERROR] Не удалось обновить mapping: {e}")
+
+
 def load_disk_store():
     global SNAPSHOTS_STORE
     if STORE_FILE.exists():
@@ -158,7 +187,7 @@ class UploadView(APIView):
 
 class SaveMappingView(APIView):
     def put(self, request, upload_id):
-        upload = UPLOADS_STORE.get(str(upload_id))
+        upload = get_upload(upload_id)
         if not upload:
             return Response({'code': 'not_found', 'message': 'Сессия загрузки не найдена'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -171,6 +200,7 @@ class SaveMappingView(APIView):
 
         upload['mapping'] = mapping
         upload['status_map'] = status_map
+        persist_upload_mapping(upload_id, mapping, status_map)
         coverage = get_coverage(mapping)
 
         return Response({
@@ -210,7 +240,7 @@ class SnapshotCreateView(APIView):
 
     def post(self, request):
         upload_id = request.data.get('upload_id')
-        upload = UPLOADS_STORE.get(str(upload_id))
+        upload = get_upload(upload_id)
         if not upload:
             return Response({'code': 'not_found', 'message': 'Файл загрузки не найден'}, status=status.HTTP_404_NOT_FOUND)
 

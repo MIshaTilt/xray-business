@@ -1,5 +1,6 @@
 import { Button } from '@maxhub/max-ui'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { api, usesFixtures } from '../api/client.ts'
 import { errorText } from '../api/errors.ts'
 import type { SnapshotListItem, UploadResponse } from '../api/types.ts'
@@ -41,6 +42,14 @@ export function Home({
   const [enteringIds, setEnteringIds] = useState<string[]>([])
   const emptyTimer = useRef(0)
   const templatesTimer = useRef(0)
+  const templatesWrapRef = useRef<HTMLDivElement>(null)
+  const [templatesBox, setTemplatesBox] = useState<{
+    top: number
+    left: number
+    width: number
+    fontFamily: string
+    fontSize: string
+  } | null>(null)
   const leavingIdsRef = useRef<string[]>([])
   const enterTimerRef = useRef<Record<string, number>>({})
 
@@ -154,6 +163,49 @@ export function Home({
     }, 420)
   }
 
+  useLayoutEffect(() => {
+    if (!showTemplatesDropdown) {
+      setTemplatesBox(null)
+      return
+    }
+    function place() {
+      const host = templatesWrapRef.current
+      if (!host) return
+      const trigger = (host.querySelector('button') ?? host) as HTMLElement
+      const rect = trigger.getBoundingClientRect()
+      const style = window.getComputedStyle(trigger)
+      setTemplatesBox({
+        top: rect.bottom + window.scrollY + 8,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+        fontFamily: style.fontFamily,
+        fontSize: style.fontSize,
+      })
+    }
+    place()
+    window.addEventListener('resize', place)
+    return () => window.removeEventListener('resize', place)
+  }, [showTemplatesDropdown])
+
+  useEffect(() => {
+    if (!showTemplatesDropdown || templatesClosing) return
+    function onPointer(event: PointerEvent) {
+      const target = event.target as Node | null
+      if (templatesWrapRef.current?.contains(target)) return
+      if (target instanceof Element && target.closest('.template-dropdown-menu')) return
+      closeTemplates()
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') closeTemplates()
+    }
+    document.addEventListener('pointerdown', onPointer)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onPointer)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [showTemplatesDropdown, templatesClosing])
+
   async function selectTemplate(templateId: string) {
     closeTemplates()
     setBusy('template')
@@ -241,7 +293,7 @@ export function Home({
           onClear={() => setFile(null)}
           onSend={() => void sendFile()}
         />
-        <div className="template-dropdown-wrapper">
+        <div className="template-dropdown-wrapper" ref={templatesWrapRef}>
           <Button
             className="action action-secondary"
             type="button"
@@ -265,24 +317,37 @@ export function Home({
             </span>
           </Button>
 
-          {showTemplatesDropdown && (
-            <div className={`template-dropdown-menu${templatesClosing ? ' is-closing' : ''}`}>
-              <InsetVScroll watch={templates.length}>
-              <div className="template-dropdown-header">Выберите готовый CSV:</div>
-              {templates.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  className="template-item-btn"
-                  onClick={() => void selectTemplate(t.id)}
+          {showTemplatesDropdown && templatesBox
+            ? createPortal(
+                <div
+                  className={`template-dropdown-menu is-portal${templatesClosing ? ' is-closing' : ''}`}
+                  style={{
+                    top: templatesBox.top,
+                    left: templatesBox.left,
+                    width: templatesBox.width,
+                    right: 'auto',
+                    fontFamily: templatesBox.fontFamily,
+                    fontSize: templatesBox.fontSize,
+                  }}
                 >
-                  <span className="template-item-label">{t.label}</span>
-                  <span className="template-item-filename">{t.name}</span>
-                </button>
-              ))}
-              </InsetVScroll>
-            </div>
-          )}
+                  <InsetVScroll watch={`${showTemplatesDropdown}:${templates.length}:${templatesBox.width}`}>
+                    <div className="template-dropdown-header">Выберите готовый CSV:</div>
+                    {templates.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        className="template-item-btn"
+                        onClick={() => void selectTemplate(t.id)}
+                      >
+                        <span className="template-item-label">{t.label}</span>
+                        <span className="template-item-filename">{t.name}</span>
+                      </button>
+                    ))}
+                  </InsetVScroll>
+                </div>,
+                document.body,
+              )
+            : null}
         </div>
         <Button
           className="action action-quiet"

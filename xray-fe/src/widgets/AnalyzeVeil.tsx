@@ -17,7 +17,7 @@ const LINES = [
   'Просмотр сумм, статусов и сроков',
 ]
 
-export function AnalyzeVeil({ phase }: { phase: AnalyzePhase }) {
+export function AnalyzeVeil({ phase, leaving = false }: { phase: AnalyzePhase; leaving?: boolean }) {
   const [tick, setTick] = useState(0)
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export function AnalyzeVeil({ phase }: { phase: AnalyzePhase }) {
 
   const line = LINES[tick % LINES.length]
   return (
-    <div className="ai-veil" role="status" aria-live="polite">
+    <div className={`ai-veil${leaving ? ' is-leaving' : ''}`} role="status" aria-live="polite">
       <span className="ai-veil-scan" aria-hidden="true" />
       <div className="ai-veil-card">
         <span className="ai-logo" aria-hidden="true">
