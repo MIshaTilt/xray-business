@@ -48,6 +48,7 @@ export function Home({
       {error ? <Notice tone="error">{error}</Notice> : null}
       {soon ? <Notice tone="ok">{soon}</Notice> : null}
       <div className="home-actions">
+        <p className="home-lead-in">Можно подключить базу данных</p>
         <div className="source-grid">
           <button type="button" className="source-tile source-1c" onClick={() => setSoon('Подключение 1С скоро появится')}>
             <span className="source-tile-icon" aria-hidden="true">
@@ -68,15 +69,7 @@ export function Home({
             <span className="source-tile-label">МойСклад</span>
           </button>
         </div>
-        <FileDrop
-          file={file}
-          busy={busy}
-          hideButton
-          inputRef={fileInputRef}
-          onPick={setFile}
-          onClear={() => setFile(null)}
-          onSend={() => void sendFile()}
-        />
+        {file ? null : <p className="home-or">или</p>}
         {file ? null : (
           <Button
             className="action action-primary"
@@ -89,6 +82,15 @@ export function Home({
             Загрузить файл CSV
           </Button>
         )}
+        <FileDrop
+          file={file}
+          busy={busy}
+          hideButton
+          inputRef={fileInputRef}
+          onPick={setFile}
+          onClear={() => setFile(null)}
+          onSend={() => void sendFile()}
+        />
         <Button
           className="action action-secondary"
           type="button"
