@@ -10,11 +10,9 @@ const CONNECTORS = [
 
 export function Menu({
   dark,
-  themePlayed,
   onToggleTheme,
 }: {
   dark: boolean
-  themePlayed: boolean
   onToggleTheme: () => void
 }) {
   const user = useMemo(() => getMaxUser(), [])
@@ -57,7 +55,7 @@ export function Menu({
           <strong>Тема</strong>
           <span>{dark ? 'Ночная' : 'Светлая'}</span>
         </div>
-        <ThemeToggle dark={dark} played={themePlayed} onToggle={onToggleTheme} />
+        <ThemeToggle dark={dark} onToggle={onToggleTheme} />
       </div>
 
       <p className="eyebrow">Подключения</p>

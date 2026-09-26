@@ -8,12 +8,16 @@ export function SwipeScan({
   onOpenChange,
   onActivate,
   onDelete,
+  selecting = false,
+  selected = false,
   children,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   onActivate: () => void
   onDelete: () => void
+  selecting?: boolean
+  selected?: boolean
   children: ReactNode
 }) {
   const [drag, setDrag] = useState<number | null>(null)
@@ -29,6 +33,8 @@ export function SwipeScan({
   const onDeleteRef = useRef(onDelete)
   onOpenChangeRef.current = onOpenChange
   onDeleteRef.current = onDelete
+  const selectingRef = useRef(selecting)
+  selectingRef.current = selecting
   const dragging = useRef(false)
   const confirming = useRef(false)
   const openRef = useRef(open)
@@ -156,7 +162,7 @@ export function SwipeScan({
     const node = rootRef.current
     if (!node) return
     const onWheel = (event: WheelEvent) => {
-      if (confirming.current || dragging.current || closingRef.current) return
+      if (selectingRef.current || confirming.current || dragging.current || closingRef.current) return
       if (Date.now() < wheelIgnoreUntil.current) return
       if (!wheelActive.current) {
         wheelPendingX.current += event.deltaX
@@ -259,6 +265,16 @@ export function SwipeScan({
 
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
     if (confirming.current || activating.current) return
+    if (selectingRef.current) {
+      dragging.current = true
+      setPress(false)
+      startX.current = event.clientX
+      moved.current = 0
+      startedOpen.current = false
+      latest.current = 0
+      event.currentTarget.setPointerCapture(event.pointerId)
+      return
+    }
     const target = event.target as HTMLElement
     if (target.closest('.history-delete') || overDelete(event.clientX, event.clientY)) {
       if (!target.closest('.history-delete')) {
@@ -280,6 +296,10 @@ export function SwipeScan({
 
   function onPointerMove(event: PointerEvent<HTMLDivElement>) {
     if (!dragging.current) return
+    if (selectingRef.current) {
+      moved.current = Math.max(moved.current, Math.abs(event.clientX - startX.current))
+      return
+    }
     const delta = startX.current - event.clientX
     moved.current = Math.max(moved.current, Math.abs(delta))
     if (moved.current < 8) return
@@ -321,6 +341,7 @@ export function SwipeScan({
         setPress(true)
         pressTimer.current = window.setTimeout(() => {
           setPress(false)
+          activating.current = false
           onActivate()
         }, 300)
         return
@@ -338,13 +359,13 @@ export function SwipeScan({
   return (
     <div
       ref={rootRef}
-      className={`swipe${live ? ' is-dragging' : ''}${press ? ' is-press' : ''}`}
+      className={`swipe${live ? ' is-dragging' : ''}${press ? ' is-press' : ''}${selecting ? ' is-selecting' : ''}`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={finish}
       onPointerCancel={finish}
     >
-      <div className="scan-card">
+      <div className={`scan-card${selected ? ' is-picked' : ''}`}>
         <div
           className="scan-card-body"
           style={{

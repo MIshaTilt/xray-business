@@ -90,6 +90,9 @@ export type SnapshotListItem = {
   status: SnapshotStatus
   created_at: string
   headline?: string
+  card_title?: string
+  filename?: string
+  topics?: MetricId[]
   source?: string
   verdict?: 'critical' | 'watch' | 'ok'
   coverage_label?: string

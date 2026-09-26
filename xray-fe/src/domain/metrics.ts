@@ -106,6 +106,23 @@ export function formatRub(value: string | number | null | undefined): string {
   return `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(amount)} руб.`
 }
 
+const SCAN_TOPIC: Record<MetricId, string> = {
+  speed_to_lead: 'Первый ответ',
+  stagnation: 'Зависшие сделки',
+  discount_leakage: 'Утечка скидок',
+  sales_cycle: 'Цикл сделки',
+  key_account_risk: 'Крупные клиенты',
+  dormant: 'Забытые клиенты',
+  funnel_dropoff: 'Провал воронки',
+}
+
+export function scanCaption(topics?: MetricId[]): string {
+  const names = (topics ?? []).map((id) => SCAN_TOPIC[id]).filter(Boolean)
+  if (names.length >= 2) return `${names[0]} и ${names[1].toLocaleLowerCase('ru-RU')}`
+  if (names.length === 1) return names[0]
+  return ''
+}
+
 export function formatImpact(finding: { money_impact: string | null; value: number | null; unit: string }): string {
   if (finding.money_impact) return formatRub(finding.money_impact)
   if (finding.value == null) return '—'

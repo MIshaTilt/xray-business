@@ -1,9 +1,10 @@
 import { Button } from '@maxhub/max-ui'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { api, usesFixtures } from '../api/client.ts'
 import { errorText } from '../api/errors.ts'
 import type { SnapshotListItem } from '../api/types.ts'
-import { formatWhen } from '../domain/metrics.ts'
+import { formatWhen, scanCaption } from '../domain/metrics.ts'
 import { Notice } from '../widgets/Notice.tsx'
 import { SwipeScan } from '../widgets/SwipeScan.tsx'
 import { XRayLogo } from '../widgets/XRayLogo.tsx'
@@ -29,7 +30,12 @@ export function Scans({
   const [leavingIds, setLeavingIds] = useState<string[]>([])
   const [emptyLeaving, setEmptyLeaving] = useState(false)
   const [enteringIds, setEnteringIds] = useState<string[]>([])
+  const [picking, setPicking] = useState(false)
+  const [pickClosing, setPickClosing] = useState(false)
+  const [picked, setPicked] = useState<string[]>([])
+  const [pickFont, setPickFont] = useState<{ fontFamily: string } | null>(null)
   const emptyTimer = useRef(0)
+  const pickTimer = useRef(0)
   const leavingIdsRef = useRef<string[]>([])
   const enterTimerRef = useRef<Record<string, number>>({})
 
@@ -47,6 +53,7 @@ export function Scans({
     void refresh()
     return () => {
       window.clearTimeout(emptyTimer.current)
+      window.clearTimeout(pickTimer.current)
       Object.values(enterTimerRef.current).forEach((timer) => window.clearTimeout(timer))
     }
   }, [])
@@ -80,6 +87,9 @@ export function Scans({
       created_at: new Date().toISOString(),
       scan_no: Math.max(0, ...snapshots.map((item) => item.scan_no ?? 0)) + 1,
       headline: 'Пустая заглушка для проверки списка',
+      card_title: 'Тестовая таблица',
+      filename: 'test_table.csv',
+      topics: ['stagnation'],
       source: 'тест',
       verdict: 'watch',
       coverage_label: '0 из 7',
@@ -125,6 +135,59 @@ export function Scans({
     }
   }
 
+  function stopPick() {
+    if (!picking || pickClosing) return
+    setPicking(false)
+    setPicked([])
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      window.clearTimeout(pickTimer.current)
+      setPickClosing(false)
+      return
+    }
+    setPickClosing(true)
+    window.clearTimeout(pickTimer.current)
+    pickTimer.current = window.setTimeout(() => setPickClosing(false), 400)
+  }
+
+  function startPick() {
+    window.clearTimeout(pickTimer.current)
+    setPickClosing(false)
+    setOpenSwipeId(null)
+    setPicked([])
+    setPicking(true)
+  }
+
+  function togglePicked(id: string) {
+    setPicked((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]))
+  }
+
+  function removePicked() {
+    const ids = picked.filter((id) => !leavingIdsRef.current.includes(id))
+    stopPick()
+    for (const id of ids) void removeSnapshot(id)
+  }
+
+  useLayoutEffect(() => {
+    if (!picking && !pickClosing) return
+    const shell = document.querySelector('.app-shell')
+    if (!(shell instanceof HTMLElement)) return
+    setPickFont({ fontFamily: getComputedStyle(shell).fontFamily })
+  }, [picking, pickClosing])
+
+  useEffect(() => {
+    if (!picking) return
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') stopPick()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [picking])
+
+  useEffect(() => {
+    if (!picking) return
+    if (snapshots.every((item) => leavingIds.includes(item.snapshot_id))) stopPick()
+  }, [picking, snapshots, leavingIds])
+
   async function removeSnapshot(id: string) {
     if (leavingIdsRef.current.includes(id)) return
     setError('')
@@ -159,11 +222,55 @@ export function Scans({
     }
   }
 
+  const pickSlot = document.getElementById('diag-more-slot')
+  const visible = snapshots.filter((item) => !leavingIds.includes(item.snapshot_id))
+  const canPick = scansLoaded && visible.length > 0
+
   return (
-    <div className="stack scans-screen">
+    <div className={`stack scans-screen${picking ? ' is-picking' : ''}`}>
       <div className="lead">
         <h1>Сканы</h1>
       </div>
+      {canPick && pickSlot
+        ? createPortal(
+            <button
+              type="button"
+              className={`more-dot-btn scans-tool${picking ? ' is-cancel' : ''}`}
+              aria-label={picking ? 'Отмена' : 'Выбрать для удаления'}
+              onClick={picking ? stopPick : startPick}
+            >
+              <span className="scans-tool-face scans-tool-trash" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M5 7.5h14" />
+                  <path d="M9.5 7.5V6.2A1.2 1.2 0 0 1 10.7 5h2.6A1.2 1.2 0 0 1 14.5 6.2V7.5" />
+                  <path d="M8 7.5h8l-.6 11.2A1.6 1.6 0 0 1 13.8 20h-3.6a1.6 1.6 0 0 1-1.6-1.3L8 7.5Z" />
+                  <path d="M10.5 11v5M13.5 11v5" />
+                </svg>
+              </span>
+              <span className="scans-tool-face scans-tool-close" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M7 7l10 10M17 7 7 17" />
+                </svg>
+              </span>
+            </button>,
+            pickSlot,
+          )
+        : null}
+      {picking || pickClosing
+        ? createPortal(
+            <div className={`scans-pick-bar${pickClosing ? ' is-closing' : ''}`} style={pickFont ?? undefined}>
+              <button
+                type="button"
+                className="action scans-pick-delete"
+                disabled={picked.length === 0}
+                onClick={removePicked}
+              >
+                {picked.length ? `Удалить · ${picked.length}` : 'Удалить'}
+              </button>
+            </div>,
+            document.body,
+          )
+        : null}
       {error ? <Notice tone="error">{error}</Notice> : null}
       {usesFixtures() ? (
         <Button
@@ -215,29 +322,21 @@ export function Scans({
                   >
                     <SwipeScan
                       open={openSwipeId === item.snapshot_id}
+                      selecting={picking}
+                      selected={picked.includes(item.snapshot_id)}
                       onOpenChange={(next) =>
                         setOpenSwipeId((current) => {
                           if (next) return item.snapshot_id
                           return current === item.snapshot_id ? null : current
                         })
                       }
-                      onActivate={() => void openSnapshot(item)}
+                      onActivate={() => {
+                        if (picking) togglePicked(item.snapshot_id)
+                        else void openSnapshot(item)
+                      }}
                       onDelete={() => void removeSnapshot(item.snapshot_id)}
                     >
-                      <span className="scan-top">
-                        <span className="scan-meta">
-                          {item.scan_no ? `№${item.scan_no} · ` : ''}
-                          {shortWhen(item.created_at)} · {item.source || STATUS[item.status]}
-                        </span>
-                        {item.verdict ? (
-                          <span className={`pill ${item.verdict}`}>
-                            {verdictName(item.verdict)} · {item.coverage_label}
-                          </span>
-                        ) : (
-                          <span className={`pill ${item.status}`}>{STATUS[item.status]}</span>
-                        )}
-                      </span>
-                      <span className="scan-title">{item.headline || 'Снимок без заключения'}</span>
+                      <ScanFace item={item} picking={picking} checked={picked.includes(item.snapshot_id)} />
                     </SwipeScan>
                   </li>
                 ))}
@@ -247,6 +346,43 @@ export function Scans({
         </section>
       )}
     </div>
+  )
+}
+
+function ScanFace({
+  item,
+  picking = false,
+  checked = false,
+}: {
+  item: SnapshotListItem
+  picking?: boolean
+  checked?: boolean
+}) {
+  return (
+    <>
+      <span className={`scan-check${picking ? ' is-shown' : ''}${checked ? ' is-on' : ''}`} aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M5 12.6 9.2 16.8 19 7.2" />
+        </svg>
+      </span>
+      <span className="scan-top">
+        <span className="scan-meta">
+          {item.scan_no ? `№${item.scan_no}` : 'Снимок'}
+          {' · '}
+          {shortWhen(item.created_at)}
+          {sourceCaption(item.source) ? ` · ${sourceCaption(item.source)}` : ''}
+        </span>
+        {item.verdict ? (
+          <span className={`pill ${item.verdict}`}>
+            {verdictName(item.verdict)}
+            {item.coverage_label ? ` · ${coverageCaption(item.coverage_label)}` : ''}
+          </span>
+        ) : (
+          <span className={`pill ${item.status}`}>{STATUS[item.status]}</span>
+        )}
+      </span>
+      <span className="scan-title">{cardTitle(item)}</span>
+    </>
   )
 }
 
@@ -261,4 +397,32 @@ function verdictName(verdict: 'critical' | 'watch' | 'ok'): string {
   if (verdict === 'critical') return 'критично'
   if (verdict === 'watch') return 'следить'
   return 'норма'
+}
+
+function sourceCaption(source?: string): string {
+  if (!source || source === 'miniapp') return ''
+  if (source === 'demo') return 'демо'
+  return source
+}
+
+function coverageCaption(label: string): string {
+  return label.replace(/\s*из\s*/u, '/')
+}
+
+function tableCaption(filename?: string): string {
+  if (!filename) return ''
+  return filename.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+function cardTitle(item: SnapshotListItem): string {
+  const invented = (item.card_title || '').trim()
+  if (invented) return invented
+  const table = tableCaption(item.filename)
+  if (table) return table
+  const topic = scanCaption(item.topics)
+  if (topic) return topic
+  if (item.verdict === 'ok') return 'В норме'
+  if (item.status === 'processing') return 'Считаем'
+  if (item.status === 'failed') return 'Не вышло'
+  return 'Снимок'
 }
