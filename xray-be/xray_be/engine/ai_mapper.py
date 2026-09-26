@@ -3,6 +3,7 @@ import os
 import requests
 from typing import List, Dict, Any, Optional
 from engine.llm_logger import log_llm_interaction
+from engine.models import record_llm_usage
 
 
 def ai_smart_column_mapping(
@@ -107,6 +108,13 @@ def ai_smart_column_mapping(
                 cleaned = cleaned[4:].strip()
 
             ai_mapping = json.loads(cleaned)
+            usage = resp.json().get("usage") or {}
+            record_llm_usage(
+                operation="ai_column_mapping",
+                model=model_name,
+                prompt_tokens=usage.get("prompt_tokens", 0),
+                completion_tokens=usage.get("completion_tokens", 0)
+            )
             log_llm_interaction(
                 title="AI-НОРМАЛИЗАТОР КОЛОНОК: УСПЕХ",
                 payload_data=payload,
@@ -221,6 +229,13 @@ def ai_smart_status_mapping(
                 content = content[4:].strip()
 
             ai_statuses = json.loads(content)
+            usage = resp.json().get("usage") or {}
+            record_llm_usage(
+                operation="ai_status_mapping",
+                model=model_name,
+                prompt_tokens=usage.get("prompt_tokens", 0),
+                completion_tokens=usage.get("completion_tokens", 0)
+            )
             valid_stages = {"new", "in_progress", "proposal", "negotiation", "won", "lost", "other"}
 
             for raw_st, canon_stage in ai_statuses.items():

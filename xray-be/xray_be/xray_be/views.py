@@ -5,7 +5,7 @@ from django.http import StreamingHttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from engine.llm_logger import log_llm_interaction
 from engine.tools import AI_TOOLS_DEFINITIONS, execute_tool_call, get_ai_tools_definitions
-from engine.models import ChatMessage, Snapshot
+from engine.models import ChatMessage, Snapshot, record_llm_usage
 
 
 def stream_openai_response(messages_list: list, snapshot_id: str = None):
@@ -28,6 +28,8 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
         current_messages = list(messages_list)
         executed_tools_for_saving = []
         initial_final_content = None
+        accumulated_prompt_tokens = 0
+        accumulated_completion_tokens = 0
 
         # 1. Step 1: Multi-turn tool resolution loop (supports tool chaining like search -> chart)
         if snapshot_id:
@@ -46,6 +48,11 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
                         break
 
                     t_json = resp_tool.json()
+                    usage = t_json.get("usage") or {}
+                    if usage:
+                        accumulated_prompt_tokens += usage.get("prompt_tokens", 0)
+                        accumulated_completion_tokens += usage.get("completion_tokens", 0)
+
                     choice = t_json.get("choices", [{}])[0]
                     msg = choice.get("message", {})
                     tool_calls = msg.get("tool_calls", [])
@@ -105,7 +112,8 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
             payload = {
                 "model": model_name,
                 "messages": current_messages,
-                "stream": True
+                "stream": True,
+                "stream_options": {"include_usage": True}
             }
 
             collected_chunks = []
@@ -131,6 +139,12 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
                                 if raw_data != '[DONE]':
                                     try:
                                         chunk_json = json.loads(raw_data)
+                                        # Track token usage from stream chunk
+                                        chunk_usage = chunk_json.get("usage")
+                                        if chunk_usage:
+                                            accumulated_prompt_tokens += chunk_usage.get("prompt_tokens", 0)
+                                            accumulated_completion_tokens += chunk_usage.get("completion_tokens", 0)
+
                                         content = chunk_json['choices'][0]['delta'].get('content', '')
                                         if content:
                                             collected_chunks.append(content)
@@ -171,11 +185,11 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
             extra_info=f"URL: {target_url} | STATUS: 200"
         )
 
-        # 3. Step 3: Persist user prompt & assistant response in Django ORM ChatMessage
-        if snapshot_id and full_stream_response:
+        # 3. Step 3: Persist user prompt & assistant response in Django ORM ChatMessage + Record Token Usage
+        if snapshot_id:
             try:
                 snap_obj = Snapshot.objects.filter(id=snapshot_id).first()
-                if snap_obj:
+                if snap_obj and full_stream_response:
                     # Find the last user message from current_messages
                     last_user_msg = next((m for m in reversed(messages_list) if m.get("role") == "user"), None)
                     if last_user_msg:
@@ -194,6 +208,17 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
                         role="assistant",
                         content=full_stream_response,
                         tool_calls=executed_tools_for_saving
+                    )
+
+                # Atomically record LLM token usage for snapshot & user
+                if accumulated_prompt_tokens > 0 or accumulated_completion_tokens > 0:
+                    record_llm_usage(
+                        user=snap_obj.user if snap_obj else None,
+                        snapshot=snap_obj,
+                        operation="chat_consultant",
+                        model=model_name,
+                        prompt_tokens=accumulated_prompt_tokens,
+                        completion_tokens=accumulated_completion_tokens
                     )
             except Exception as e:
                 print(f"[CHAT ORM SAVE ERROR]: {e}")

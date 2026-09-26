@@ -12,10 +12,17 @@ class UTF8JSONEncoder(json.JSONEncoder):
 class MaxUser(models.Model):
     max_user_id = models.BigIntegerField(unique=True)
     first_name = models.CharField(max_length=255, blank=True)
+    prompt_tokens = models.BigIntegerField(default=0, verbose_name="Входные токены (prompt)")
+    completion_tokens = models.BigIntegerField(default=0, verbose_name="Выходные токены (completion)")
+    total_tokens = models.BigIntegerField(default=0, verbose_name="Всего токенов")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"User {self.max_user_id} ({self.first_name})"
+
+    class Meta:
+        verbose_name = "Пользователь MAX"
+        verbose_name_plural = "Пользователи MAX"
 
 
 class Upload(models.Model):
@@ -118,3 +125,60 @@ class ChatMessage(models.Model):
 
     class Meta:
         ordering = ['created_at']
+
+
+class LLMUsageLog(models.Model):
+    user = models.ForeignKey(MaxUser, on_delete=models.SET_NULL, null=True, blank=True, related_name="llm_usages")
+    snapshot = models.ForeignKey(Snapshot, on_delete=models.SET_NULL, null=True, blank=True, related_name="llm_usages")
+    operation = models.CharField(max_length=64, default="chat", db_index=True)
+    model = models.CharField(max_length=64, default="gemini-3.8-flash-high")
+    prompt_tokens = models.IntegerField(default=0)
+    completion_tokens = models.IntegerField(default=0)
+    total_tokens = models.IntegerField(default=0)
+    duration_ms = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Лог токенов LLM"
+        verbose_name_plural = "Логи токенов LLM"
+
+    def __str__(self):
+        return f"[{self.operation}] {self.total_tokens} токенов"
+
+
+def record_llm_usage(user=None, snapshot=None, operation="chat", model="gemini-3.8-flash-high", prompt_tokens=0, completion_tokens=0, duration_ms=0):
+    """
+    Records an LLM interaction with prompt/completion tokens and updates user totals atomically.
+    """
+    from django.db.models import F
+    total_tokens = int(prompt_tokens or 0) + int(completion_tokens or 0)
+    if total_tokens <= 0 and (prompt_tokens or 0) <= 0 and (completion_tokens or 0) <= 0:
+        return None
+
+    target_user = user
+    if not target_user and snapshot and snapshot.user:
+        target_user = snapshot.user
+
+    try:
+        log_entry = LLMUsageLog.objects.create(
+            user=target_user,
+            snapshot=snapshot,
+            operation=operation,
+            model=model,
+            prompt_tokens=prompt_tokens or 0,
+            completion_tokens=completion_tokens or 0,
+            total_tokens=total_tokens,
+            duration_ms=duration_ms or 0
+        )
+
+        if target_user:
+            MaxUser.objects.filter(pk=target_user.pk).update(
+                prompt_tokens=F('prompt_tokens') + (prompt_tokens or 0),
+                completion_tokens=F('completion_tokens') + (completion_tokens or 0),
+                total_tokens=F('total_tokens') + total_tokens
+            )
+        return log_entry
+    except Exception as e:
+        print(f"[LLM USAGE LOG ERROR]: {e}")
+        return None

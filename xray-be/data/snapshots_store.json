@@ -40990,5 +40990,702 @@
         ]
       }
     }
+  },
+  "da7ccd90-266b-43f9-bff9-c9fc5bbc2450": {
+    "snapshot_id": "da7ccd90-266b-43f9-bff9-c9fc5bbc2450",
+    "user_id": 18712527,
+    "guest_session": "",
+    "is_guest": false,
+    "scan_no": 28,
+    "status": "ready",
+    "progress": 100,
+    "error": "",
+    "created_at": "2026-09-26T23:00:38.705092",
+    "filename": "custom_messy_slang_crm.csv",
+    "source": "miniapp",
+    "diagnosis": {
+      "snapshot_id": "da7ccd90-266b-43f9-bff9-c9fc5bbc2450",
+      "headline": "Воронка теряет 1 329 000 руб. на этапе «in_progress»: ключевые сделки зависли и не доходят до оплаты",
+      "body": "Срочно разберите этап «in_progress»: здесь сгорает 64.5% суммы воронки (1 329 000 руб.). Прослушайте звонки менеджеров и внедрите жесткий регламент квалификации, чтобы отсекать нецелевых клиентов раньше и доводить теплых до оплаты. Проведите ревизию 8 сделок старше 21 дней на 1 329 000 руб. Поставьте менеджерам задачу связаться с каждым ЛПР прямо сейчас: либо согласовать дату оплаты, либо закрыть сделку с причиной отказа. Верните в работу 8 клиентов на сумму 1 289 500 руб., которые молчат дольше 45 дней. Подключите к звонкам руководителя отдела продаж или сделайте спецпредложение с ограниченным сроком действия.",
+      "findings": [
+        {
+          "metric_id": "funnel_dropoff",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "critical",
+          "value": 64.5,
+          "unit": "pct",
+          "money_impact": "1329000.00",
+          "threshold_label": "этап теряет больше 40% суммы",
+          "action": "Срочно разберите этап «in_progress»: здесь сгорает 64.5% суммы воронки (1 329 000 руб.). Прослушайте звонки менеджеров и внедрите жесткий регламент квалификации, чтобы отсекать нецелевых клиентов раньше и доводить теплых до оплаты.",
+          "evidence": [
+            {
+              "deal_id": "ORD-8802",
+              "client": "ИП Васильев А.В.",
+              "amount": "45000.00",
+              "status": "in_progress",
+              "manager": "Мария Смирнова",
+              "contact": "+7 (916) 222-33-44"
+            },
+            {
+              "deal_id": "ORD-8803",
+              "client": "АО \"ТехноПром\"",
+              "amount": "340000.00",
+              "status": "in_progress",
+              "manager": "Алексей Громов",
+              "contact": "+7 (903) 333-44-55"
+            },
+            {
+              "deal_id": "ORD-8805",
+              "client": "ИП Кузнецова С.М.",
+              "amount": "98000.00",
+              "status": "in_progress",
+              "manager": "Мария Смирнова",
+              "contact": "+7 (925) 555-66-77"
+            },
+            {
+              "deal_id": "ORD-8808",
+              "client": "ООО \"ГлавСнаб\"",
+              "amount": "165000.00",
+              "status": "in_progress",
+              "manager": "Алексей Громов",
+              "contact": "+7 (926) 888-99-00"
+            },
+            {
+              "deal_id": "ORD-8809",
+              "client": "ИП Орлова Н.В.",
+              "amount": "52000.00",
+              "status": "in_progress",
+              "manager": "Мария Смирнова",
+              "contact": "+7 (916) 999-00-11"
+            },
+            {
+              "deal_id": "ORD-8810",
+              "client": "ООО \"ПромАльянс\"",
+              "amount": "420000.00",
+              "status": "in_progress",
+              "manager": "Алексей Громов",
+              "contact": "+7 (903) 000-11-22"
+            },
+            {
+              "deal_id": "ORD-8812",
+              "client": "ООО \"ИнтерЛогистик\"",
+              "amount": "135000.00",
+              "status": "in_progress",
+              "manager": "Мария Смирнова",
+              "contact": "+7 (925) 222-33-44"
+            },
+            {
+              "deal_id": "ORD-8815",
+              "client": "ИП Морозов Д.А.",
+              "amount": "74000.00",
+              "status": "in_progress",
+              "manager": "Мария Смирнова",
+              "contact": "+7 (926) 555-66-77"
+            }
+          ]
+        },
+        {
+          "metric_id": "stagnation",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "critical",
+          "value": 8,
+          "unit": "deals",
+          "money_impact": "1329000.00",
+          "threshold_label": "Зависшей считаем сделку старше 21 дней",
+          "action": "Проведите ревизию 8 сделок старше 21 дней на 1 329 000 руб. Поставьте менеджерам задачу связаться с каждым ЛПР прямо сейчас: либо согласовать дату оплаты, либо закрыть сделку с причиной отказа.",
+          "evidence": [
+            {
+              "deal_id": "ORD-8802",
+              "client": "ИП Васильев А.В.",
+              "amount": "45000.00",
+              "status": "in_progress",
+              "days_stale": 56,
+              "manager": "Мария Смирнова",
+              "contact": "+7 (916) 222-33-44"
+            },
+            {
+              "deal_id": "ORD-8803",
+              "client": "АО \"ТехноПром\"",
+              "amount": "340000.00",
+              "status": "in_progress",
+              "days_stale": 73,
+              "manager": "Алексей Громов",
+              "contact": "+7 (903) 333-44-55"
+            },
+            {
+              "deal_id": "ORD-8805",
+              "client": "ИП Кузнецова С.М.",
+              "amount": "98000.00",
+              "status": "in_progress",
+              "days_stale": 63,
+              "manager": "Мария Смирнова",
+              "contact": "+7 (925) 555-66-77"
+            },
+            {
+              "deal_id": "ORD-8808",
+              "client": "ООО \"ГлавСнаб\"",
+              "amount": "165000.00",
+              "status": "in_progress",
+              "days_stale": 70,
+              "manager": "Алексей Громов",
+              "contact": "+7 (926) 888-99-00"
+            },
+            {
+              "deal_id": "ORD-8809",
+              "client": "ИП Орлова Н.В.",
+              "amount": "52000.00",
+              "status": "in_progress",
+              "days_stale": 25,
+              "manager": "Мария Смирнова",
+              "contact": "+7 (916) 999-00-11"
+            },
+            {
+              "deal_id": "ORD-8810",
+              "client": "ООО \"ПромАльянс\"",
+              "amount": "420000.00",
+              "status": "in_progress",
+              "days_stale": 78,
+              "manager": "Алексей Громов",
+              "contact": "+7 (903) 000-11-22"
+            },
+            {
+              "deal_id": "ORD-8812",
+              "client": "ООО \"ИнтерЛогистик\"",
+              "amount": "135000.00",
+              "status": "in_progress",
+              "days_stale": 66,
+              "manager": "Мария Смирнова",
+              "contact": "+7 (925) 222-33-44"
+            },
+            {
+              "deal_id": "ORD-8815",
+              "client": "ИП Морозов Д.А.",
+              "amount": "74000.00",
+              "status": "in_progress",
+              "days_stale": 58,
+              "manager": "Мария Смирнова",
+              "contact": "+7 (926) 555-66-77"
+            }
+          ]
+        },
+        {
+          "metric_id": "dormant",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "critical",
+          "value": 8,
+          "unit": "deals",
+          "money_impact": "1289500.00",
+          "threshold_label": "дольше 45 дней",
+          "action": "Верните в работу 8 клиентов на сумму 1 289 500 руб., которые молчат дольше 45 дней. Подключите к звонкам руководителя отдела продаж или сделайте спецпредложение с ограниченным сроком действия.",
+          "evidence": [
+            {
+              "deal_id": "ORD-8802",
+              "client": "ИП Васильев А.В.",
+              "amount": "45000.00",
+              "status": "in_progress",
+              "manager": "Мария Смирнова",
+              "contact": "+7 (916) 222-33-44"
+            },
+            {
+              "deal_id": "ORD-8803",
+              "client": "АО \"ТехноПром\"",
+              "amount": "340000.00",
+              "status": "in_progress",
+              "manager": "Алексей Громов",
+              "contact": "+7 (903) 333-44-55"
+            },
+            {
+              "deal_id": "ORD-8804",
+              "client": "ООО \"АвтоЛайн\"",
+              "amount": "12500.00",
+              "status": "lost",
+              "manager": "Дмитрий Ковалев",
+              "contact": "+7 (985) 444-55-66"
+            },
+            {
+              "deal_id": "ORD-8805",
+              "client": "ИП Кузнецова С.М.",
+              "amount": "98000.00",
+              "status": "in_progress",
+              "manager": "Мария Смирнова",
+              "contact": "+7 (925) 555-66-77"
+            },
+            {
+              "deal_id": "ORD-8808",
+              "client": "ООО \"ГлавСнаб\"",
+              "amount": "165000.00",
+              "status": "in_progress",
+              "manager": "Алексей Громов",
+              "contact": "+7 (926) 888-99-00"
+            },
+            {
+              "deal_id": "ORD-8810",
+              "client": "ООО \"ПромАльянс\"",
+              "amount": "420000.00",
+              "status": "in_progress",
+              "manager": "Алексей Громов",
+              "contact": "+7 (903) 000-11-22"
+            },
+            {
+              "deal_id": "ORD-8812",
+              "client": "ООО \"ИнтерЛогистик\"",
+              "amount": "135000.00",
+              "status": "in_progress",
+              "manager": "Мария Смирнова",
+              "contact": "+7 (925) 222-33-44"
+            },
+            {
+              "deal_id": "ORD-8815",
+              "client": "ИП Морозов Д.А.",
+              "amount": "74000.00",
+              "status": "in_progress",
+              "manager": "Мария Смирнова",
+              "contact": "+7 (926) 555-66-77"
+            }
+          ]
+        }
+      ],
+      "coverage": {
+        "available": [
+          "speed_to_lead",
+          "stagnation",
+          "discount_leakage",
+          "sales_cycle",
+          "key_account_risk",
+          "dormant",
+          "funnel_dropoff"
+        ],
+        "skipped": []
+      },
+      "period": {
+        "from": "2026-07-05",
+        "to": "2026-09-01"
+      },
+      "totals": {
+        "deals": 15,
+        "amount": "2108500.00",
+        "accepted": 15,
+        "rejected": 0
+      },
+      "ok": [],
+      "low_sample": [
+        "discount_leakage",
+        "sales_cycle",
+        "key_account_risk"
+      ]
+    },
+    "all_metrics": {
+      "speed_to_lead": {
+        "metric_id": "speed_to_lead",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "watch",
+        "value": 0.67,
+        "unit": "hours",
+        "money_impact": null,
+        "threshold_label": "быстрее 30 минут",
+        "action": "Медиана первого контакта 0.67 ч. Ответьте новым заявкам быстрее 30 минут",
+        "evidence": [
+          {
+            "deal_id": "ORD-8801",
+            "client": "ООО \"СтройКомплект\"",
+            "amount": "185000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": "+7 (926) 111-22-33"
+          },
+          {
+            "deal_id": "ORD-8802",
+            "client": "ИП Васильев А.В.",
+            "amount": "45000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (916) 222-33-44"
+          },
+          {
+            "deal_id": "ORD-8803",
+            "client": "АО \"ТехноПром\"",
+            "amount": "340000.00",
+            "status": "in_progress",
+            "manager": "Алексей Громов",
+            "contact": "+7 (903) 333-44-55"
+          },
+          {
+            "deal_id": "ORD-8804",
+            "client": "ООО \"АвтоЛайн\"",
+            "amount": "12500.00",
+            "status": "lost",
+            "manager": "Дмитрий Ковалев",
+            "contact": "+7 (985) 444-55-66"
+          },
+          {
+            "deal_id": "ORD-8805",
+            "client": "ИП Кузнецова С.М.",
+            "amount": "98000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (925) 555-66-77"
+          },
+          {
+            "deal_id": "ORD-8806",
+            "client": "ООО \"Северный Ветер\"",
+            "amount": "210000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": "+7 (915) 666-77-88"
+          },
+          {
+            "deal_id": "ORD-8807",
+            "client": "ИП Пономарев К.Е.",
+            "amount": "15000.00",
+            "status": "lost",
+            "manager": "Дмитрий Ковалев",
+            "contact": "+7 (909) 777-88-99"
+          },
+          {
+            "deal_id": "ORD-8808",
+            "client": "ООО \"ГлавСнаб\"",
+            "amount": "165000.00",
+            "status": "in_progress",
+            "manager": "Алексей Громов",
+            "contact": "+7 (926) 888-99-00"
+          },
+          {
+            "deal_id": "ORD-8809",
+            "client": "ИП Орлова Н.В.",
+            "amount": "52000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (916) 999-00-11"
+          },
+          {
+            "deal_id": "ORD-8810",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "420000.00",
+            "status": "in_progress",
+            "manager": "Алексей Громов",
+            "contact": "+7 (903) 000-11-22"
+          },
+          {
+            "deal_id": "ORD-8811",
+            "client": "ИП Савельев В.Д.",
+            "amount": "28000.00",
+            "status": "won",
+            "manager": "Дмитрий Ковалев",
+            "contact": "+7 (985) 111-22-33"
+          },
+          {
+            "deal_id": "ORD-8812",
+            "client": "ООО \"ИнтерЛогистик\"",
+            "amount": "135000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (925) 222-33-44"
+          },
+          {
+            "deal_id": "ORD-8813",
+            "client": "ИП Григорьева Т.П.",
+            "amount": "19000.00",
+            "status": "lost",
+            "manager": "Дмитрий Ковалев",
+            "contact": "+7 (915) 333-44-55"
+          },
+          {
+            "deal_id": "ORD-8814",
+            "client": "ООО \"МегаТрейд\"",
+            "amount": "310000.00",
+            "status": "won",
+            "manager": "Алексей Громов",
+            "contact": "+7 (909) 444-55-66"
+          },
+          {
+            "deal_id": "ORD-8815",
+            "client": "ИП Морозов Д.А.",
+            "amount": "74000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (926) 555-66-77"
+          }
+        ]
+      },
+      "stagnation": {
+        "metric_id": "stagnation",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "critical",
+        "value": 8,
+        "unit": "deals",
+        "money_impact": "1329000.00",
+        "threshold_label": "Зависшей считаем сделку старше 21 дней",
+        "action": "Разморозьте 8 сделок старше 21 дней на 1 329 000 руб.",
+        "evidence": [
+          {
+            "deal_id": "ORD-8802",
+            "client": "ИП Васильев А.В.",
+            "amount": "45000.00",
+            "status": "in_progress",
+            "days_stale": 56,
+            "manager": "Мария Смирнова",
+            "contact": "+7 (916) 222-33-44"
+          },
+          {
+            "deal_id": "ORD-8803",
+            "client": "АО \"ТехноПром\"",
+            "amount": "340000.00",
+            "status": "in_progress",
+            "days_stale": 73,
+            "manager": "Алексей Громов",
+            "contact": "+7 (903) 333-44-55"
+          },
+          {
+            "deal_id": "ORD-8805",
+            "client": "ИП Кузнецова С.М.",
+            "amount": "98000.00",
+            "status": "in_progress",
+            "days_stale": 63,
+            "manager": "Мария Смирнова",
+            "contact": "+7 (925) 555-66-77"
+          },
+          {
+            "deal_id": "ORD-8808",
+            "client": "ООО \"ГлавСнаб\"",
+            "amount": "165000.00",
+            "status": "in_progress",
+            "days_stale": 70,
+            "manager": "Алексей Громов",
+            "contact": "+7 (926) 888-99-00"
+          },
+          {
+            "deal_id": "ORD-8809",
+            "client": "ИП Орлова Н.В.",
+            "amount": "52000.00",
+            "status": "in_progress",
+            "days_stale": 25,
+            "manager": "Мария Смирнова",
+            "contact": "+7 (916) 999-00-11"
+          },
+          {
+            "deal_id": "ORD-8810",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "420000.00",
+            "status": "in_progress",
+            "days_stale": 78,
+            "manager": "Алексей Громов",
+            "contact": "+7 (903) 000-11-22"
+          },
+          {
+            "deal_id": "ORD-8812",
+            "client": "ООО \"ИнтерЛогистик\"",
+            "amount": "135000.00",
+            "status": "in_progress",
+            "days_stale": 66,
+            "manager": "Мария Смирнова",
+            "contact": "+7 (925) 222-33-44"
+          },
+          {
+            "deal_id": "ORD-8815",
+            "client": "ИП Морозов Д.А.",
+            "amount": "74000.00",
+            "status": "in_progress",
+            "days_stale": 58,
+            "manager": "Мария Смирнова",
+            "contact": "+7 (926) 555-66-77"
+          }
+        ]
+      },
+      "discount_leakage": {
+        "metric_id": "discount_leakage",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": null,
+        "unit": "pct",
+        "money_impact": null,
+        "threshold_label": "скидка больше 10%",
+        "action": "Слишком мало закрытых сделок для оценки скидок",
+        "evidence": []
+      },
+      "sales_cycle": {
+        "metric_id": "sales_cycle",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": null,
+        "unit": "days",
+        "money_impact": null,
+        "threshold_label": "цикл вырос",
+        "action": "Недостаточно данных для анализа цикла",
+        "evidence": []
+      },
+      "key_account_risk": {
+        "metric_id": "key_account_risk",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": null,
+        "unit": "pct",
+        "money_impact": null,
+        "threshold_label": "два клиента больше 50%",
+        "action": "Мало клиентов для анализа концентрации",
+        "evidence": []
+      },
+      "dormant": {
+        "metric_id": "dormant",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "critical",
+        "value": 8,
+        "unit": "deals",
+        "money_impact": "1289500.00",
+        "threshold_label": "дольше 45 дней",
+        "action": "8 клиентов молчат дольше 45 дней",
+        "evidence": [
+          {
+            "deal_id": "ORD-8802",
+            "client": "ИП Васильев А.В.",
+            "amount": "45000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (916) 222-33-44"
+          },
+          {
+            "deal_id": "ORD-8803",
+            "client": "АО \"ТехноПром\"",
+            "amount": "340000.00",
+            "status": "in_progress",
+            "manager": "Алексей Громов",
+            "contact": "+7 (903) 333-44-55"
+          },
+          {
+            "deal_id": "ORD-8804",
+            "client": "ООО \"АвтоЛайн\"",
+            "amount": "12500.00",
+            "status": "lost",
+            "manager": "Дмитрий Ковалев",
+            "contact": "+7 (985) 444-55-66"
+          },
+          {
+            "deal_id": "ORD-8805",
+            "client": "ИП Кузнецова С.М.",
+            "amount": "98000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (925) 555-66-77"
+          },
+          {
+            "deal_id": "ORD-8808",
+            "client": "ООО \"ГлавСнаб\"",
+            "amount": "165000.00",
+            "status": "in_progress",
+            "manager": "Алексей Громов",
+            "contact": "+7 (926) 888-99-00"
+          },
+          {
+            "deal_id": "ORD-8810",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "420000.00",
+            "status": "in_progress",
+            "manager": "Алексей Громов",
+            "contact": "+7 (903) 000-11-22"
+          },
+          {
+            "deal_id": "ORD-8812",
+            "client": "ООО \"ИнтерЛогистик\"",
+            "amount": "135000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (925) 222-33-44"
+          },
+          {
+            "deal_id": "ORD-8815",
+            "client": "ИП Морозов Д.А.",
+            "amount": "74000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (926) 555-66-77"
+          }
+        ]
+      },
+      "funnel_dropoff": {
+        "metric_id": "funnel_dropoff",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "critical",
+        "value": 64.5,
+        "unit": "pct",
+        "money_impact": "1329000.00",
+        "threshold_label": "этап теряет больше 40% суммы",
+        "action": "На этапе «in_progress» теряется 1 329 000 руб.",
+        "evidence": [
+          {
+            "deal_id": "ORD-8802",
+            "client": "ИП Васильев А.В.",
+            "amount": "45000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (916) 222-33-44"
+          },
+          {
+            "deal_id": "ORD-8803",
+            "client": "АО \"ТехноПром\"",
+            "amount": "340000.00",
+            "status": "in_progress",
+            "manager": "Алексей Громов",
+            "contact": "+7 (903) 333-44-55"
+          },
+          {
+            "deal_id": "ORD-8805",
+            "client": "ИП Кузнецова С.М.",
+            "amount": "98000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (925) 555-66-77"
+          },
+          {
+            "deal_id": "ORD-8808",
+            "client": "ООО \"ГлавСнаб\"",
+            "amount": "165000.00",
+            "status": "in_progress",
+            "manager": "Алексей Громов",
+            "contact": "+7 (926) 888-99-00"
+          },
+          {
+            "deal_id": "ORD-8809",
+            "client": "ИП Орлова Н.В.",
+            "amount": "52000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (916) 999-00-11"
+          },
+          {
+            "deal_id": "ORD-8810",
+            "client": "ООО \"ПромАльянс\"",
+            "amount": "420000.00",
+            "status": "in_progress",
+            "manager": "Алексей Громов",
+            "contact": "+7 (903) 000-11-22"
+          },
+          {
+            "deal_id": "ORD-8812",
+            "client": "ООО \"ИнтерЛогистик\"",
+            "amount": "135000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (925) 222-33-44"
+          },
+          {
+            "deal_id": "ORD-8815",
+            "client": "ИП Морозов Д.А.",
+            "amount": "74000.00",
+            "status": "in_progress",
+            "manager": "Мария Смирнова",
+            "contact": "+7 (926) 555-66-77"
+          }
+        ]
+      }
+    }
   }
 }

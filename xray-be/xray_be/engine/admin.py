@@ -1,14 +1,91 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
-from .models import MaxUser, Upload, Snapshot, Deal, ChatMessage
+from .models import MaxUser, Upload, Snapshot, Deal, ChatMessage, LLMUsageLog
+
+
+class LLMUsageLogInLine(admin.TabularInline):
+    model = LLMUsageLog
+    extra = 0
+    fields = ('operation', 'model', 'prompt_tokens', 'completion_tokens', 'total_tokens', 'created_at')
+    readonly_fields = ('operation', 'model', 'prompt_tokens', 'completion_tokens', 'total_tokens', 'created_at')
+    can_delete = False
+    max_num = 20
+    ordering = ('-created_at',)
 
 
 @admin.register(MaxUser)
 class MaxUserAdmin(admin.ModelAdmin):
-    list_display = ('max_user_id', 'first_name', 'created_at')
+    list_display = (
+        'max_user_id',
+        'first_name',
+        'prompt_tokens_display',
+        'completion_tokens_display',
+        'total_tokens_display',
+        'snapshots_count',
+        'created_at'
+    )
     search_fields = ('max_user_id', 'first_name')
+    readonly_fields = ('max_user_id', 'created_at', 'prompt_tokens', 'completion_tokens', 'total_tokens')
+    ordering = ('-total_tokens', '-created_at')
+    inlines = [LLMUsageLogInLine]
+
+    @admin.display(description='Входные (Prompt)', ordering='prompt_tokens')
+    def prompt_tokens_display(self, obj):
+        val = f"{obj.prompt_tokens:,}".replace(',', ' ')
+        return format_html('<span style="color: #4b5563;">📥 {}</span>', val)
+
+    @admin.display(description='Выходные (Completion)', ordering='completion_tokens')
+    def completion_tokens_display(self, obj):
+        val = f"{obj.completion_tokens:,}".replace(',', ' ')
+        return format_html('<span style="color: #4b5563;">📤 {}</span>', val)
+
+    @admin.display(description='Всего токенов', ordering='total_tokens')
+    def total_tokens_display(self, obj):
+        val = f"{obj.total_tokens:,}".replace(',', ' ')
+        if obj.total_tokens > 0:
+            return format_html('<b style="color: #2563eb; font-size: 13px;">⚡ {}</b>', val)
+        return format_html('<span style="color: #999;">0</span>')
+
+    @admin.display(description='Снимков')
+    def snapshots_count(self, obj):
+        return obj.snapshot_set.count()
+
+
+@admin.register(LLMUsageLog)
+class LLMUsageLogAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'user_display',
+        'operation',
+        'model',
+        'prompt_tokens',
+        'completion_tokens',
+        'total_tokens',
+        'created_at'
+    )
+    list_filter = ('operation', 'model', 'created_at')
+    search_fields = ('user__max_user_id', 'user__first_name', 'operation', 'model')
+    readonly_fields = (
+        'id',
+        'created_at',
+        'user',
+        'snapshot',
+        'operation',
+        'model',
+        'prompt_tokens',
+        'completion_tokens',
+        'total_tokens',
+        'duration_ms'
+    )
     ordering = ('-created_at',)
+
+    @admin.display(description='Пользователь')
+    def user_display(self, obj):
+        if obj.user:
+            url = reverse('admin:engine_maxuser_change', args=[obj.user.pk])
+            return format_html('<a href="{}">👤 MAX: <b>{}</b> ({})</a>', url, obj.user.max_user_id, obj.user.first_name or '—')
+        return format_html('<span style="color: #999;">Гость / Тест</span>')
 
 
 @admin.register(Upload)
