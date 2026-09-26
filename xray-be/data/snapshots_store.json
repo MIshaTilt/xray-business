@@ -41687,5 +41687,609 @@
         ]
       }
     }
+  },
+  "e313814e-74c7-4bf0-916f-238125edb508": {
+    "snapshot_id": "e313814e-74c7-4bf0-916f-238125edb508",
+    "user_id": null,
+    "guest_session": "guest_1ibudo5ep97muix5xkm",
+    "is_guest": true,
+    "scan_no": 29,
+    "status": "ready",
+    "progress": 100,
+    "error": "",
+    "created_at": "2026-09-27T01:56:35.050808",
+    "filename": "amoCRM liaisanbedr.amocrm.ru",
+    "source": "amocrm",
+    "diagnosis": {
+      "snapshot_id": "e313814e-74c7-4bf0-916f-238125edb508",
+      "headline": "На этапе «new» теряется 6 820 000 руб.",
+      "card_title": "amoCRM liaisanbedr.amocrm",
+      "body": "На этапе «new» теряется 6 820 000 руб.",
+      "findings": [
+        {
+          "metric_id": "funnel_dropoff",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "critical",
+          "value": 100.0,
+          "unit": "pct",
+          "money_impact": "6820000.00",
+          "threshold_label": "этап теряет больше 40% суммы",
+          "action": "На этапе «new» теряется 6 820 000 руб.",
+          "evidence": [
+            {
+              "deal_id": "29753465",
+              "client": "ООО Северная линия",
+              "amount": "1400000.00",
+              "status": "new",
+              "manager": "",
+              "contact": ""
+            },
+            {
+              "deal_id": "29753467",
+              "client": "АО Каспий Сервис",
+              "amount": "980000.00",
+              "status": "new",
+              "manager": "",
+              "contact": ""
+            },
+            {
+              "deal_id": "29753469",
+              "client": "ТОО Алтын",
+              "amount": "640000.00",
+              "status": "new",
+              "manager": "",
+              "contact": ""
+            },
+            {
+              "deal_id": "29753471",
+              "client": "ИП Орлов",
+              "amount": "320000.00",
+              "status": "new",
+              "manager": "",
+              "contact": ""
+            },
+            {
+              "deal_id": "29753473",
+              "client": "ООО Ромашка",
+              "amount": "210000.00",
+              "status": "new",
+              "manager": "",
+              "contact": ""
+            },
+            {
+              "deal_id": "29753475",
+              "client": "АО Степь",
+              "amount": "1500000.00",
+              "status": "new",
+              "manager": "",
+              "contact": ""
+            },
+            {
+              "deal_id": "29753477",
+              "client": "ТОО Байтерек",
+              "amount": "870000.00",
+              "status": "new",
+              "manager": "",
+              "contact": ""
+            },
+            {
+              "deal_id": "29753479",
+              "client": "ООО Маяк",
+              "amount": "450000.00",
+              "status": "new",
+              "manager": "",
+              "contact": ""
+            },
+            {
+              "deal_id": "29753399",
+              "client": "Сделка #29753399",
+              "amount": "450000.00",
+              "status": "new",
+              "manager": "",
+              "contact": ""
+            }
+          ]
+        }
+      ],
+      "coverage": {
+        "available": [
+          "stagnation",
+          "key_account_risk",
+          "dormant",
+          "funnel_dropoff"
+        ],
+        "skipped": [
+          "speed_to_lead",
+          "discount_leakage",
+          "sales_cycle"
+        ]
+      },
+      "period": {
+        "from": "2026-09-27",
+        "to": "2026-09-27"
+      },
+      "totals": {
+        "deals": 9,
+        "amount": "6820000.00",
+        "accepted": 9,
+        "rejected": 0
+      },
+      "ok": [
+        "stagnation",
+        "dormant"
+      ],
+      "low_sample": [
+        "key_account_risk"
+      ]
+    },
+    "all_metrics": {
+      "speed_to_lead": {
+        "metric_id": "speed_to_lead",
+        "available": false,
+        "missing_fields": [
+          "first_contact_at"
+        ],
+        "verdict": "skipped",
+        "value": null,
+        "unit": "hours",
+        "money_impact": null,
+        "threshold_label": "быстрее 30 минут",
+        "action": "Отвечайте новым заявкам быстрее 30 минут",
+        "evidence": []
+      },
+      "stagnation": {
+        "metric_id": "stagnation",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 0,
+        "unit": "deals",
+        "money_impact": null,
+        "threshold_label": "Зависшей считаем сделку старше 21 дней",
+        "action": "Зависших сделок не обнаружено",
+        "evidence": []
+      },
+      "discount_leakage": {
+        "metric_id": "discount_leakage",
+        "available": false,
+        "missing_fields": [
+          "discount_pct",
+          "list_price"
+        ],
+        "verdict": "skipped",
+        "value": null,
+        "unit": "pct",
+        "money_impact": null,
+        "threshold_label": "скидка больше 10%",
+        "action": "Контролируйте скидки при закрытии сделок",
+        "evidence": []
+      },
+      "sales_cycle": {
+        "metric_id": "sales_cycle",
+        "available": false,
+        "missing_fields": [
+          "closed_at"
+        ],
+        "verdict": "skipped",
+        "value": null,
+        "unit": "days",
+        "money_impact": null,
+        "threshold_label": "цикл вырос",
+        "action": "Сокращайте длительность цикла сделки",
+        "evidence": []
+      },
+      "key_account_risk": {
+        "metric_id": "key_account_risk",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": null,
+        "unit": "pct",
+        "money_impact": null,
+        "threshold_label": "два клиента больше 50%",
+        "action": "Мало клиентов для анализа концентрации",
+        "evidence": []
+      },
+      "dormant": {
+        "metric_id": "dormant",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 0,
+        "unit": "deals",
+        "money_impact": null,
+        "threshold_label": "дольше 45 дней",
+        "action": "0 клиентов молчат дольше 45 дней",
+        "evidence": []
+      },
+      "funnel_dropoff": {
+        "metric_id": "funnel_dropoff",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "critical",
+        "value": 100.0,
+        "unit": "pct",
+        "money_impact": "6820000.00",
+        "threshold_label": "этап теряет больше 40% суммы",
+        "action": "На этапе «new» теряется 6 820 000 руб.",
+        "evidence": [
+          {
+            "deal_id": "29753465",
+            "client": "ООО Северная линия",
+            "amount": "1400000.00",
+            "status": "new",
+            "manager": "",
+            "contact": ""
+          },
+          {
+            "deal_id": "29753467",
+            "client": "АО Каспий Сервис",
+            "amount": "980000.00",
+            "status": "new",
+            "manager": "",
+            "contact": ""
+          },
+          {
+            "deal_id": "29753469",
+            "client": "ТОО Алтын",
+            "amount": "640000.00",
+            "status": "new",
+            "manager": "",
+            "contact": ""
+          },
+          {
+            "deal_id": "29753471",
+            "client": "ИП Орлов",
+            "amount": "320000.00",
+            "status": "new",
+            "manager": "",
+            "contact": ""
+          },
+          {
+            "deal_id": "29753473",
+            "client": "ООО Ромашка",
+            "amount": "210000.00",
+            "status": "new",
+            "manager": "",
+            "contact": ""
+          },
+          {
+            "deal_id": "29753475",
+            "client": "АО Степь",
+            "amount": "1500000.00",
+            "status": "new",
+            "manager": "",
+            "contact": ""
+          },
+          {
+            "deal_id": "29753477",
+            "client": "ТОО Байтерек",
+            "amount": "870000.00",
+            "status": "new",
+            "manager": "",
+            "contact": ""
+          },
+          {
+            "deal_id": "29753479",
+            "client": "ООО Маяк",
+            "amount": "450000.00",
+            "status": "new",
+            "manager": "",
+            "contact": ""
+          },
+          {
+            "deal_id": "29753399",
+            "client": "Сделка #29753399",
+            "amount": "450000.00",
+            "status": "new",
+            "manager": "",
+            "contact": ""
+          }
+        ]
+      }
+    }
+  },
+  "9d473ee1-93af-4cd9-bd42-91edc3b7f6e4": {
+    "snapshot_id": "9d473ee1-93af-4cd9-bd42-91edc3b7f6e4",
+    "user_id": null,
+    "guest_session": "guest_1ibudo5ep97muix5xkm",
+    "is_guest": true,
+    "scan_no": 30,
+    "status": "ready",
+    "progress": 100,
+    "error": "",
+    "created_at": "2026-09-27T02:00:05.951863",
+    "filename": "amoCRM liaisanbedr.amocrm.ru",
+    "source": "amocrm",
+    "diagnosis": {
+      "snapshot_id": "9d473ee1-93af-4cd9-bd42-91edc3b7f6e4",
+      "headline": "На этапе «new» теряется 6 820 000 руб.",
+      "card_title": "amoCRM liaisanbedr.amocrm",
+      "body": "На этапе «new» теряется 6 820 000 руб.",
+      "findings": [
+        {
+          "metric_id": "funnel_dropoff",
+          "available": true,
+          "missing_fields": [],
+          "verdict": "critical",
+          "value": 100.0,
+          "unit": "pct",
+          "money_impact": "6820000.00",
+          "threshold_label": "этап теряет больше 40% суммы",
+          "action": "На этапе «new» теряется 6 820 000 руб.",
+          "evidence": [
+            {
+              "deal_id": "29753465",
+              "client": "ООО Северная линия",
+              "amount": "1400000.00",
+              "status": "new",
+              "manager": "",
+              "contact": ""
+            },
+            {
+              "deal_id": "29753467",
+              "client": "АО Каспий Сервис",
+              "amount": "980000.00",
+              "status": "new",
+              "manager": "",
+              "contact": ""
+            },
+            {
+              "deal_id": "29753469",
+              "client": "ТОО Алтын",
+              "amount": "640000.00",
+              "status": "new",
+              "manager": "",
+              "contact": ""
+            },
+            {
+              "deal_id": "29753471",
+              "client": "ИП Орлов",
+              "amount": "320000.00",
+              "status": "new",
+              "manager": "",
+              "contact": ""
+            },
+            {
+              "deal_id": "29753473",
+              "client": "ООО Ромашка",
+              "amount": "210000.00",
+              "status": "new",
+              "manager": "",
+              "contact": ""
+            },
+            {
+              "deal_id": "29753475",
+              "client": "АО Степь",
+              "amount": "1500000.00",
+              "status": "new",
+              "manager": "",
+              "contact": ""
+            },
+            {
+              "deal_id": "29753477",
+              "client": "ТОО Байтерек",
+              "amount": "870000.00",
+              "status": "new",
+              "manager": "",
+              "contact": ""
+            },
+            {
+              "deal_id": "29753479",
+              "client": "ООО Маяк",
+              "amount": "450000.00",
+              "status": "new",
+              "manager": "",
+              "contact": ""
+            },
+            {
+              "deal_id": "29753399",
+              "client": "Сделка #29753399",
+              "amount": "450000.00",
+              "status": "new",
+              "manager": "",
+              "contact": ""
+            }
+          ]
+        }
+      ],
+      "coverage": {
+        "available": [
+          "stagnation",
+          "key_account_risk",
+          "dormant",
+          "funnel_dropoff"
+        ],
+        "skipped": [
+          "speed_to_lead",
+          "discount_leakage",
+          "sales_cycle"
+        ]
+      },
+      "period": {
+        "from": "2026-09-27",
+        "to": "2026-09-27"
+      },
+      "totals": {
+        "deals": 9,
+        "amount": "6820000.00",
+        "accepted": 9,
+        "rejected": 0
+      },
+      "ok": [
+        "stagnation",
+        "dormant"
+      ],
+      "low_sample": [
+        "key_account_risk"
+      ]
+    },
+    "all_metrics": {
+      "speed_to_lead": {
+        "metric_id": "speed_to_lead",
+        "available": false,
+        "missing_fields": [
+          "first_contact_at"
+        ],
+        "verdict": "skipped",
+        "value": null,
+        "unit": "hours",
+        "money_impact": null,
+        "threshold_label": "быстрее 30 минут",
+        "action": "Отвечайте новым заявкам быстрее 30 минут",
+        "evidence": []
+      },
+      "stagnation": {
+        "metric_id": "stagnation",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 0,
+        "unit": "deals",
+        "money_impact": null,
+        "threshold_label": "Зависшей считаем сделку старше 21 дней",
+        "action": "Зависших сделок не обнаружено",
+        "evidence": []
+      },
+      "discount_leakage": {
+        "metric_id": "discount_leakage",
+        "available": false,
+        "missing_fields": [
+          "discount_pct",
+          "list_price"
+        ],
+        "verdict": "skipped",
+        "value": null,
+        "unit": "pct",
+        "money_impact": null,
+        "threshold_label": "скидка больше 10%",
+        "action": "Контролируйте скидки при закрытии сделок",
+        "evidence": []
+      },
+      "sales_cycle": {
+        "metric_id": "sales_cycle",
+        "available": false,
+        "missing_fields": [
+          "closed_at"
+        ],
+        "verdict": "skipped",
+        "value": null,
+        "unit": "days",
+        "money_impact": null,
+        "threshold_label": "цикл вырос",
+        "action": "Сокращайте длительность цикла сделки",
+        "evidence": []
+      },
+      "key_account_risk": {
+        "metric_id": "key_account_risk",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": null,
+        "unit": "pct",
+        "money_impact": null,
+        "threshold_label": "два клиента больше 50%",
+        "action": "Мало клиентов для анализа концентрации",
+        "evidence": []
+      },
+      "dormant": {
+        "metric_id": "dormant",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "ok",
+        "value": 0,
+        "unit": "deals",
+        "money_impact": null,
+        "threshold_label": "дольше 45 дней",
+        "action": "0 клиентов молчат дольше 45 дней",
+        "evidence": []
+      },
+      "funnel_dropoff": {
+        "metric_id": "funnel_dropoff",
+        "available": true,
+        "missing_fields": [],
+        "verdict": "critical",
+        "value": 100.0,
+        "unit": "pct",
+        "money_impact": "6820000.00",
+        "threshold_label": "этап теряет больше 40% суммы",
+        "action": "На этапе «new» теряется 6 820 000 руб.",
+        "evidence": [
+          {
+            "deal_id": "29753465",
+            "client": "ООО Северная линия",
+            "amount": "1400000.00",
+            "status": "new",
+            "manager": "",
+            "contact": ""
+          },
+          {
+            "deal_id": "29753467",
+            "client": "АО Каспий Сервис",
+            "amount": "980000.00",
+            "status": "new",
+            "manager": "",
+            "contact": ""
+          },
+          {
+            "deal_id": "29753469",
+            "client": "ТОО Алтын",
+            "amount": "640000.00",
+            "status": "new",
+            "manager": "",
+            "contact": ""
+          },
+          {
+            "deal_id": "29753471",
+            "client": "ИП Орлов",
+            "amount": "320000.00",
+            "status": "new",
+            "manager": "",
+            "contact": ""
+          },
+          {
+            "deal_id": "29753473",
+            "client": "ООО Ромашка",
+            "amount": "210000.00",
+            "status": "new",
+            "manager": "",
+            "contact": ""
+          },
+          {
+            "deal_id": "29753475",
+            "client": "АО Степь",
+            "amount": "1500000.00",
+            "status": "new",
+            "manager": "",
+            "contact": ""
+          },
+          {
+            "deal_id": "29753477",
+            "client": "ТОО Байтерек",
+            "amount": "870000.00",
+            "status": "new",
+            "manager": "",
+            "contact": ""
+          },
+          {
+            "deal_id": "29753479",
+            "client": "ООО Маяк",
+            "amount": "450000.00",
+            "status": "new",
+            "manager": "",
+            "contact": ""
+          },
+          {
+            "deal_id": "29753399",
+            "client": "Сделка #29753399",
+            "amount": "450000.00",
+            "status": "new",
+            "manager": "",
+            "contact": ""
+          }
+        ]
+      }
+    }
   }
 }

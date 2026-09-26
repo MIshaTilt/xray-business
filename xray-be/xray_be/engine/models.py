@@ -91,7 +91,7 @@ class Deal(models.Model):
     client = models.CharField(max_length=255, blank=True)
     contact = models.CharField(max_length=255, blank=True)
     manager = models.CharField(max_length=255, blank=True)
-    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    amount = models.DecimalField(max_digits=20, decimal_places=2)
     list_price = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
     discount_pct = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     status_raw = models.CharField(max_length=255, blank=True)
@@ -109,6 +109,21 @@ class Deal(models.Model):
             models.Index(fields=["snapshot", "-amount"]),
             models.Index(fields=["snapshot", "status"]),
         ]
+
+
+class AmoConnection(models.Model):
+    user = models.ForeignKey(MaxUser, on_delete=models.CASCADE, null=True, blank=True)
+    guest_session = models.CharField(max_length=128, blank=True, default="", db_index=True)
+    account = models.CharField(max_length=255)
+    token = models.TextField()
+    last_sync_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.TextField(blank=True)
+    last_snapshot_id = models.CharField(max_length=64, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Подключение amoCRM"
+        verbose_name_plural = "Подключения amoCRM"
 
 
 class ChatMessage(models.Model):

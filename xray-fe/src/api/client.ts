@@ -65,6 +65,30 @@ async function request<T>(path: string, init: RequestInit, jsonBody: boolean): P
 }
 
 export const api = {
+  amoStatus() {
+    return request<{
+      connected: boolean
+      account?: string
+      last_sync_at?: string | null
+      last_error?: string
+      last_snapshot_id?: string
+    }>('/api/amo', { method: 'GET' }, false)
+  },
+
+  connectAmo(account: string, token: string) {
+    return request<{
+      connected: boolean
+      account: string
+      snapshot_id?: string
+      message?: string
+      last_sync_at: string | null
+    }>('/api/amo/connect', { method: 'POST', body: JSON.stringify({ account, token }) }, true)
+  },
+
+  syncAmo() {
+    return request<{ snapshot_id: string; status: string }>('/api/amo/sync', { method: 'POST' }, true)
+  },
+
   upload(file: File) {
     if (usesFixtures()) return fixtures.upload(file)
     const body = new FormData()

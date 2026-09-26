@@ -1,5 +1,5 @@
 import { Button } from '@maxhub/max-ui'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, usesFixtures } from '../api/client.ts'
 import { errorText } from '../api/errors.ts'
 import type { UploadResponse } from '../api/types.ts'
@@ -11,15 +11,58 @@ import { XRayLogo } from '../widgets/XRayLogo.tsx'
 export function Home({
   onUploaded,
   onTemplates,
+  onAmoReady,
 }: {
   onUploaded: (upload: UploadResponse) => void
   onTemplates: () => void
+  onAmoReady: (snapshotId: string) => void
 }) {
   const [file, setFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [soon, setSoon] = useState('')
+  const [amoOpen, setAmoOpen] = useState(false)
+  const [amoAccount, setAmoAccount] = useState('')
+  const [amoToken, setAmoToken] = useState('')
+  const [amoAccountName, setAmoAccountName] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (usesFixtures()) return
+    api.amoStatus().then((status) => {
+      if (status.connected && status.account) setAmoAccountName(status.account)
+    }).catch(() => undefined)
+  }, [])
+
+  async function connectAmo() {
+    setBusy(true)
+    setError('')
+    try {
+      const result = await api.connectAmo(amoAccount.trim(), amoToken.trim())
+      setAmoAccountName(result.account)
+      setAmoToken('')
+      setAmoOpen(false)
+      if (result.snapshot_id) onAmoReady(result.snapshot_id)
+      else setSoon(result.message || 'Кабинет подключен. В сделках пока нет бюджета.')
+    } catch (reason) {
+      setError(errorText(reason))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function refreshAmo() {
+    setBusy(true)
+    setError('')
+    try {
+      const result = await api.syncAmo()
+      onAmoReady(result.snapshot_id)
+    } catch (reason) {
+      setError(errorText(reason))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   async function sendFile() {
     if (!file) return
@@ -68,6 +111,49 @@ export function Home({
             <span className="source-tile-label">МойСклад</span>
           </button>
         </div>
+        <Button
+          className="action action-secondary"
+          type="button"
+          size="large"
+          stretched
+          variant="secondary"
+          onClick={() => setAmoOpen((open) => !open)}
+        >
+          Подключить amoCRM
+        </Button>
+        {amoOpen ? (
+          <form
+            className="amo-form"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void connectAmo()
+            }}
+          >
+            <input
+              className="amo-input"
+              placeholder="Поддомен, например demo"
+              value={amoAccount}
+              onChange={(event) => setAmoAccount(event.target.value)}
+              autoComplete="off"
+            />
+            <input
+              className="amo-input"
+              placeholder="Долгосрочный токен"
+              value={amoToken}
+              onChange={(event) => setAmoToken(event.target.value)}
+              autoComplete="off"
+              type="password"
+            />
+            <Button className="action action-primary" type="submit" size="large" stretched variant="primary" disabled={busy}>
+              {busy ? 'Читаем сделки…' : 'Забрать сделки из amoCRM'}
+            </Button>
+          </form>
+        ) : null}
+        {amoAccountName ? (
+          <Button className="action action-secondary" type="button" size="large" stretched variant="secondary" disabled={busy} onClick={() => void refreshAmo()}>
+            Обновить {amoAccountName}
+          </Button>
+        ) : null}
         <FileDrop
           file={file}
           busy={busy}
