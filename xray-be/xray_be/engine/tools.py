@@ -1,5 +1,7 @@
 import json
+import re
 from decimal import Decimal
+from django.db import connection
 from django.db.models import Sum, Count, Avg, Q
 from engine.models import Deal, Snapshot
 
@@ -8,64 +10,38 @@ AI_TOOLS_DEFINITIONS = [
     {
         "type": "function",
         "function": {
-            "name": "search_deals",
-            "description": "Поиск сделок в отчете по фильтрам: статус, имя клиента, менеджер или минимальная сумма.",
+            "name": "execute_sql_query",
+            "description": (
+                "Выполнить аналитический SQL SELECT-запрос к таблице deals (сделки текущего снимка). "
+                "Используй этот инструмент ВСЕГДА для любых выборок, фильтрации, поиска сделок, аналитики по менеджерам, клиентам, суммам, датам, воронке и среднему чеку.\n"
+                "Схема таблицы deals:\n"
+                "- deal_id (TEXT): идентификатор сделки / заказа\n"
+                "- client (TEXT): имя клиента / покупателя / компании\n"
+                "- contact (TEXT): контакты (телефон, email)\n"
+                "- manager (TEXT): имя ответственного менеджера\n"
+                "- amount (NUMERIC): сумма сделки / выручка в рублях\n"
+                "- list_price (NUMERIC): базовая цена без скидки\n"
+                "- discount_pct (NUMERIC): скидка в %\n"
+                "- status (TEXT): канонический статус ('new', 'in_progress', 'proposal', 'negotiation', 'won', 'lost', 'other')\n"
+                "- status_raw (TEXT): исходный статус из CRM / файла пользователя\n"
+                "- created_at (TIMESTAMP): дата создания сделки\n"
+                "- closed_at (TIMESTAMP): дата закрытия / оплаты / отгрузки сделки\n"
+                "- first_contact_at (TIMESTAMP): дата первого контакта\n"
+                "- status_changed_at (TIMESTAMP): дата последней смены этапа\n"
+                "- last_activity_at (TIMESTAMP): дата последней активности\n"
+                "- source (TEXT): канал / источник лида / маркетплейс\n\n"
+                "Поддерживаются стандартные функции SQL: COUNT, SUM, AVG, MIN, MAX, GROUP BY, ORDER BY, LIMIT, LIKE (или LOWER(col) LIKE '%...%'), CASE WHEN... "
+                "Запрос автоматически изолирован внутри данных текущего отчета."
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "status": {
+                    "query": {
                         "type": "string",
-                        "description": "Статус сделки: new, in_progress, proposal, negotiation, won, lost, other"
-                    },
-                    "client": {
-                        "type": "string",
-                        "description": "Фрагмент имени клиента или компании"
-                    },
-                    "manager": {
-                        "type": "string",
-                        "description": "Имя менеджера"
-                    },
-                    "min_amount": {
-                        "type": "number",
-                        "description": "Минимальная сумма сделки в рублях"
-                    },
-                    "order_by": {
-                        "type": "string",
-                        "enum": ["amount_desc", "amount_asc", "created_desc"],
-                        "description": "Сортировка: amount_desc (самые крупные), amount_asc (мелкие), created_desc (свежие)"
-                    },
-                    "limit": {
-                        "type": "integer",
-                        "description": "Количество возвращаемых сделок (по умолчанию 5, максимум 15)"
+                        "description": "SQL SELECT запрос к таблице deals (например: SELECT manager, COUNT(*) as deals_cnt, SUM(amount) as total_amt FROM deals WHERE manager != '' GROUP BY manager ORDER BY total_amt DESC LIMIT 10)"
                     }
-                }
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_manager_stats",
-            "description": "Получить детальную статистику по конкретным менеджерам команды: кто ведет сделки, сколько сделок зависло (stagnant_deals), сколько проиграно (lost_deals), общая сумма и средний чек. Вызывай эту функцию ВСЕГДА, когда пользователь спрашивает про менеджеров, сотрудников, кто косячит, кто лучше или хуже всех работает.",
-            "parameters": {
-                "type": "object",
-                "properties": {}
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_top_clients",
-            "description": "Получить список ключевых клиентов с наибольшей суммой покупок/сделок.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "limit": {
-                        "type": "integer",
-                        "description": "Количество клиентов (по умолчанию 5)"
-                    }
-                }
+                },
+                "required": ["query"]
             }
         }
     },
@@ -127,6 +103,101 @@ AI_TOOLS_DEFINITIONS = [
 ]
 
 
+def _run_sql_query(query: str, snapshot_id: str) -> str:
+    """
+    Executes a read-only SQL SELECT query against the 'deals' table scoped to the given snapshot.
+    """
+    if not snapshot_id:
+        return json.dumps({"error": "snapshot_id не указан"}, ensure_ascii=False)
+
+    if not query or not isinstance(query, str):
+        return json.dumps({"error": "Запрос query пустой или некорректный"}, ensure_ascii=False)
+
+    # Clean markdown fences and whitespace
+    clean_query = query.strip()
+    if clean_query.startswith("```"):
+        clean_query = re.sub(r"^```(?:sql)?\s*", "", clean_query, flags=re.IGNORECASE)
+        clean_query = re.sub(r"\s*```$", "", clean_query)
+    clean_query = clean_query.strip().rstrip("; \t\r\n")
+
+    # Guard against multi-statement execution
+    if ";" in clean_query:
+        return json.dumps({
+            "error": "Точка с запятой ';' не разрешена. Разрешен только один SELECT-запрос.",
+            "query": query
+        }, ensure_ascii=False)
+
+    # Guard against DDL/DML mutations
+    forbidden_pattern = re.compile(
+        r"\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|ATTACH|DETACH|PRAGMA|EXEC|EXECUTE|TRUNCATE|REPLACE|GRANT|REVOKE|VACUUM)\b",
+        re.IGNORECASE
+    )
+    if forbidden_pattern.search(clean_query):
+        return json.dumps({
+            "error": "Запросы на изменение данных запрещены. Разрешены только SELECT-запросы.",
+            "query": query
+        }, ensure_ascii=False)
+
+    # Must start with SELECT or WITH
+    if not re.match(r"^\s*(SELECT|WITH)\b", clean_query, re.IGNORECASE):
+        return json.dumps({
+            "error": "Запрос должен начинаться с ключевого слова SELECT или WITH.",
+            "query": query
+        }, ensure_ascii=False)
+
+    s_id = str(snapshot_id)
+    clean_id = s_id.replace('-', '')
+
+    cte_deals = (
+        "WITH deals AS ("
+        "SELECT deal_id, client, contact, manager, amount, list_price, discount_pct, "
+        "status_raw, status, created_at, first_contact_at, status_changed_at, "
+        "last_activity_at, closed_at, source "
+        "FROM engine_deal "
+        "WHERE snapshot_id = %s OR snapshot_id = %s"
+        ")"
+    )
+
+    if re.match(r"^\s*WITH\b", clean_query, re.IGNORECASE):
+        stripped_user_cte = re.sub(r"^\s*WITH\s+", "", clean_query, flags=re.IGNORECASE)
+        full_sql = f"{cte_deals}, {stripped_user_cte}"
+    else:
+        full_sql = f"{cte_deals} {clean_query}"
+
+    try:
+        with connection.cursor() as cur:
+            cur.execute(full_sql, [s_id, clean_id])
+            cols = [col[0] for col in cur.description] if cur.description else []
+            raw_rows = cur.fetchmany(51)
+            truncated = len(raw_rows) > 50
+            display_rows = raw_rows[:50]
+
+            def serialize_val(v):
+                if isinstance(v, Decimal):
+                    return float(v) if v % 1 else int(v)
+                if hasattr(v, 'isoformat'):
+                    return v.isoformat()
+                return v
+
+            dict_rows = [
+                {cols[i]: serialize_val(row[i]) for i in range(len(cols))}
+                for row in display_rows
+            ]
+
+            return json.dumps({
+                "query": clean_query,
+                "columns": cols,
+                "rows": dict_rows,
+                "row_count": len(dict_rows),
+                "truncated": truncated
+            }, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({
+            "error": f"Ошибка выполнения SQL: {str(e)}",
+            "query": clean_query
+        }, ensure_ascii=False)
+
+
 def execute_tool_call(tool_name: str, arguments: dict, snapshot_id: str) -> str:
     """
     Executes tool query directly against the SQLite / Postgres database for the given snapshot.
@@ -134,6 +205,9 @@ def execute_tool_call(tool_name: str, arguments: dict, snapshot_id: str) -> str:
     """
     if not snapshot_id:
         return json.dumps({"error": "snapshot_id не указан"})
+
+    if tool_name == "execute_sql_query":
+        return _run_sql_query(arguments.get("query", ""), snapshot_id)
 
     qs = Deal.objects.filter(snapshot_id=snapshot_id)
 
