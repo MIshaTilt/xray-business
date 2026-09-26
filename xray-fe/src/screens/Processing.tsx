@@ -15,7 +15,6 @@ export function Processing({
   onBack: () => void
   onFailed: () => void
 }) {
-  const [progress, setProgress] = useState(0)
   const [error, setError] = useState('')
   const onReadyRef = useRef(onReady)
   const finished = useRef(false)
@@ -27,7 +26,6 @@ export function Processing({
       try {
         const poll = await api.poll(snapshotId)
         if (stopped || finished.current) return
-        setProgress(poll.progress)
         if (poll.status === 'ready') {
           finished.current = true
           onReadyRef.current()
@@ -49,29 +47,15 @@ export function Processing({
     }
   }, [snapshotId])
 
+  if (!error) return null
+
   return (
     <div className="stack">
-      <Typography.Title variant="medium-strong">Просвечиваем сделки</Typography.Title>
-      {error ? (
-        <>
-          <Notice tone="error">{error}</Notice>
-          <Button className="action action-secondary" type="button" size="large" stretched variant="secondary" onClick={onBack}>
-            Вернуться к колонкам
-          </Button>
-        </>
-      ) : (
-        <>
-          <div className="scan" aria-hidden="true">
-            <span className="scan-ring" />
-            <span className="scan-line" />
-          </div>
-          <Typography.Body variant="medium">Сверяем суммы, статусы и даты. Это займёт несколько секунд.</Typography.Body>
-          <div className="progress-track" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} role="progressbar">
-            <div className="progress-bar" style={{ width: `${progress}%` }} />
-          </div>
-          <Typography.Label variant="small">{progress}%</Typography.Label>
-        </>
-      )}
+      <Typography.Title variant="medium-strong">Снимок не собрался</Typography.Title>
+      <Notice tone="error">{error}</Notice>
+      <Button className="action action-secondary" type="button" size="large" stretched variant="secondary" onClick={onBack}>
+        Вернуться к колонкам
+      </Button>
     </div>
   )
 }

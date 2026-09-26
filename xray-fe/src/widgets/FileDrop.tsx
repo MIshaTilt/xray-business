@@ -1,5 +1,5 @@
 import { Button, Typography } from '@maxhub/max-ui'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 
 function kindOf(name: string): string {
   const ext = name.split('.').pop()?.toLowerCase()
@@ -21,14 +21,21 @@ export function FileDrop({
   onPick,
   onSend,
   onClear,
+  extra,
+  hideButton = false,
+  inputRef,
 }: {
   file: File | null
   busy: boolean
   onPick: (file: File) => void
   onSend: () => void
   onClear: () => void
+  extra?: ReactNode
+  hideButton?: boolean
+  inputRef?: RefObject<HTMLInputElement | null>
 }) {
-  const input = useRef<HTMLInputElement>(null)
+  const localInput = useRef<HTMLInputElement>(null)
+  const input = inputRef ?? localInput
   const slot = useRef<HTMLDivElement>(null)
   const hideTimer = useRef(0)
   const [leaving, setLeaving] = useState(false)
@@ -92,9 +99,11 @@ export function FileDrop({
           if (next && ALLOWED.test(next.name)) onPick(next)
         }}
       />
-      <Button className="action action-primary" type="button" size="large" stretched variant="primary" onClick={() => input.current?.click()}>
-        Загрузить файл
-      </Button>
+      {hideButton ? null : (
+        <Button className="action action-primary" type="button" size="large" stretched variant="primary" onClick={() => input.current?.click()}>
+          Загрузить файл
+        </Button>
+      )}
       {visible ? (
         <div ref={slot} className={`file-card-slot${leaving ? ' is-leaving' : ''}`}>
           <div className="file-card-pad">
@@ -125,6 +134,7 @@ export function FileDrop({
           </div>
         </div>
       ) : null}
+      {extra}
     </div>
   )
 }

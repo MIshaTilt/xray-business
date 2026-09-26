@@ -12,14 +12,22 @@ export function FlyoutSelect({
   closing,
   onToggle,
   onChange,
+  triggerClassName = 'action action-secondary field-select-btn flyout-trigger',
+  minMenuWidth = 0,
+  caption,
+  emptyLabel,
 }: {
   value: string
   placeholder?: string
+  emptyLabel?: string
   options: Option[]
   open: boolean
   closing: boolean
   onToggle: () => void
   onChange: (value: string) => void
+  triggerClassName?: string
+  minMenuWidth?: number
+  caption?: string
 }) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const [box, setBox] = useState<{
@@ -31,6 +39,7 @@ export function FlyoutSelect({
   } | null>(null)
   const selected = options.find((option) => option.value === value)
   const shown = open || closing
+  const vacant = emptyLabel ?? placeholder
 
   useLayoutEffect(() => {
     if (!shown) {
@@ -48,7 +57,7 @@ export function FlyoutSelect({
       setBox({
         top: rect.bottom + window.scrollY + 8,
         left: rect.left + window.scrollX,
-        width: rect.width,
+        width: Math.max(rect.width, minMenuWidth),
         fontFamily: style.fontFamily,
         fontSize: style.fontSize,
       })
@@ -56,7 +65,7 @@ export function FlyoutSelect({
     place()
     window.addEventListener('resize', place)
     return () => window.removeEventListener('resize', place)
-  }, [shown])
+  }, [shown, minMenuWidth])
 
   const menu = shown && box
     ? createPortal(
@@ -99,13 +108,14 @@ export function FlyoutSelect({
     <div ref={wrapRef} className="template-dropdown-wrapper field-dropdown">
       <button
         type="button"
-        className="action action-secondary field-select-btn flyout-trigger"
+        className={triggerClassName}
         aria-expanded={open && !closing}
         onClick={onToggle}
       >
         <span className="template-label">
-          <span className={selected ? '' : 'field-select-placeholder'}>
-            {selected ? selected.label : placeholder}
+          {caption ? <span className="map-col-file">{caption}</span> : null}
+          <span className={selected ? (caption ? 'map-col-role' : '') : `field-select-placeholder${caption ? ' map-col-role' : ''}`}>
+            {selected ? selected.label : vacant}
           </span>
           <span className={`template-caret${open && !closing ? ' open' : ''}`} aria-hidden="true">
             <svg viewBox="0 0 24 24">

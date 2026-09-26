@@ -1,7 +1,16 @@
 export type Platform = 'ios' | 'android' | 'desktop' | 'web'
 
+export type MaxUser = {
+  id: number
+  first_name: string
+  last_name?: string
+  username?: string
+  photo_url?: string
+}
+
 export type MaxWebApp = {
   initData?: string
+  initDataUnsafe?: { user?: MaxUser }
   platform?: string
   ready?: () => void
   expand?: () => void
@@ -22,5 +31,6 @@ export type MaxWebApp = {
 declare global {
   interface Window {
     WebApp?: MaxWebApp
+    Telegram?: { WebApp?: MaxWebApp }
   }
 }

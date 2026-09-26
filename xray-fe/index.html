@@ -6,6 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>X-Ray</title>
     <script src="https://st.max.ru/js/max-web-app.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+      if (!window.WebApp && window.Telegram && window.Telegram.WebApp) {
+        window.WebApp = window.Telegram.WebApp
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

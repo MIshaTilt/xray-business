@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { api } from '../api/client.ts'
 import { errorText } from '../api/errors.ts'
 import type { CanonicalField, Coverage, Mapping as MappingValue, UploadResponse } from '../api/types.ts'
-import { canEnlighten, compactMapping, exampleValue, MAPPING_FIELDS } from '../domain/mapping.ts'
+import { canEnlighten, compactMapping, MAPPING_FIELDS } from '../domain/mapping.ts'
 import { setClosingConfirmation } from '../bridge/index.ts'
 import { CoverageBar } from '../widgets/CoverageBar.tsx'
 import { DataTable } from '../widgets/DataTable.tsx'
@@ -27,9 +27,9 @@ export function MappingScreen({
   const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [openField, setOpenField] = useState<CanonicalField | null>(null)
-  const [closingFields, setClosingFields] = useState<ReadonlySet<CanonicalField>>(() => new Set())
-  const closeTimers = useRef<Partial<Record<CanonicalField, number>>>({})
+  const [openColumn, setOpenColumn] = useState<string | null>(null)
+  const [closingColumns, setClosingColumns] = useState<ReadonlySet<string>>(() => new Set())
+  const closeTimers = useRef<Record<string, number>>({})
   const fieldsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -51,15 +51,27 @@ export function MappingScreen({
     return () => window.clearTimeout(timer)
   }, [dirty, mapping, upload.upload_id])
 
-  function change(field: keyof MappingValue, column: string) {
+  function roleOf(column: string): CanonicalField | '' {
+    const field = MAPPING_FIELDS.find((item) => mapping[item.id] === column)
+    return field?.id ?? ''
+  }
+
+  function assignRole(column: string, fieldId: string) {
     setDirty(true)
-    setMapping((current) => ({ ...current, [field]: column || undefined }))
+    setMapping((current) => {
+      const next: MappingValue = { ...current }
+      for (const field of MAPPING_FIELDS) {
+        if (next[field.id] === column) delete next[field.id]
+      }
+      if (fieldId) next[fieldId as CanonicalField] = column
+      return next
+    })
     closeFlyout()
   }
 
-  function beginClose(id: CanonicalField) {
+  function beginClose(id: string) {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    setClosingFields((current) => {
+    setClosingColumns((current) => {
       if (current.has(id)) return current
       const next = new Set(current)
       next.add(id)
@@ -67,7 +79,7 @@ export function MappingScreen({
     })
     window.clearTimeout(closeTimers.current[id])
     closeTimers.current[id] = window.setTimeout(() => {
-      setClosingFields((current) => {
+      setClosingColumns((current) => {
         if (!current.has(id)) return current
         const next = new Set(current)
         next.delete(id)
@@ -77,10 +89,10 @@ export function MappingScreen({
     }, 420)
   }
 
-  function cancelClose(id: CanonicalField) {
+  function cancelClose(id: string) {
     window.clearTimeout(closeTimers.current[id])
     delete closeTimers.current[id]
-    setClosingFields((current) => {
+    setClosingColumns((current) => {
       if (!current.has(id)) return current
       const next = new Set(current)
       next.delete(id)
@@ -89,20 +101,20 @@ export function MappingScreen({
   }
 
   function closeFlyout() {
-    if (!openField) return
-    const id = openField
-    setOpenField(null)
+    if (!openColumn) return
+    const id = openColumn
+    setOpenColumn(null)
     beginClose(id)
   }
 
-  function toggleFlyout(field: CanonicalField) {
-    if (openField === field) {
+  function toggleFlyout(column: string) {
+    if (openColumn === column) {
       closeFlyout()
       return
     }
-    if (openField) beginClose(openField)
-    cancelClose(field)
-    setOpenField(field)
+    if (openColumn) beginClose(openColumn)
+    cancelClose(column)
+    setOpenColumn(column)
   }
 
   useEffect(
@@ -113,7 +125,7 @@ export function MappingScreen({
   )
 
   useEffect(() => {
-    if (!openField) return
+    if (!openColumn) return
     function onPointer(event: PointerEvent) {
       const target = event.target as Node | null
       if (fieldsRef.current?.contains(target)) return
@@ -129,7 +141,7 @@ export function MappingScreen({
       document.removeEventListener('pointerdown', onPointer)
       document.removeEventListener('keydown', onKey)
     }
-  }, [openField])
+  }, [openColumn])
 
   async function enlighten() {
     setBusy(true)
@@ -149,68 +161,74 @@ export function MappingScreen({
   }
 
   const ready = canEnlighten(mapping)
-  const taken = new Set(
-    Object.values(mapping).filter((column): column is string => Boolean(column)),
+  const takenFields = new Set(
+    Object.entries(mapping)
+      .filter(([, column]) => Boolean(column))
+      .map(([field]) => field),
   )
 
   return (
-    <div className="stack">
+    <div className="stack mapping-screen">
       <div className="lead">
         <h1>Проверьте колонки</h1>
-        <Typography.Body variant="medium">Если поле назначено неверно — выберите другую колонку.</Typography.Body>
+        <Typography.Body variant="medium">Нажмите заголовок колонки и назначьте роль.</Typography.Body>
       </div>
-      <CoverageBar coverage={coverage} />
+      <CoverageBar coverage={coverage} compact />
       {error ? <Notice tone="error">{error}</Notice> : null}
       {warnings.map((warning) => (
         <Notice key={warning} tone="ok">{warning}</Notice>
       ))}
-      <DataTable>
-        <table>
-          <thead>
-            <tr>
-              {upload.columns.map((column) => (
-                <th key={column}>{column}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {upload.sample_rows.map((row, index) => (
-              <tr key={index}>
-                {upload.columns.map((column) => (
-                  <td key={column}>{row[column] || '—'}</td>
-                ))}
+      <div ref={fieldsRef}>
+        <DataTable>
+          <table>
+            <thead>
+              <tr>
+                {upload.columns.map((column) => {
+                  const role = roleOf(column)
+                  const field = MAPPING_FIELDS.find((item) => item.id === role)
+                  return (
+                    <th key={column} className={role ? 'is-mapped' : undefined}>
+                      <FlyoutSelect
+                        value={role}
+                        placeholder="Не назначено"
+                        emptyLabel="Назначить"
+                        caption={column}
+                        minMenuWidth={240}
+                        triggerClassName={`map-col flyout-trigger${role ? ' is-set' : ' is-empty'}`}
+                        options={MAPPING_FIELDS.filter((item) => item.id === role || !takenFields.has(item.id)).map(
+                          (item) => ({ value: item.id, label: item.label }),
+                        )}
+                        open={openColumn === column}
+                        closing={closingColumns.has(column)}
+                        onToggle={() => toggleFlyout(column)}
+                        onChange={(fieldId) => assignRole(column, fieldId)}
+                      />
+                      {field ? <span className="map-col-hint">{field.badge}</span> : null}
+                    </th>
+                  )
+                })}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </DataTable>
-      <div className="fields" ref={fieldsRef}>
-        {MAPPING_FIELDS.map((field) => (
-          <div key={field.id} className="field">
-            <span className="field-head">
-              <Typography.Body variant="medium-strong">{field.label}</Typography.Body>
-              <span className="badge">{field.badge}</span>
-            </span>
-            <FlyoutSelect
-              value={mapping[field.id] ?? ''}
-              options={upload.columns
-                .filter((column) => mapping[field.id] === column || !taken.has(column))
-                .map((column) => ({ value: column, label: column }))}
-              open={openField === field.id}
-              closing={closingFields.has(field.id)}
-              onToggle={() => toggleFlyout(field.id)}
-              onChange={(column) => change(field.id, column)}
-            />
-            <Typography.Label variant="small">Пример: {exampleValue(upload.sample_rows, mapping[field.id])}</Typography.Label>
-          </div>
-        ))}
+            </thead>
+            <tbody>
+              {upload.sample_rows.map((row, index) => (
+                <tr key={index}>
+                  {upload.columns.map((column) => (
+                    <td key={column}>{row[column] || '—'}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </DataTable>
       </div>
       {ready ? null : (
-        <Typography.Body variant="medium">Подтвердите сумму и дату или статус.</Typography.Body>
+        <Typography.Body variant="medium">Нужны сумма и дата или статус.</Typography.Body>
       )}
-      <Button className="action action-primary" type="button" size="large" stretched variant="primary" disabled={!ready} loading={busy} onClick={() => void enlighten()}>
-        Сделать снимок
-      </Button>
+      <div className="mapping-cta">
+        <Button className="action action-primary" type="button" size="large" stretched variant="primary" disabled={!ready} loading={busy} onClick={() => void enlighten()}>
+          Сделать снимок
+        </Button>
+      </div>
     </div>
   )
 }
