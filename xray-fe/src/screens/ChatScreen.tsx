@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { marked } from 'marked'
-import type { Diagnosis as DiagnosisData } from '../api/types.ts'
+import type { Diagnosis as DiagnosisData, ComparisonResult } from '../api/types.ts'
 import { ToolCallBadge } from './ToolCallBadge.tsx'
 import { ChartCard } from '../widgets/ChartCard.tsx'
 import { api, authHeaders } from '../api/client.ts'
@@ -29,7 +29,43 @@ export type PromptSuggestion = {
   query: string
 }
 
-export function getSuggestedPrompts(diagnosis: DiagnosisData | null): PromptSuggestion[] {
+export function getSuggestedPrompts(
+  diagnosis?: DiagnosisData | null,
+  comparison?: ComparisonResult | null,
+): PromptSuggestion[] {
+  if (comparison) {
+    return [
+      {
+        label: '🚀 Причина изменения выручки',
+        query: 'В чем главная причина изменения выручки между базовым и текущим срезами? Разложи по факторам.',
+      },
+      {
+        label: '👥 Сравнение менеджеров',
+        query: 'Сравни показатели менеджеров: кто вырос сильнее всех, а кто просел по выручке и закрытым сделкам?',
+      },
+      {
+        label: '📊 График выручки менеджеров',
+        query: 'Построй график выручки менеджеров в текущем периоде.',
+      },
+      {
+        label: '📉 Динамика зависших сделок',
+        query: 'Как изменился объем зависших сделок и сколько денег удалось сберечь от зависания?',
+      },
+      {
+        label: '🎯 3 главных шага РОПа',
+        query: 'Какие 3 главных шага нужно сделать руководителю на основе динамики этих двух периодов?',
+      },
+      {
+        label: '🏆 Топ сделок текущего периода',
+        query: 'Покажи 5 самых крупных сделок текущего среза и их текущие статусы.',
+      },
+      {
+        label: '💰 Анализ среднего чека',
+        query: 'Как изменился средний чек и как это повлияло на итоговую выручку?',
+      },
+    ]
+  }
+
   const suggestions: PromptSuggestion[] = []
   const availableCols = diagnosis?.available_columns || []
   const normCols = availableCols.map((c) => c.toLowerCase())
@@ -164,80 +200,116 @@ export function getSuggestedPrompts(diagnosis: DiagnosisData | null): PromptSugg
 }
 
 export function ChatScreen({
+  comparisonId,
   snapshotId,
+  targetSnapshotId,
+  comparison,
   diagnosis,
   onBack: _onBack,
 }: {
+  comparisonId?: string
   snapshotId: string
-  diagnosis: DiagnosisData | null
+  targetSnapshotId?: string
+  comparison?: ComparisonResult | null
+  diagnosis?: DiagnosisData | null
   onBack: () => void
 }) {
-  const storageKey = `xray_chat_history_${snapshotId}`
+  const effectiveComparisonId = comparisonId || comparison?.comparison_id
+  const historyId = effectiveComparisonId || snapshotId
+  const storageKey = effectiveComparisonId
+    ? `xray_chat_compare_${effectiveComparisonId}`
+    : targetSnapshotId
+    ? `xray_chat_compare_${snapshotId}_${targetSnapshotId}`
+    : `xray_chat_history_${snapshotId}`
 
-  const suggestedPrompts = useMemo(() => getSuggestedPrompts(diagnosis), [diagnosis])
+  const suggestedPrompts = useMemo(
+    () => getSuggestedPrompts(diagnosis, comparison),
+    [diagnosis, comparison]
+  )
 
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: 'assistant',
-      content:
-        'Здравствуйте! Я проанализировал ваш бизнес-рентген и готов ответить на любые вопросы по найденным угрозам, зависшим сделкам или рекомендациям.',
-    },
-  ])
+  const defaultGreeting = comparison || effectiveComparisonId
+    ? 'Здравствуйте! Я изучил динамику между двумя срезами бизнеса. Готов ответить на любые вопросы по причинам изменений выручки, спаду или росту менеджеров, динамике зависших сделок и точкам роста.'
+    : 'Здравствуйте! Я проанализировал ваш бизнес-рентген и готов ответить на любые вопросы по найденным угрозам, зависшим сделкам или рекомендациям.'
+
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    try {
+      const saved = localStorage.getItem(storageKey)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch {
+      // ignore
+    }
+    return [{ role: 'assistant', content: defaultGreeting }]
+  })
+
+  const hasLoadedHistoryRef = useRef(false)
 
   // Load chat history from backend database (with fallback to localStorage)
   useEffect(() => {
     let ignore = false
     async function loadHistory() {
+      if (!historyId) return
       try {
-        const dbMsgs = await api.getChatHistory(snapshotId)
+        const dbMsgs = await api.getChatHistory(historyId)
         if (!ignore && dbMsgs && dbMsgs.length > 0) {
-          setMessages(
-            dbMsgs.map((m: any) => ({
-              role: m.role,
-              content: m.content,
-              toolCalls:
-                m.tool_calls && m.tool_calls.length > 0
-                  ? m.tool_calls.map((t: any) => ({
-                      ...t,
-                      result:
-                        typeof t.result === 'string'
-                          ? (() => {
-                              try {
-                                return JSON.parse(t.result)
-                              } catch {
-                                return t.result
-                              }
-                            })()
-                          : t.result,
-                    }))
-                  : undefined,
-            }))
-          )
+          const formatted: ChatMessage[] = dbMsgs.map((m: any) => ({
+            role: m.role,
+            content: m.content,
+            toolCalls:
+              m.tool_calls && m.tool_calls.length > 0
+                ? m.tool_calls.map((t: any) => ({
+                    ...t,
+                    result:
+                      typeof t.result === 'string'
+                        ? (() => {
+                            try {
+                              return JSON.parse(t.result)
+                            } catch {
+                              return t.result
+                            }
+                          })()
+                        : t.result,
+                  }))
+                : undefined,
+          }))
+          setMessages(formatted)
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(formatted))
+          } catch {
+            // ignore
+          }
+          hasLoadedHistoryRef.current = true
           return
         }
       } catch {
-        // DB load failed, check local storage
+        // DB load failed, fallback to local storage
       }
 
       try {
         const saved = localStorage.getItem(storageKey)
         if (!ignore && saved) {
           const parsed = JSON.parse(saved)
-          if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setMessages(parsed)
+          }
         }
       } catch {
         // ignore
       }
+      hasLoadedHistoryRef.current = true
     }
 
     void loadHistory()
     return () => {
       ignore = true
     }
-  }, [snapshotId, storageKey])
+  }, [historyId, storageKey])
 
   // Also cache in localStorage for fast local re-render
   useEffect(() => {
+    if (!hasLoadedHistoryRef.current && messages.length <= 1) return
     try {
       localStorage.setItem(storageKey, JSON.stringify(messages))
     } catch {
@@ -318,8 +390,63 @@ export function ChatScreen({
     [],
   )
 
-  // Build rich system prompt with diagnosis context
+  // Build rich system prompt with diagnosis or comparison context
   function buildSystemPrompt(): string {
+    if (comparison) {
+      const baseName = comparison.base.filename || 'Базовый период'
+      const targetName = comparison.target.filename || 'Текущий период'
+      const rev = comparison.totals_diff.amount
+      const deals = comparison.totals_diff.deals
+      const avgCheck = comparison.totals_diff.avg_check
+
+      const metricsText = (comparison.metrics_diff || [])
+        .map((m) => {
+          const sign = m.delta_pct > 0 ? '+' : ''
+          const stat = m.status === 'positive' ? 'УЛУЧШЕНИЕ' : m.status === 'negative' ? 'УХУДШЕНИЕ' : 'БЕЗ ИЗМЕНЕНИЙ'
+          return `- [${stat}] ${m.name}: было ${m.base_value} ${m.unit}, стало ${m.target_value} ${m.unit} (${sign}${m.delta_pct}%). Утечка: было ${m.base_impact} ₽, стало ${m.target_impact} ₽`
+        })
+        .join('\n')
+
+      const managersText = (comparison.managers_diff || [])
+        .map((mgr) => {
+          const sign = mgr.delta_pct > 0 ? '+' : ''
+          return `- ${mgr.manager}: текущая выручка ${mgr.target_amount} ₽ (${mgr.target_deals} сдел.), базовая ${mgr.base_amount} ₽ (${mgr.base_deals} сдел.), дельта: ${sign}${mgr.delta_pct}% (${mgr.delta_amount} ₽)`
+        })
+        .join('\n')
+
+      return (
+        'Ты — персональный бизнес-аналитик и трекер сервиса X-Ray.\n' +
+        'Ты проводишь глубокий сравнительный анализ двух срезов бизнеса (Before vs After):\n' +
+        `Базовый срез (До): "${baseName}" (${comparison.base.created_at})\n` +
+        `Текущий срез (После): "${targetName}" (${comparison.target.created_at})\n\n` +
+        `ВЕРДИКТ И РЕЗЮМЕ ДИНАМИКИ:\n` +
+        `Заголовок: "${comparison.summary.headline}"\n` +
+        `Пояснение: "${comparison.summary.body}"\n` +
+        `Спасенные деньги бизнеса: +${comparison.total_saved_money} ₽\n\n` +
+        `ОБЩИЕ ПОКАЗАТЕЛИ (ДЕЛЬТА):\n` +
+        `- Выручка: было ${rev.base} ₽ ➔ стало ${rev.target} ₽ (дельта: ${rev.delta_abs > 0 ? '+' : ''}${rev.delta_abs} ₽, ${rev.delta_pct}%)\n` +
+        `- Сделок: было ${deals.base} ➔ стало ${deals.target} (дельта: ${deals.delta_abs > 0 ? '+' : ''}${deals.delta_abs}, ${deals.delta_pct}%)\n` +
+        `- Средний чек: было ${avgCheck.base} ₽ ➔ стало ${avgCheck.target} ₽ (дельта: ${avgCheck.delta_abs > 0 ? '+' : ''}${avgCheck.delta_abs} ₽, ${avgCheck.delta_pct}%)\n\n` +
+        `ДИНАМИКА 7 МЕТРИК РИСКОВ И ВОРОНКИ:\n${metricsText}\n\n` +
+        `ДИНАМИКА МЕНЕДЖЕРОВ:\n${managersText}\n\n` +
+        'ВАЖНО ОБ ИНСТРУМЕНТАХ (TOOLS):\n' +
+        '1. get_comparison_summary: вызывай для мгновенного получения готовых точных математических расчетов сравнения двух срезов (дельты выручки, метрик, менеджеров и спасенных денег).\n' +
+        '2. execute_sql_query: используй для любых выборок по конкретным сделкам, клиентам, менеджерам или этапам воронки.\n' +
+        '   В запросе доступны ТРИ таблицы/CTE:\n' +
+        '   - deals — объединенная таблица сделок обоих срезов с колонкой snapshot_tag ("base" или "target")\n' +
+        '   - base_deals — сделки ТОЛЬКО базового среза (До)\n' +
+        '   - target_deals — сделки ТОЛЬКО текущего среза (После)\n' +
+        '3. render_chart: вызывай для визуализации, когда пользователь просит "построй график", "нарисуй диаграмму", "динамику выручки", "сравни менеджеров визуально" или "сделай чарт".\n' +
+        '   * Для выручки менеджеров: chart_type="bar", dimension="manager"\n' +
+        '   * Для динамики выручки по датам: chart_type="line", dimension="date"\n' +
+        '   * Ты также можешь передавать массив data со сравнением показателей прямо в render_chart!\n\n' +
+        'ПРАВИЛА ОБЩЕНИЯ:\n' +
+        '1. Опирайся на точные цифры и дельты из сравнения. Четко поясняй, за счет чего произошел рост или спад.\n' +
+        '2. Отвечай кратко, структурированно, дружелюбно, языком опытного предпринимателя и коммерческого директора.\n' +
+        '3. Давай практические советы по шагам: что сделать РОПу, менеджерам или владельцу уже сегодня.'
+      )
+    }
+
     if (!diagnosis) {
       return (
         'Ты — экспертный бизнес-аналитик сервиса X-Ray. ' +
@@ -443,6 +570,8 @@ export function ChatScreen({
         headers: authHeaders(true),
         body: JSON.stringify({
           snapshot_id: snapshotId,
+          target_snapshot_id: targetSnapshotId,
+          comparison_id: effectiveComparisonId,
           messages: payloadMessages,
         }),
       })
@@ -523,10 +652,12 @@ export function ChatScreen({
   function handleClear() {
     if (!canClear) return
     const reset = () => {
-      setMessages([])
+      setMessages([{ role: 'assistant', content: defaultGreeting }])
       setClearing(false)
       localStorage.removeItem(storageKey)
-      void api.clearChatHistory(snapshotId)
+      if (historyId) {
+        void api.clearChatHistory(historyId)
+      }
     }
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       reset()

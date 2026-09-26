@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom'
 import { api, usesFixtures } from '../api/client.ts'
 import { errorText } from '../api/errors.ts'
 import type { SnapshotListItem } from '../api/types.ts'
-import { formatWhen, scanCaption } from '../domain/metrics.ts'
+import { formatRub, formatWhen, scanCaption } from '../domain/metrics.ts'
 import { Notice } from '../widgets/Notice.tsx'
 import { SwipeScan } from '../widgets/SwipeScan.tsx'
 import { XRayLogo } from '../widgets/XRayLogo.tsx'
@@ -121,6 +121,12 @@ export function Scans({
   async function openSnapshot(item: SnapshotListItem) {
     setError('')
     if (item.snapshot_id.startsWith('stub-')) return
+    if (item.item_type === 'comparison' && item.compare_base_id && item.compare_target_id) {
+      if (onCompare) {
+        onCompare(item.compare_base_id, item.compare_target_id)
+      }
+      return
+    }
     if (item.status === 'ready') {
       onDiagnosis(item.snapshot_id)
       return
@@ -243,20 +249,26 @@ export function Scans({
             </button>
           ) : null}
         </div>
-        {visible.length >= 2 && !picking && onCompare ? (
-          <div className="scans-quick-compare-wrap">
-            <button
-              type="button"
-              className="action scans-quick-compare-btn"
-              onClick={() => onCompare(visible[0].snapshot_id, visible[1].snapshot_id)}
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M7 16V4m0 0L3 8m4-4 4 4m6 4v12m0 0 4-4m-4 4-4-4" />
-              </svg>
-              <span>Сравнить 2 последних среза</span>
-            </button>
-          </div>
-        ) : null}
+        {(() => {
+          const standardScans = visible.filter((item) => item.item_type !== 'comparison')
+          if (standardScans.length >= 2 && !picking && onCompare) {
+            return (
+              <div className="scans-quick-compare-wrap">
+                <button
+                  type="button"
+                  className="action scans-quick-compare-btn"
+                  onClick={() => onCompare(standardScans[0].snapshot_id, standardScans[1].snapshot_id)}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M7 16V4m0 0L3 8m4-4 4 4m6 4v12m0 0 4-4m-4 4-4-4" />
+                  </svg>
+                  <span>Сравнить 2 последних среза</span>
+                </button>
+              </div>
+            )
+          }
+          return null
+        })()}
       </div>
       {canPick && pickSlot
         ? createPortal(
@@ -285,18 +297,24 @@ export function Scans({
       {picking || pickClosing
         ? createPortal(
             <div
-              className={`scans-pick-bar${pickClosing ? ' is-closing' : ''}${picked.length === 2 && onCompare ? ' has-compare' : ''}`}
+              className={`scans-pick-bar${pickClosing ? ' is-closing' : ''}${picked.filter((id) => snapshots.find((s) => s.snapshot_id === id)?.item_type !== 'comparison').length === 2 && onCompare ? ' has-compare' : ''}`}
               style={pickFont ?? undefined}
             >
-              {picked.length === 2 && onCompare ? (
-                <button
-                  type="button"
-                  className="action scans-pick-compare"
-                  onClick={() => onCompare(picked[0], picked[1])}
-                >
-                  Сравнить (2)
-                </button>
-              ) : null}
+              {(() => {
+                const pickedStandard = picked.filter((id) => snapshots.find((s) => s.snapshot_id === id)?.item_type !== 'comparison')
+                if (pickedStandard.length === 2 && onCompare) {
+                  return (
+                    <button
+                      type="button"
+                      className="action scans-pick-compare"
+                      onClick={() => onCompare(pickedStandard[0], pickedStandard[1])}
+                    >
+                      Сравнить (2)
+                    </button>
+                  )
+                }
+                return null
+              })()}
               <button
                 type="button"
                 className="action scans-pick-delete"
@@ -407,6 +425,7 @@ function ScanFace({
   onToggle?: () => void
 }) {
   const [drop, setDrop] = useState(false)
+  const isComparison = item.item_type === 'comparison'
 
   function onCheckDown(event: ReactPointerEvent<HTMLButtonElement>) {
     if (!picking) return
@@ -436,9 +455,15 @@ function ScanFace({
       <span className="scan-top">
         <span className="scan-meta">
           {shortWhen(item.created_at)}
-          {sourceCaption(item.source) ? ` · ${sourceCaption(item.source)}` : ''}
+          {isComparison ? ' · Динамика' : sourceCaption(item.source) ? ` · ${sourceCaption(item.source)}` : ''}
         </span>
-        {item.verdict ? (
+        {isComparison ? (
+          <span className={`pill ${item.verdict || 'ok'}`}>
+            {item.total_saved_money && item.total_saved_money > 0
+              ? `+${formatRub(item.total_saved_money)}`
+              : (item.verdict === 'ok' ? 'Улучшение' : 'Внимание')}
+          </span>
+        ) : item.verdict ? (
           <span className={`pill ${item.verdict}`}>
             {verdictName(item.verdict)}
             {item.coverage_label ? ` · ${coverageCaption(item.coverage_label)}` : ''}
@@ -448,6 +473,9 @@ function ScanFace({
         )}
       </span>
       <span className="scan-title">{cardTitle(item)}</span>
+      {isComparison && item.headline ? (
+        <span className="scan-headline-sub">{item.headline}</span>
+      ) : null}
     </>
   )
 }
@@ -481,6 +509,9 @@ function tableCaption(filename?: string): string {
 }
 
 function cardTitle(item: SnapshotListItem): string {
+  if (item.item_type === 'comparison') {
+    return item.card_title || item.filename || 'Сравнение срезов'
+  }
   const invented = (item.card_title || '').trim()
   if (invented) return invented
   const table = tableCaption(item.filename)

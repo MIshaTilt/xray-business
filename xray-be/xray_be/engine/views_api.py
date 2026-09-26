@@ -77,6 +77,54 @@ def get_upload(upload_id, request=None) -> dict | None:
     return entry
 
 
+def snapshot_model_to_dict(snap_obj: Snapshot) -> dict:
+    s_key = str(snap_obj.id)
+    owner_uid = snap_obj.user.max_user_id if snap_obj.user else None
+    is_guest = snap_obj.is_guest
+    guest_sess = snap_obj.guest_session or ""
+    is_cmp = (snap_obj.archetype == 'comparison') or (isinstance(snap_obj.quality, dict) and snap_obj.quality.get('item_type') == 'comparison')
+    q = snap_obj.quality or {}
+    diag = {
+        'snapshot_id': s_key,
+        'headline': snap_obj.headline,
+        'body': snap_obj.body,
+        'findings': snap_obj.findings,
+        'coverage': snap_obj.coverage,
+        'period': {
+            'from': snap_obj.period_from.isoformat() if snap_obj.period_from else None,
+            'to': snap_obj.period_to.isoformat() if snap_obj.period_to else None,
+        },
+        'totals': snap_obj.totals,
+        'ok': snap_obj.ok_list,
+        'low_sample': snap_obj.low_sample,
+        'card_title': q.get('card_title', ''),
+    }
+    return {
+        'snapshot_id': s_key,
+        'item_type': 'comparison' if is_cmp else 'snapshot',
+        'compare_base_id': q.get('compare_base_id'),
+        'compare_target_id': q.get('compare_target_id'),
+        'diff_result': q.get('diff_result'),
+        'user_id': owner_uid,
+        'guest_session': guest_sess,
+        'is_guest': is_guest,
+        'scan_no': snap_obj.scan_no,
+        'status': snap_obj.status,
+        'progress': snap_obj.progress,
+        'error': snap_obj.error,
+        'created_at': snap_obj.created_at.isoformat() if snap_obj.created_at else "",
+        'filename': snap_obj.filename,
+        'source': 'comparison' if is_cmp else snap_obj.archetype,
+        'card_title': q.get('card_title', snap_obj.filename),
+        'headline': snap_obj.headline,
+        'body': snap_obj.body,
+        'verdict': 'ok' if q.get('trend') == 'improved' else 'watch',
+        'total_saved_money': q.get('total_saved_money', 0),
+        'diagnosis': diag,
+        'all_metrics': snap_obj.all_metrics,
+    }
+
+
 def get_snapshot_for_request(snapshot_id, request) -> tuple[dict | None, Snapshot | None]:
     cleanup_expired_guest_data()
     ident = get_request_identity(request)
@@ -101,35 +149,7 @@ def get_snapshot_for_request(snapshot_id, request) -> tuple[dict | None, Snapsho
 
     # Reconstruct snap_dict from snap_obj if missing from in-memory cache
     if not snap_dict and snap_obj:
-        diag = {
-            'snapshot_id': s_key,
-            'headline': snap_obj.headline,
-            'body': snap_obj.body,
-            'findings': snap_obj.findings,
-            'coverage': snap_obj.coverage,
-            'period': {
-                'from': snap_obj.period_from.isoformat() if snap_obj.period_from else None,
-                'to': snap_obj.period_to.isoformat() if snap_obj.period_to else None,
-            },
-            'totals': snap_obj.totals,
-            'ok': snap_obj.ok_list,
-            'low_sample': snap_obj.low_sample,
-        }
-        snap_dict = {
-            'snapshot_id': s_key,
-            'user_id': owner_uid,
-            'guest_session': guest_sess,
-            'is_guest': is_guest,
-            'scan_no': snap_obj.scan_no,
-            'status': snap_obj.status,
-            'progress': snap_obj.progress,
-            'error': snap_obj.error,
-            'created_at': snap_obj.created_at.isoformat(),
-            'filename': snap_obj.filename,
-            'source': snap_obj.archetype,
-            'diagnosis': diag,
-            'all_metrics': snap_obj.all_metrics,
-        }
+        snap_dict = snapshot_model_to_dict(snap_obj)
         SNAPSHOTS_STORE[s_key] = snap_dict
 
     return snap_dict, snap_obj
@@ -341,6 +361,28 @@ class SaveMappingView(APIView):
 
 
 def snapshot_card(snap: dict) -> dict:
+    if snap.get('item_type') == 'comparison' or snap.get('source') == 'comparison':
+        diag = snap.get('diagnosis') or {}
+        return {
+            'snapshot_id': snap['snapshot_id'],
+            'item_type': 'comparison',
+            'compare_base_id': snap.get('compare_base_id'),
+            'compare_target_id': snap.get('compare_target_id'),
+            'scan_no': snap.get('scan_no'),
+            'status': snap.get('status', 'ready'),
+            'created_at': snap['created_at'],
+            'filename': snap.get('filename'),
+            'source': 'comparison',
+            'period': diag.get('period') if isinstance(diag, dict) else None,
+            'headline': snap.get('headline') or (diag.get('headline') if isinstance(diag, dict) else ''),
+            'card_title': snap.get('card_title') or (diag.get('card_title') if isinstance(diag, dict) else '') or snap.get('filename'),
+            'topics': snap.get('topics', []),
+            'verdict': snap.get('verdict', 'ok'),
+            'total_saved_money': snap.get('total_saved_money', 0),
+            'coverage_ready': 7,
+            'coverage_total': 7,
+        }
+
     diag = snap.get('diagnosis')
     crit = 'ok'
     topics = []
@@ -360,6 +402,7 @@ def snapshot_card(snap: dict) -> dict:
                 break
     return {
         'snapshot_id': snap['snapshot_id'],
+        'item_type': 'snapshot',
         'scan_no': snap.get('scan_no'),
         'status': snap['status'],
         'created_at': snap['created_at'],
@@ -383,7 +426,22 @@ class SnapshotCreateView(APIView):
         ident = get_request_identity(request)
         items = []
 
-        for snap in reversed(list(SNAPSHOTS_STORE.values())):
+        # Sync any snapshots from DB for this user/guest missing from in-memory cache
+        qs = Snapshot.objects.all()
+        if ident.user:
+            qs = qs.filter(user=ident.user)
+        elif ident.is_guest and ident.guest_session:
+            qs = qs.filter(is_guest=True, guest_session=ident.guest_session)
+        else:
+            qs = Snapshot.objects.none()
+
+        for db_snap in qs:
+            db_key = str(db_snap.id)
+            if db_key not in SNAPSHOTS_STORE:
+                SNAPSHOTS_STORE[db_key] = snapshot_model_to_dict(db_snap)
+
+        matching_snaps = []
+        for snap in SNAPSHOTS_STORE.values():
             owner_uid = snap.get('user_id')
             is_guest = snap.get('is_guest', False)
             guest_sess = snap.get('guest_session', '')
@@ -398,6 +456,15 @@ class SnapshotCreateView(APIView):
             else:
                 continue
 
+            matching_snaps.append(snap)
+
+        # Sort descending by scan_no or created_at
+        matching_snaps.sort(
+            key=lambda s: (int(s.get('scan_no') or 0), str(s.get('created_at') or '')),
+            reverse=True,
+        )
+
+        for snap in matching_snaps:
             items.append(snapshot_card(snap))
 
         return Response({'items': items, 'next_cursor': None})
@@ -572,6 +639,9 @@ class SnapshotDiagnosisView(APIView):
         payload = dict(snap.get('diagnosis') or {})
         payload['scan_no'] = snap.get('scan_no')
         payload['snapshot_id'] = snap.get('snapshot_id', snapshot_id)
+        payload['item_type'] = snap.get('item_type', 'snapshot')
+        payload['compare_base_id'] = snap.get('compare_base_id')
+        payload['compare_target_id'] = snap.get('compare_target_id')
 
         # Include available columns from upload for AI SQL analytics
         cols = []
@@ -753,7 +823,9 @@ class SnapshotChatHistoryView(APIView):
     def get(self, request, snapshot_id):
         _, snap_obj = get_snapshot_for_request(snapshot_id, request)
         if not snap_obj:
-            return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
+            snap_obj = Snapshot.objects.filter(id=str(snapshot_id)).first()
+            if not snap_obj:
+                return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
 
         messages_qs = ChatMessage.objects.filter(snapshot=snap_obj).order_by('created_at')
         items = []
@@ -770,7 +842,9 @@ class SnapshotChatHistoryView(APIView):
     def delete(self, request, snapshot_id):
         _, snap_obj = get_snapshot_for_request(snapshot_id, request)
         if not snap_obj:
-            return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
+            snap_obj = Snapshot.objects.filter(id=str(snapshot_id)).first()
+            if not snap_obj:
+                return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
 
         ChatMessage.objects.filter(snapshot=snap_obj).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -847,9 +921,112 @@ class SnapshotCompareView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        # Determine chronological base and target
+        if snap1.created_at <= snap2.created_at:
+            base_snap, target_snap = snap1, snap2
+        else:
+            base_snap, target_snap = snap2, snap1
+
+        cmp_uuid = uuid.uuid5(uuid.NAMESPACE_DNS, f"comparison:{base_snap.id}:{target_snap.id}")
+        s_cmp_id = str(cmp_uuid)
+
+        # 1. Fast Cache Check: return instantly if already calculated!
+        existing_snap = Snapshot.objects.filter(id=cmp_uuid).first()
+        if existing_snap and existing_snap.quality and isinstance(existing_snap.quality, dict):
+            cached_diff = existing_snap.quality.get('diff_result')
+            if cached_diff and isinstance(cached_diff, dict):
+                cached_diff['comparison_id'] = s_cmp_id
+                return Response(cached_diff, status=status.HTTP_200_OK)
+
+        if s_cmp_id in SNAPSHOTS_STORE and isinstance(SNAPSHOTS_STORE[s_cmp_id].get('diff_result'), dict):
+            cached_diff = dict(SNAPSHOTS_STORE[s_cmp_id]['diff_result'])
+            cached_diff['comparison_id'] = s_cmp_id
+            return Response(cached_diff, status=status.HTTP_200_OK)
+
         from engine.comparator import compare_snapshots
         try:
             diff_result = compare_snapshots(snap1, snap2)
+
+            # Save comparison snapshot in store and DB so it persists in scan history
+            ident = get_request_identity(request)
+
+            base_title = (base_snap.filename or 'Срез 1').replace('.csv', '')
+            target_title = (target_snap.filename or 'Срез 2').replace('.csv', '')
+            cmp_title = f"{base_title} ➔ {target_title}"
+
+            scan_no = existing_snap.scan_no if (existing_snap and existing_snap.scan_no) else next_scan_no()
+
+            trend = diff_result.get('summary', {}).get('trend', 'improved')
+            verdict = 'ok' if trend == 'improved' else 'watch'
+            saved_money = diff_result.get('total_saved_money', 0)
+
+            cmp_obj, _ = Snapshot.objects.update_or_create(
+                id=cmp_uuid,
+                defaults={
+                    'user': ident.user,
+                    'upload': target_snap.upload,
+                    'scan_no': scan_no,
+                    'guest_session': ident.guest_session if ident.is_guest else "",
+                    'is_guest': ident.is_guest,
+                    'filename': cmp_title,
+                    'archetype': 'comparison',
+                    'headline': diff_result.get('summary', {}).get('headline', ''),
+                    'body': diff_result.get('summary', {}).get('body', ''),
+                    'findings': [],
+                    'coverage': {'available': [m['metric_id'] for m in diff_result.get('metrics_diff', [])], 'skipped': []},
+                    'totals': diff_result.get('totals_diff', {}),
+                    'all_metrics': {m['metric_id']: m for m in diff_result.get('metrics_diff', [])},
+                    'quality': {
+                        'item_type': 'comparison',
+                        'compare_base_id': str(base_snap.id),
+                        'compare_target_id': str(target_snap.id),
+                        'base_filename': base_snap.filename,
+                        'target_filename': target_snap.filename,
+                        'card_title': f"⚡ {cmp_title}",
+                        'total_saved_money': saved_money,
+                        'trend': trend,
+                        'diff_result': diff_result,
+                    }
+                }
+            )
+
+            # Store in SNAPSHOTS_STORE
+            SNAPSHOTS_STORE[s_cmp_id] = {
+                'snapshot_id': s_cmp_id,
+                'item_type': 'comparison',
+                'compare_base_id': str(base_snap.id),
+                'compare_target_id': str(target_snap.id),
+                'diff_result': diff_result,
+                'user_id': ident.user.max_user_id if ident.user else None,
+                'guest_session': ident.guest_session if ident.is_guest else "",
+                'is_guest': ident.is_guest,
+                'scan_no': scan_no,
+                'status': 'ready',
+                'progress': 100,
+                'error': '',
+                'created_at': cmp_obj.created_at.isoformat(),
+                'filename': cmp_title,
+                'source': 'comparison',
+                'card_title': f"⚡ {cmp_title}",
+                'headline': diff_result.get('summary', {}).get('headline', ''),
+                'body': diff_result.get('summary', {}).get('body', ''),
+                'verdict': verdict,
+                'total_saved_money': saved_money,
+                'totals': diff_result.get('totals_diff', {}),
+                'all_metrics': {m['metric_id']: m for m in diff_result.get('metrics_diff', [])},
+                'diagnosis': {
+                    'snapshot_id': s_cmp_id,
+                    'card_title': f"⚡ {cmp_title}",
+                    'headline': diff_result.get('summary', {}).get('headline', ''),
+                    'body': diff_result.get('summary', {}).get('body', ''),
+                    'findings': [],
+                    'coverage': {'available': [m['metric_id'] for m in diff_result.get('metrics_diff', [])], 'skipped': []},
+                    'totals': diff_result.get('totals_diff', {}),
+                }
+            }
+            save_disk_store()
+
+            diff_result['comparison_id'] = s_cmp_id
             return Response(diff_result, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(

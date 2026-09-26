@@ -1,5 +1,7 @@
 import json
 import os
+import time
+import uuid
 import requests
 from django.http import StreamingHttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -8,11 +10,12 @@ from engine.tools import AI_TOOLS_DEFINITIONS, execute_tool_call, get_ai_tools_d
 from engine.models import ChatMessage, Snapshot, record_llm_usage
 
 
-def stream_openai_response(messages_list: list, snapshot_id: str = None):
+def stream_openai_response(messages_list: list, snapshot_id: str = None, target_snapshot_id: str = None, comparison_id: str = None):
     """
     Generator that proxies streaming response from OpenAI-compatible API to the client.
     Formats data as Server-Sent Events (SSE): 'data: {json}\n\n'.
     Supports Tool Calling (Function Calling) with SQLite deals querying before streaming final answer.
+    Supports dual-snapshot comparative tool calling when target_snapshot_id is provided.
     """
     base_url = os.environ.get('OPENAI_BASE_URL', 'http://144.31.157.209:8317/v1').rstrip('/')
     api_key = os.environ.get('OPENAI_API_KEY', '')
@@ -26,14 +29,15 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
 
     from engine.anonymizer import PIIAnonymizer
     anonymizer = PIIAnonymizer()
-    if snapshot_id:
+    active_sids = [s for s in (snapshot_id, target_snapshot_id) if s]
+    if active_sids:
         try:
             from engine.models import Deal
-            known_managers = Deal.objects.filter(snapshot_id=snapshot_id).exclude(manager='').values_list('manager', flat=True).distinct()[:150]
+            known_managers = Deal.objects.filter(snapshot_id__in=active_sids).exclude(manager='').values_list('manager', flat=True).distinct()[:200]
             for m in known_managers:
                 anonymizer.register_exempt_name(m)
 
-            known_clients = Deal.objects.filter(snapshot_id=snapshot_id).exclude(client='').values_list('client', flat=True).distinct()[:150]
+            known_clients = Deal.objects.filter(snapshot_id__in=active_sids).exclude(client='').values_list('client', flat=True).distinct()[:200]
             for c in known_clients:
                 anonymizer.register_client(c)
         except Exception:
@@ -46,11 +50,11 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
         accumulated_prompt_tokens = 0
         accumulated_completion_tokens = 0
 
-        # 1. Step 1: Multi-turn tool resolution loop (supports tool chaining like search -> chart)
-        if snapshot_id:
+        # 1. Step 1: Tool resolution loop (supports tool execution before live synthesis)
+        if snapshot_id or target_snapshot_id:
             try:
-                tools_for_snapshot = get_ai_tools_definitions(snapshot_id)
-                for round_idx in range(4):
+                tools_for_snapshot = get_ai_tools_definitions(snapshot_id, target_snapshot_id=target_snapshot_id)
+                for round_idx in range(3):
                     # Enforce 152-FZ PII masking before sending to external LLM
                     tool_payload = {
                         "model": model_name,
@@ -74,8 +78,9 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
                     tool_calls = msg.get("tool_calls", [])
 
                     if not tool_calls:
-                        # Model has concluded tool calls and produced its final textual answer
-                        if msg.get("content"):
+                        # Model did not call any tools.
+                        # If round_idx == 0 (no tools called), the model produced its direct textual answer
+                        if round_idx == 0 and msg.get("content"):
                             initial_final_content = msg.get("content")
                         break
 
@@ -88,7 +93,7 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
                         except Exception:
                             parsed_args = {}
 
-                        tool_result = execute_tool_call(func_name, parsed_args, snapshot_id)
+                        tool_result = execute_tool_call(func_name, parsed_args, snapshot_id, target_snapshot_id=target_snapshot_id)
 
                         # Emit an event to client about this tool execution
                         tool_event = {
@@ -106,15 +111,17 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
                             "name": func_name,
                             "content": tool_result
                         })
+
+                    # Once tools have executed, break out immediately so Step 2 streams the synthesis live!
+                    break
             except Exception as e:
                 # Fallback smoothly to standard completion without tools
                 print(f"[TOOL CALL ERROR]: {e}")
 
         # 2. Step 2: Stream final synthesized answer with SSE
         if initial_final_content:
-            # We already have the complete synthesized answer from the model!
-            # Stream it in chunks so the frontend UI gets the same real-time SSE effect
-            chunk_size = 40
+            # Direct answer from model when no tools were needed (pacing with time.sleep for smooth SSE typewriter streaming)
+            chunk_size = 14
             for i in range(0, len(initial_final_content), chunk_size):
                 sub_chunk = initial_final_content[i:i+chunk_size]
                 chunk_event = {
@@ -123,6 +130,8 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
                     }]
                 }
                 yield f"data: {json.dumps(chunk_event, ensure_ascii=False)}\n\n"
+                time.sleep(0.015)
+            yield "data: [DONE]\n\n"
             full_stream_response = initial_final_content
         else:
             payload = {
@@ -193,6 +202,7 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
                     }]
                 }
                 yield f"data: {json.dumps(chunk_event, ensure_ascii=False)}\n\n"
+                yield "data: [DONE]\n\n"
 
         log_llm_interaction(
             title="ПОТОКОВЫЙ ЧАТ: УСПЕШНЫЙ ОТВЕТ (RAG/TOOLS)",
@@ -202,9 +212,12 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
         )
 
         # 3. Step 3: Persist user prompt & assistant response in Django ORM ChatMessage + Record Token Usage
-        if snapshot_id:
+        target_snap_id = comparison_id or snapshot_id or target_snapshot_id
+        if target_snap_id:
             try:
-                snap_obj = Snapshot.objects.filter(id=snapshot_id).first()
+                snap_obj = Snapshot.objects.filter(id=target_snap_id).first()
+                if not snap_obj and snapshot_id:
+                    snap_obj = Snapshot.objects.filter(id=snapshot_id).first()
                 if snap_obj and full_stream_response:
                     # Find the last user message from current_messages
                     last_user_msg = next((m for m in reversed(messages_list) if m.get("role") == "user"), None)
@@ -256,17 +269,57 @@ from engine.views_api import get_snapshot_for_request
 def chat_stream(request):
     """
     POST or GET endpoint for streaming chat completion with message history, context and tool calling.
+    Supports single snapshot and dual-snapshot comparisons.
     """
     messages_list = []
     snapshot_id = None
+    target_snapshot_id = None
+    comparison_id = None
+
     if request.method == 'POST':
         try:
             body = json.loads(request.body.decode('utf-8'))
             snapshot_id = body.get('snapshot_id')
+            target_snapshot_id = body.get('target_snapshot_id')
+            comparison_id = body.get('comparison_id')
+
+            # If snapshot_id is actually a comparison snapshot, resolve base and target automatically
+            if snapshot_id and not target_snapshot_id:
+                snap_dict, snap_obj = get_snapshot_for_request(snapshot_id, request)
+                if snap_dict and (snap_dict.get('item_type') == 'comparison' or snap_dict.get('source') == 'comparison'):
+                    comparison_id = snapshot_id
+                    target_snapshot_id = snap_dict.get('compare_target_id')
+                    snapshot_id = snap_dict.get('compare_base_id')
+                elif snap_obj and (snap_obj.archetype == 'comparison' or (isinstance(snap_obj.quality, dict) and snap_obj.quality.get('item_type') == 'comparison')):
+                    comparison_id = snapshot_id
+                    q = snap_obj.quality or {}
+                    target_snapshot_id = q.get('compare_target_id')
+                    snapshot_id = q.get('compare_base_id')
+
+            # If both snapshot_id and target_snapshot_id are passed, but comparison_id is missing, auto-resolve comparison_id
+            if snapshot_id and target_snapshot_id and not comparison_id:
+                try:
+                    cmp_uuid1 = uuid.uuid5(uuid.NAMESPACE_DNS, f"comparison:{snapshot_id}:{target_snapshot_id}")
+                    cmp_uuid2 = uuid.uuid5(uuid.NAMESPACE_DNS, f"comparison:{target_snapshot_id}:{snapshot_id}")
+                    from engine.views_api import SNAPSHOTS_STORE
+                    if Snapshot.objects.filter(id=cmp_uuid1).exists() or str(cmp_uuid1) in SNAPSHOTS_STORE:
+                        comparison_id = str(cmp_uuid1)
+                    elif Snapshot.objects.filter(id=cmp_uuid2).exists() or str(cmp_uuid2) in SNAPSHOTS_STORE:
+                        comparison_id = str(cmp_uuid2)
+                    else:
+                        comparison_id = str(cmp_uuid1)
+                except Exception:
+                    pass
+
             if snapshot_id:
                 snap_dict, snap_obj = get_snapshot_for_request(snapshot_id, request)
                 if not snap_obj and not snap_dict:
                     return JsonResponse({'error': 'Снимок не найден или доступ ограничен'}, status=403)
+            if target_snapshot_id:
+                t_dict, t_obj = get_snapshot_for_request(target_snapshot_id, request)
+                if not t_obj and not t_dict:
+                    return JsonResponse({'error': 'Целевой снимок не найден или доступ ограничен'}, status=403)
+
             if 'messages' in body and isinstance(body['messages'], list):
                 messages_list = body['messages']
             else:
@@ -284,13 +337,20 @@ def chat_stream(request):
     else:
         prompt = request.GET.get('prompt', 'Hello world')
         snapshot_id = request.GET.get('snapshot_id')
+        target_snapshot_id = request.GET.get('target_snapshot_id')
+        comparison_id = request.GET.get('comparison_id')
         messages_list = [
             {"role": "system", "content": "You are a helpful assistant for AI Business X-Ray."},
             {"role": "user", "content": prompt}
         ]
 
     response = StreamingHttpResponse(
-        stream_openai_response(messages_list, snapshot_id=snapshot_id),
+        stream_openai_response(
+            messages_list,
+            snapshot_id=snapshot_id,
+            target_snapshot_id=target_snapshot_id,
+            comparison_id=comparison_id
+        ),
         content_type='text/event-stream'
     )
     # Necessary headers for smooth streaming through proxies/browsers

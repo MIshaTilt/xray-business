@@ -1,7 +1,7 @@
 import { Panel } from '@maxhub/max-ui'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
-import type { Diagnosis as DiagnosisData, MetricId } from '../api/types.ts'
+import type { ComparisonResult, Diagnosis as DiagnosisData, MetricId } from '../api/types.ts'
 import { api } from '../api/client.ts'
 import { bindBack, initBridge, showBack } from '../bridge/index.ts'
 import { ChatScreen } from '../screens/ChatScreen.tsx'
@@ -94,7 +94,7 @@ function Shell() {
 
   const pop = useCallback(() => {
     if (skipBack.current) return
-    if (/^\/scan\/[^/]+$/.test(location.pathname) || location.pathname.startsWith('/compare')) {
+    if (/^\/scan\/[^/]+$/.test(location.pathname) || (location.pathname.startsWith('/compare') && !location.pathname.endsWith('/chat'))) {
       go(navigate, '/scans')
       return
     }
@@ -159,6 +159,7 @@ function Shell() {
             <Route path="/mapping" element={<MappingPage />} />
             <Route path="/processing/:snapshotId" element={<ProcessingPage />} />
             <Route path="/compare" element={<ComparePage />} />
+            <Route path="/compare/chat" element={<CompareChatPage />} />
             <Route path="/scan" element={<Navigate to="/scans" replace />} />
             <Route path="/scan/:snapshotId" element={<DiagnosisPage />} />
             <Route path="/scan/:snapshotId/metric/:metricId" element={<MetricPage />} />
@@ -279,6 +280,7 @@ function ScansPage() {
 function ComparePage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { finishVeil } = useFlow()
   const baseId = searchParams.get('base_id') || ''
   const targetId = searchParams.get('target_id') || ''
 
@@ -290,7 +292,15 @@ function ComparePage() {
     <Compare
       baseId={baseId}
       targetId={targetId}
+      onLoaded={finishVeil}
       onOpenSnapshot={(snapshotId) => go(navigate, `/scan/${snapshotId}`)}
+      onOpenChat={(comparisonId) => {
+        if (comparisonId) {
+          go(navigate, `/scan/${comparisonId}/chat`)
+        } else {
+          go(navigate, `/compare/chat?base_id=${encodeURIComponent(baseId)}&target_id=${encodeURIComponent(targetId)}`)
+        }
+      }}
     />
   )
 }
@@ -377,20 +387,92 @@ function ChatPage() {
   const { snapshotId = '' } = useParams()
   const navigate = useNavigate()
   const [diagnosis, setDiagnosis] = useState<DiagnosisData | null>(null)
+  const [comparison, setComparison] = useState<ComparisonResult | null>(null)
+
   useEffect(() => {
     let alive = true
-    void api.diagnosis(snapshotId).then((result) => {
-      if (alive) setDiagnosis(result)
-    }).catch(() => {})
+    void api
+      .diagnosis(snapshotId)
+      .then((result) => {
+        if (!alive) return
+        setDiagnosis(result)
+        if (result.item_type === 'comparison' && result.compare_base_id && result.compare_target_id) {
+          api
+            .compare(result.compare_base_id, result.compare_target_id)
+            .then((cmp) => {
+              if (alive) setComparison(cmp)
+            })
+            .catch(() => {})
+        }
+      })
+      .catch(() => {})
     return () => {
       alive = false
     }
   }, [snapshotId])
+
+  const isComparison = diagnosis?.item_type === 'comparison' || Boolean(comparison)
+  const baseId = comparison?.base.snapshot_id || diagnosis?.compare_base_id || snapshotId
+  const targetId = comparison?.target.snapshot_id || diagnosis?.compare_target_id
+  const comparisonId = isComparison ? (comparison?.comparison_id || snapshotId) : undefined
+
   return (
     <ChatScreen
-      snapshotId={snapshotId}
+      comparisonId={comparisonId}
+      snapshotId={baseId}
+      targetSnapshotId={targetId}
+      comparison={comparison}
       diagnosis={diagnosis}
-      onBack={() => go(navigate, `/scan/${snapshotId}`)}
+      onBack={() => {
+        if (isComparison && (diagnosis?.compare_base_id || comparison?.base.snapshot_id)) {
+          const b = comparison?.base.snapshot_id || diagnosis?.compare_base_id
+          const t = comparison?.target.snapshot_id || diagnosis?.compare_target_id
+          go(navigate, `/compare?base_id=${encodeURIComponent(b || '')}&target_id=${encodeURIComponent(t || '')}`)
+        } else {
+          go(navigate, `/scan/${snapshotId}`)
+        }
+      }}
+    />
+  )
+}
+
+function CompareChatPage() {
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const baseId = searchParams.get('base_id') || ''
+  const targetId = searchParams.get('target_id') || ''
+  const [comparison, setComparison] = useState<ComparisonResult | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    if (!baseId || !targetId) return
+    api
+      .compare(baseId, targetId)
+      .then((result) => {
+        if (alive) setComparison(result)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [baseId, targetId])
+
+  if (!baseId || !targetId) {
+    return <Navigate to="/scans" replace />
+  }
+
+  return (
+    <ChatScreen
+      comparisonId={comparison?.comparison_id}
+      snapshotId={baseId}
+      targetSnapshotId={targetId}
+      comparison={comparison}
+      onBack={() =>
+        go(
+          navigate,
+          `/compare?base_id=${encodeURIComponent(baseId)}&target_id=${encodeURIComponent(targetId)}`,
+        )
+      }
     />
   )
 }

@@ -253,12 +253,32 @@ def get_snapshot_extra_columns(snapshot_id: str) -> list:
     return []
 
 
-def get_ai_tools_definitions(snapshot_id: str = None) -> list:
+COMPARISON_SUMMARY_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "get_comparison_summary",
+        "description": (
+            "Получить готовый точный математический расчет сравнения двух срезов (База vs Текущий): "
+            "дельту выручки, количества сделок, среднего чека, изменения по всем 7 метрикам рисков, "
+            "динамику по каждому менеджеру (рост/падение выручки) и общую сумму спасенных денег. "
+            "Используй этот инструмент ВСЕГДА в первую очередь для ответов на вопросы о сравнении периодов!"
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {}
+        }
+    }
+}
+
+
+def get_ai_tools_definitions(snapshot_id: str = None, target_snapshot_id: str = None) -> list:
     """
     Returns AI tools definitions, dynamically enriched with custom/unmapped columns
-    from the current snapshot's uploaded dataset so the LLM knows all queryable fields.
+    from the current snapshot's (or both snapshots' when comparing) uploaded dataset so the LLM knows all queryable fields.
     """
     extra_cols = get_snapshot_extra_columns(snapshot_id) if snapshot_id else []
+    if target_snapshot_id:
+        extra_cols = list(dict.fromkeys(extra_cols + get_snapshot_extra_columns(target_snapshot_id)))
     standard_cols = {
         'deal_id', 'client', 'contact', 'manager', 'amount', 'list_price',
         'discount_pct', 'status_raw', 'status', 'created_at', 'first_contact_at',
@@ -277,24 +297,45 @@ def get_ai_tools_definitions(snapshot_id: str = None) -> list:
         )
 
     defs = []
+    if target_snapshot_id:
+        defs.append(json.loads(json.dumps(COMPARISON_SUMMARY_TOOL)))
+
     for tool in AI_TOOLS_DEFINITIONS:
         tool_copy = json.loads(json.dumps(tool))
-        if tool_copy.get("function", {}).get("name") == "execute_sql_query" and custom_cols_text:
-            orig_desc = tool_copy["function"]["description"]
-            tool_copy["function"]["description"] = orig_desc + custom_cols_text
+        if tool_copy.get("function", {}).get("name") == "execute_sql_query":
+            if target_snapshot_id:
+                tool_copy["function"]["description"] = (
+                    "Выполнить аналитический SQL SELECT-запрос для сравнения двух срезов (База vs Текущий).\n"
+                    "В запросе доступны ТРИ таблицы/CTE:\n"
+                    "1) deals — объединенная таблица сделок обоих срезов с колонкой snapshot_tag ('base' для базового, 'target' для текущего).\n"
+                    "2) base_deals — сделки ТОЛЬКО базового среза (До).\n"
+                    "3) target_deals — сделки ТОЛЬКО текущего среза (После).\n"
+                    "Колонки: deal_id, client, contact, manager, amount, list_price, discount_pct, status, status_raw, created_at, closed_at, source, snapshot_tag.\n\n"
+                    "Примеры запросов:\n"
+                    "- Сравнить выручку по срезам: SELECT snapshot_tag, COUNT(*), SUM(amount), AVG(amount) FROM deals GROUP BY snapshot_tag\n"
+                    "- Сравнить менеджеров: SELECT manager, SUM(CASE WHEN snapshot_tag='base' THEN amount ELSE 0 END) as was_amt, SUM(CASE WHEN snapshot_tag='target' THEN amount ELSE 0 END) as now_amt FROM deals WHERE manager != '' GROUP BY manager ORDER BY now_amt DESC\n"
+                    "- Сравнить воронку: SELECT status, snapshot_tag, COUNT(*), SUM(amount) FROM deals GROUP BY status, snapshot_tag"
+                    + custom_cols_text
+                )
+            elif custom_cols_text:
+                orig_desc = tool_copy["function"]["description"]
+                tool_copy["function"]["description"] = orig_desc + custom_cols_text
         defs.append(tool_copy)
 
     return defs
 
 
-def _run_sql_query(query: str, snapshot_id: str) -> str:
+def _run_sql_query(query: str, snapshot_id: str, target_snapshot_id: str = None) -> str:
     """
-    Executes a read-only SQL SELECT query against the 'deals' table scoped to the given snapshot.
+    Executes a read-only SQL SELECT query against the 'deals' table scoped to the given snapshot(s).
+    If target_snapshot_id is provided, sets up CTEs for base_deals, target_deals and union deals with snapshot_tag.
     """
     if not snapshot_id:
         return json.dumps({"error": "snapshot_id не указан"}, ensure_ascii=False)
 
     ensure_snapshot_deals(snapshot_id)
+    if target_snapshot_id:
+        ensure_snapshot_deals(target_snapshot_id)
 
     if not query or not isinstance(query, str):
         return json.dumps({"error": "Запрос query пустой или некорректный"}, ensure_ascii=False)
@@ -337,6 +378,9 @@ def _run_sql_query(query: str, snapshot_id: str) -> str:
     clean_no_hyphen = clean_s_id.replace('-', '')
 
     raw_cols = get_snapshot_extra_columns(snapshot_id)
+    if target_snapshot_id:
+        raw_cols = list(dict.fromkeys(raw_cols + get_snapshot_extra_columns(target_snapshot_id)))
+
     standard_cols = {
         'deal_id', 'client', 'contact', 'manager', 'amount', 'list_price',
         'discount_pct', 'status_raw', 'status', 'created_at', 'first_contact_at',
@@ -352,15 +396,40 @@ def _run_sql_query(query: str, snapshot_id: str) -> str:
 
     extra_str = (', ' + ', '.join(extra_selects)) if extra_selects else ''
 
-    cte_deals = (
-        "WITH deals AS ("
-        "SELECT deal_id, client, contact, manager, amount, list_price, discount_pct, "
-        "status_raw, status, created_at, first_contact_at, status_changed_at, "
-        f"last_activity_at, closed_at, source, raw_data{extra_str} "
-        "FROM engine_deal "
-        f"WHERE snapshot_id = '{clean_s_id}' OR snapshot_id = '{clean_no_hyphen}'"
-        ")"
-    )
+    if target_snapshot_id:
+        clean_target_id = re.sub(r"[^a-zA-Z0-9\-]", "", str(target_snapshot_id))
+        clean_target_no_hyphen = clean_target_id.replace('-', '')
+        cte_deals = (
+            "WITH base_deals AS ("
+            "SELECT deal_id, client, contact, manager, amount, list_price, discount_pct, "
+            "status_raw, status, created_at, first_contact_at, status_changed_at, "
+            f"last_activity_at, closed_at, source, raw_data{extra_str}, 'base' AS snapshot_tag "
+            "FROM engine_deal "
+            f"WHERE snapshot_id = '{clean_s_id}' OR snapshot_id = '{clean_no_hyphen}'"
+            "), "
+            "target_deals AS ("
+            "SELECT deal_id, client, contact, manager, amount, list_price, discount_pct, "
+            "status_raw, status, created_at, first_contact_at, status_changed_at, "
+            f"last_activity_at, closed_at, source, raw_data{extra_str}, 'target' AS snapshot_tag "
+            "FROM engine_deal "
+            f"WHERE snapshot_id = '{clean_target_id}' OR snapshot_id = '{clean_target_no_hyphen}'"
+            "), "
+            "deals AS ("
+            "SELECT * FROM base_deals "
+            "UNION ALL "
+            "SELECT * FROM target_deals"
+            ")"
+        )
+    else:
+        cte_deals = (
+            "WITH deals AS ("
+            "SELECT deal_id, client, contact, manager, amount, list_price, discount_pct, "
+            "status_raw, status, created_at, first_contact_at, status_changed_at, "
+            f"last_activity_at, closed_at, source, raw_data{extra_str} "
+            "FROM engine_deal "
+            f"WHERE snapshot_id = '{clean_s_id}' OR snapshot_id = '{clean_no_hyphen}'"
+            ")"
+        )
 
     if re.match(r"^\s*WITH\b", clean_query, re.IGNORECASE):
         stripped_user_cte = re.sub(r"^\s*WITH\s+", "", clean_query, flags=re.IGNORECASE)
@@ -402,18 +471,33 @@ def _run_sql_query(query: str, snapshot_id: str) -> str:
         }, ensure_ascii=False)
 
 
-def _execute_tool_call_raw(tool_name: str, arguments: dict, snapshot_id: str) -> str:
+def _execute_tool_call_raw(tool_name: str, arguments: dict, snapshot_id: str, target_snapshot_id: str = None) -> str:
     """
-    Executes tool query directly against the SQLite / Postgres database for the given snapshot.
+    Executes tool query directly against the SQLite / Postgres database for the given snapshot(s).
     Returns JSON string with factual data.
     """
     if not snapshot_id:
         return json.dumps({"error": "snapshot_id не указан"})
 
     ensure_snapshot_deals(snapshot_id)
+    if target_snapshot_id:
+        ensure_snapshot_deals(target_snapshot_id)
+
+    if tool_name == "get_comparison_summary":
+        if snapshot_id and target_snapshot_id:
+            snap1 = Snapshot.objects.filter(id=snapshot_id).first()
+            snap2 = Snapshot.objects.filter(id=target_snapshot_id).first()
+            if snap1 and snap2:
+                from engine.comparator import compare_snapshots
+                try:
+                    diff = compare_snapshots(snap1, snap2)
+                    return json.dumps(diff, ensure_ascii=False)
+                except Exception as e:
+                    return json.dumps({"error": f"Ошибка сравнения: {str(e)}"}, ensure_ascii=False)
+        return json.dumps({"error": "Для сравнения требуются оба снимка (snapshot_id и target_snapshot_id)"}, ensure_ascii=False)
 
     if tool_name == "execute_sql_query":
-        return _run_sql_query(arguments.get("query", ""), snapshot_id)
+        return _run_sql_query(arguments.get("query", ""), snapshot_id, target_snapshot_id=target_snapshot_id)
 
     qs = Deal.objects.filter(snapshot_id=snapshot_id)
 
@@ -806,20 +890,22 @@ def _execute_tool_call_raw(tool_name: str, arguments: dict, snapshot_id: str) ->
     return json.dumps({"error": f"Неизвестная функция: {tool_name}"})
 
 
-def execute_tool_call(tool_name: str, arguments: dict, snapshot_id: str) -> str:
+def execute_tool_call(tool_name: str, arguments: dict, snapshot_id: str, target_snapshot_id: str = None) -> str:
     """
     Executes tool query and enforces strict 152-ФЗ PII Anonymization before
     returning data to the LLM. Masks client names into 'Клиент #XXX' and
     phone/email into '+7 999 ***-**-67' / 'i***v@company.ru'.
+    Exempts real employee manager names across all active snapshots.
     """
-    raw_res = _execute_tool_call_raw(tool_name, arguments, snapshot_id)
+    raw_res = _execute_tool_call_raw(tool_name, arguments, snapshot_id, target_snapshot_id=target_snapshot_id)
     try:
         from engine.anonymizer import PIIAnonymizer
         anon = PIIAnonymizer()
-        if snapshot_id:
+        s_ids = [s for s in (snapshot_id, target_snapshot_id) if s]
+        if s_ids:
             try:
                 from engine.models import Deal
-                known_managers = Deal.objects.filter(snapshot_id=snapshot_id).exclude(manager='').values_list('manager', flat=True).distinct()[:150]
+                known_managers = Deal.objects.filter(snapshot_id__in=s_ids).exclude(manager='').values_list('manager', flat=True).distinct()[:200]
                 for m in known_managers:
                     anon.register_exempt_name(m)
             except Exception:

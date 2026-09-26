@@ -1,27 +1,29 @@
 import { useEffect, useState } from 'react'
+import { Button } from '@maxhub/max-ui'
 import { api } from '../api/client.ts'
 import { errorText } from '../api/errors.ts'
 import type { ComparisonResult, MetricDiffItem } from '../api/types.ts'
 import { formatRub, formatWhen } from '../domain/metrics.ts'
 import { Notice } from '../widgets/Notice.tsx'
-import { XRayLogo } from '../widgets/XRayLogo.tsx'
 
 export function Compare({
   baseId,
   targetId,
   onOpenSnapshot,
+  onOpenChat,
+  onLoaded,
 }: {
   baseId: string
   targetId: string
   onOpenSnapshot?: (snapshotId: string) => void
+  onOpenChat?: (comparisonId?: string) => void
+  onLoaded?: () => void
 }) {
   const [data, setData] = useState<ComparisonResult | null>(null)
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
     let alive = true
-    setLoading(true)
     setError('')
 
     api
@@ -29,33 +31,18 @@ export function Compare({
       .then((result) => {
         if (!alive) return
         setData(result)
+        onLoaded?.()
       })
       .catch((err) => {
         if (!alive) return
         setError(errorText(err))
-      })
-      .finally(() => {
-        if (alive) setLoading(false)
+        onLoaded?.()
       })
 
     return () => {
       alive = false
     }
-  }, [baseId, targetId])
-
-  if (loading) {
-    return (
-      <div className="stack compare-screen">
-        <div className="compare-loading">
-          <span className="compare-loading-icon">
-            <XRayLogo scanning />
-          </span>
-          <p className="compare-loading-title">Сопоставляем срезы...</p>
-          <p className="compare-loading-subtitle">Считаем разницу в показателях и выявляем динамику</p>
-        </div>
-      </div>
-    )
-  }
+  }, [baseId, targetId, onLoaded])
 
   if (error) {
     return (
@@ -71,6 +58,7 @@ export function Compare({
 
   if (!data) return null
 
+
   const baseLabel = data.base.filename || shortDate(data.base.created_at)
   const targetLabel = data.target.filename || shortDate(data.target.created_at)
 
@@ -79,6 +67,7 @@ export function Compare({
       <div className="lead">
         <p className="eyebrow">Динамика бизнеса</p>
         <h1>Сравнение срезов</h1>
+
         <div className="compare-range-bar">
           <button
             type="button"
@@ -103,115 +92,131 @@ export function Compare({
           </button>
         </div>
       </div>
+          {/* Hero Executive AI Narrative Card */}
+          <section className={`compare-hero-card ${data.summary.trend}`}>
+            <div className="compare-hero-top">
+              {data.total_saved_money > 0 ? (
+                <span className="compare-saved-badge">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 2 3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5Z" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                  <span>+{formatRub(data.total_saved_money)} спасено</span>
+                </span>
+              ) : (
+                <span className={`pill ${data.summary.trend === 'improved' ? 'ok' : 'watch'}`}>
+                  {data.summary.trend === 'improved' ? 'Позитивная динамика' : 'Внимание к рискам'}
+                </span>
+              )}
+            </div>
+            <h2 className="compare-hero-headline">{data.summary.headline}</h2>
+            <p className="compare-hero-body">{data.summary.body}</p>
+          </section>
 
-      {/* Hero Executive AI Narrative Card */}
-      <section className={`compare-hero-card ${data.summary.trend}`}>
-        <div className="compare-hero-top">
-          {data.total_saved_money > 0 ? (
-            <span className="compare-saved-badge">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 2 3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5Z" />
-                <path d="m9 12 2 2 4-4" />
-              </svg>
-              <span>+{formatRub(data.total_saved_money)} спасено</span>
-            </span>
-          ) : (
-            <span className={`pill ${data.summary.trend === 'improved' ? 'ok' : 'watch'}`}>
-              {data.summary.trend === 'improved' ? 'Позитивная динамика' : 'Внимание к рискам'}
-            </span>
-          )}
-        </div>
-        <h2 className="compare-hero-headline">{data.summary.headline}</h2>
-        <p className="compare-hero-body">{data.summary.body}</p>
-      </section>
-
-      {/* Totals Delta Grid */}
-      <section className="compare-totals-grid">
-        <div className="compare-total-card">
-          <span className="compare-total-label">Выручка</span>
-          <strong className="compare-total-val">{shortMoney(data.totals_diff.amount.target)}</strong>
-          <div className="compare-total-sub">
-            <span className="compare-prev-val">было {shortMoney(data.totals_diff.amount.base)}</span>
-            <span className={`compare-delta-pill ${data.totals_diff.amount.status}`}>
-              {formatDeltaPct(data.totals_diff.amount.delta_pct)}
-            </span>
-          </div>
-        </div>
-
-        <div className="compare-total-card">
-          <span className="compare-total-label">Сделок</span>
-          <strong className="compare-total-val">{data.totals_diff.deals.target}</strong>
-          <div className="compare-total-sub">
-            <span className="compare-prev-val">было {data.totals_diff.deals.base}</span>
-            <span className={`compare-delta-pill ${data.totals_diff.deals.status}`}>
-              {formatDeltaPct(data.totals_diff.deals.delta_pct)}
-            </span>
-          </div>
-        </div>
-
-        <div className="compare-total-card">
-          <span className="compare-total-label">Средний чек</span>
-          <strong className="compare-total-val">{shortMoney(data.totals_diff.avg_check.target)}</strong>
-          <div className="compare-total-sub">
-            <span className="compare-prev-val">было {shortMoney(data.totals_diff.avg_check.base)}</span>
-            <span className={`compare-delta-pill ${data.totals_diff.avg_check.status}`}>
-              {formatDeltaPct(data.totals_diff.avg_check.delta_pct)}
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* Metrics Dynamics */}
-      <section className="compare-metrics-section">
-        <div className="compare-section-header">
-          <h2>Показатели воронки</h2>
-          <span className="compare-section-meta">До ➔ После</span>
-        </div>
-
-        <div className="compare-metrics-list">
-          {data.metrics_diff.map((item) => (
-            <MetricDiffCard key={item.metric_id} item={item} />
-          ))}
-        </div>
-      </section>
-
-      {/* Sales Managers Dynamics */}
-      {data.managers_diff && data.managers_diff.length > 0 ? (
-        <section className="compare-managers-section">
-          <div className="compare-section-header">
-            <h2>Динамика менеджеров</h2>
-            <span className="compare-section-meta">{data.managers_diff.length} сотр.</span>
-          </div>
-
-          <div className="compare-managers-list">
-            {data.managers_diff.map((m) => (
-              <div key={m.manager} className="compare-manager-card">
-                <div className="compare-mgr-main">
-                  <span className="compare-mgr-name">{m.manager}</span>
-                  <span className={`compare-delta-pill ${m.status}`}>
-                    {formatDeltaPct(m.delta_pct)}
-                  </span>
-                </div>
-
-                <div className="compare-mgr-stats">
-                  <div className="compare-mgr-stat-col">
-                    <span className="compare-mgr-stat-label">Текущая выручка</span>
-                    <strong className="compare-mgr-stat-val">{formatRub(m.target_amount)}</strong>
-                    <span className="compare-mgr-stat-sub">{m.target_deals} сделок</span>
-                  </div>
-                  <div className="compare-mgr-stat-col align-right">
-                    <span className="compare-mgr-stat-label">Базовая выручка</span>
-                    <span className="compare-mgr-stat-val-prev">{formatRub(m.base_amount)}</span>
-                    <span className="compare-mgr-stat-sub">
-                      {m.delta_amount >= 0 ? `+${formatRub(m.delta_amount)}` : formatRub(m.delta_amount)}
-                    </span>
-                  </div>
-                </div>
+          {/* Totals Delta Grid */}
+          <section className="compare-totals-grid">
+            <div className="compare-total-card">
+              <span className="compare-total-label">Выручка</span>
+              <strong className="compare-total-val">{shortMoney(data.totals_diff.amount.target)}</strong>
+              <div className="compare-total-sub">
+                <span className="compare-prev-val">было {shortMoney(data.totals_diff.amount.base)}</span>
+                <span className={`compare-delta-pill ${data.totals_diff.amount.status}`}>
+                  {formatDeltaPct(data.totals_diff.amount.delta_pct)}
+                </span>
               </div>
-            ))}
+            </div>
+
+            <div className="compare-total-card">
+              <span className="compare-total-label">Сделок</span>
+              <strong className="compare-total-val">{data.totals_diff.deals.target}</strong>
+              <div className="compare-total-sub">
+                <span className="compare-prev-val">было {data.totals_diff.deals.base}</span>
+                <span className={`compare-delta-pill ${data.totals_diff.deals.status}`}>
+                  {formatDeltaPct(data.totals_diff.deals.delta_pct)}
+                </span>
+              </div>
+            </div>
+
+            <div className="compare-total-card">
+              <span className="compare-total-label">Средний чек</span>
+              <strong className="compare-total-val">{shortMoney(data.totals_diff.avg_check.target)}</strong>
+              <div className="compare-total-sub">
+                <span className="compare-prev-val">было {shortMoney(data.totals_diff.avg_check.base)}</span>
+                <span className={`compare-delta-pill ${data.totals_diff.avg_check.status}`}>
+                  {formatDeltaPct(data.totals_diff.avg_check.delta_pct)}
+                </span>
+              </div>
+            </div>
+          </section>
+
+          {/* Metrics Dynamics */}
+          <section className="compare-metrics-section">
+            <div className="compare-section-header">
+              <h2>Показатели воронки</h2>
+              <span className="compare-section-meta">До ➔ После</span>
+            </div>
+
+            <div className="compare-metrics-list">
+              {data.metrics_diff.map((item) => (
+                <MetricDiffCard key={item.metric_id} item={item} />
+              ))}
+            </div>
+          </section>
+
+          {/* Sales Managers Dynamics */}
+          {data.managers_diff && data.managers_diff.length > 0 ? (
+            <section className="compare-managers-section">
+              <div className="compare-section-header">
+                <h2>Динамика менеджеров</h2>
+                <span className="compare-section-meta">{data.managers_diff.length} сотр.</span>
+              </div>
+
+              <div className="compare-managers-list">
+                {data.managers_diff.map((m) => (
+                  <div key={m.manager} className="compare-manager-card">
+                    <div className="compare-mgr-main">
+                      <span className="compare-mgr-name">{m.manager}</span>
+                      <span className={`compare-delta-pill ${m.status}`}>
+                        {formatDeltaPct(m.delta_pct)}
+                      </span>
+                    </div>
+
+                    <div className="compare-mgr-stats">
+                      <div className="compare-mgr-stat-col">
+                        <span className="compare-mgr-stat-label">Текущая выручка</span>
+                        <strong className="compare-mgr-stat-val">{formatRub(m.target_amount)}</strong>
+                        <span className="compare-mgr-stat-sub">{m.target_deals} сделок</span>
+                      </div>
+                      <div className="compare-mgr-stat-col align-right">
+                        <span className="compare-mgr-stat-label">Базовая выручка</span>
+                        <span className="compare-mgr-stat-val-prev">{formatRub(m.base_amount)}</span>
+                        <span className="compare-mgr-stat-sub">
+                          {m.delta_amount >= 0 ? `+${formatRub(m.delta_amount)}` : formatRub(m.delta_amount)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          <div className="compare-actions-bar">
+            <Button
+              className="action action-accent"
+              type="button"
+              size="large"
+              stretched
+              variant="primary"
+              onClick={() => onOpenChat?.(data.comparison_id)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: 18, height: 18, marginRight: 8, fill: 'currentColor' }}>
+                <path d="M5 6.5h14v9.5H9.2L5 19.2V6.5Z" />
+                <path d="M8.5 10h7M8.5 13h4.5" />
+              </svg>
+              Разобрать динамику с AI-агентом
+            </Button>
           </div>
-        </section>
-      ) : null}
     </div>
   )
 }

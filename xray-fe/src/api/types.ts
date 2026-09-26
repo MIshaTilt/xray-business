@@ -81,6 +81,9 @@ export type Diagnosis = {
   period: { from: string | null; to: string | null }
   totals: { deals: number; amount: string; accepted: number; rejected: number }
   available_columns?: string[]
+  item_type?: 'snapshot' | 'comparison'
+  compare_base_id?: string
+  compare_target_id?: string
 }
 
 export type DiagnosisResponse = Diagnosis & {
@@ -89,6 +92,10 @@ export type DiagnosisResponse = Diagnosis & {
 
 export type SnapshotListItem = {
   snapshot_id: string
+  item_type?: 'snapshot' | 'comparison'
+  compare_base_id?: string
+  compare_target_id?: string
+  total_saved_money?: number
   scan_no?: number
   status: SnapshotStatus
   created_at: string
@@ -184,6 +191,7 @@ export type SnapshotMetaItem = {
 }
 
 export type ComparisonResult = {
+  comparison_id?: string
   base: SnapshotMetaItem
   target: SnapshotMetaItem
   summary: ComparisonSummary
