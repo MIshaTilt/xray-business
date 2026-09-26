@@ -19,7 +19,7 @@ def log_llm_interaction(title: str, payload_data: dict, response_data: str, extr
 
     log_entry = (
         f"\n{separator}\n"
-        f"[{timestamp}] {title}\n"
+        f"[{timestamp}] {title} | 🛡️ 152-ФЗ PII Anonymization\n"
         f"{separator}\n"
     )
 
@@ -45,7 +45,8 @@ def log_llm_interaction(title: str, payload_data: dict, response_data: str, extr
     if response_data:
         log_entry += f"\n--- ОТВЕТ НЕЙРОСЕТИ ---\n{response_data}\n"
 
-    log_entry += f"{separator}\n"
+    from engine.anonymizer import mask_phone, mask_email
+    log_entry = mask_phone(mask_email(log_entry))
 
     # 1. Write to log file (UTF-8)
     try:

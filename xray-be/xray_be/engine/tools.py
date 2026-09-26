@@ -402,7 +402,7 @@ def _run_sql_query(query: str, snapshot_id: str) -> str:
         }, ensure_ascii=False)
 
 
-def execute_tool_call(tool_name: str, arguments: dict, snapshot_id: str) -> str:
+def _execute_tool_call_raw(tool_name: str, arguments: dict, snapshot_id: str) -> str:
     """
     Executes tool query directly against the SQLite / Postgres database for the given snapshot.
     Returns JSON string with factual data.
@@ -804,3 +804,40 @@ def execute_tool_call(tool_name: str, arguments: dict, snapshot_id: str) -> str:
         }, ensure_ascii=False)
 
     return json.dumps({"error": f"Неизвестная функция: {tool_name}"})
+
+
+def execute_tool_call(tool_name: str, arguments: dict, snapshot_id: str) -> str:
+    """
+    Executes tool query and enforces strict 152-ФЗ PII Anonymization before
+    returning data to the LLM. Masks client names into 'Клиент #XXX' and
+    phone/email into '+7 999 ***-**-67' / 'i***v@company.ru'.
+    """
+    raw_res = _execute_tool_call_raw(tool_name, arguments, snapshot_id)
+    try:
+        from engine.anonymizer import PIIAnonymizer
+        anon = PIIAnonymizer()
+        data = json.loads(raw_res)
+        if isinstance(data, dict):
+            if "rows" in data and isinstance(data["rows"], list):
+                data["rows"] = anon.anonymize_records(data["rows"])
+            if "deals" in data and isinstance(data["deals"], list):
+                data["deals"] = anon.anonymize_records(data["deals"])
+            if "top_clients" in data and isinstance(data["top_clients"], list):
+                data["top_clients"] = anon.anonymize_records(data["top_clients"])
+            if "items" in data and isinstance(data["items"], list):
+                if data.get("dimension") == "client":
+                    for it in data["items"]:
+                        if "label" in it:
+                            it["label"] = anon.get_pseudonym(it["label"])
+                        if "hint" in it:
+                            it["hint"] = anon.anonymize_text(it["hint"])
+            if "summary" in data and isinstance(data["summary"], str):
+                data["summary"] = anon.anonymize_text(data["summary"])
+            return json.dumps(data, ensure_ascii=False)
+        elif isinstance(data, list):
+            return json.dumps(anon.anonymize_records(data), ensure_ascii=False)
+    except Exception as e:
+        print(f"[PII TOOL ANONYMIZE ERROR]: {e}")
+
+    return raw_res
+

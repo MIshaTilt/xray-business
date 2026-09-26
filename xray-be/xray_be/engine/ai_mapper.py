@@ -44,10 +44,14 @@ def ai_smart_column_mapping(
     if not unmapped_columns:
         return current_mapping
 
+    from engine.anonymizer import PIIAnonymizer
+    anonymizer = PIIAnonymizer()
+    clean_sample_rows = anonymizer.anonymize_records(sample_rows[:15])
+
     column_samples = {}
     for col in unmapped_columns:
         samples = []
-        for r in sample_rows[:15]:
+        for r in clean_sample_rows:
             v = r.get(col)
             if v is not None and str(v).strip() != "":
                 samples.append(str(v).strip())

@@ -127,11 +127,14 @@ def generate_llm_narrative(
         }
         model_name = os.environ.get("OPENAI_MODEL", "gemini-3.8-flash-high")
 
+        from engine.anonymizer import PIIAnonymizer
+        anonymizer = PIIAnonymizer()
+
         payload = {
             "model": model_name,
             "messages": [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": anonymizer.anonymize_text(user_prompt)}
             ],
             "temperature": 0.3
         }
@@ -205,6 +208,8 @@ def invent_card_title(findings: List[Dict[str, Any]], headline: str, filename: s
         for f in findings
         if f.get('verdict') in ('critical', 'watch', 'ok')
     ]
+    from engine.anonymizer import PIIAnonymizer
+    anonymizer = PIIAnonymizer()
     payload = {
         'model': 'gemini-3.8-flash-high',
         'messages': [
@@ -218,7 +223,7 @@ def invent_card_title(findings: List[Dict[str, Any]], headline: str, filename: s
             },
             {
                 'role': 'user',
-                'content': (
+                'content': anonymizer.anonymize_text(
                     f'Файл: {filename or "не указан"}\n'
                     f'Headline: {headline}\n'
                     f'Метрики:\n{json.dumps(items, ensure_ascii=False)}'

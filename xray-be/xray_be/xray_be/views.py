@@ -24,6 +24,17 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
         "Content-Type": "application/json"
     }
 
+    from engine.anonymizer import PIIAnonymizer
+    anonymizer = PIIAnonymizer()
+    if snapshot_id:
+        try:
+            from engine.models import Deal
+            known_clients = Deal.objects.filter(snapshot_id=snapshot_id).exclude(client='').values_list('client', flat=True).distinct()[:150]
+            for c in known_clients:
+                anonymizer.register_client(c)
+        except Exception:
+            pass
+
     try:
         current_messages = list(messages_list)
         executed_tools_for_saving = []
@@ -36,9 +47,10 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
             try:
                 tools_for_snapshot = get_ai_tools_definitions(snapshot_id)
                 for round_idx in range(4):
+                    # Enforce 152-FZ PII masking before sending to external LLM
                     tool_payload = {
                         "model": model_name,
-                        "messages": current_messages,
+                        "messages": anonymizer.anonymize_messages(current_messages),
                         "tools": tools_for_snapshot,
                         "tool_choice": "auto",
                         "stream": False
@@ -111,7 +123,7 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None):
         else:
             payload = {
                 "model": model_name,
-                "messages": current_messages,
+                "messages": anonymizer.anonymize_messages(current_messages),
                 "stream": True,
                 "stream_options": {"include_usage": True}
             }
