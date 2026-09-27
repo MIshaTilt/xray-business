@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
 import { hapticImpact } from '../bridge/index.ts'
 
 const BASE = 156
@@ -94,26 +94,22 @@ export function SwipeScan({
   const translate = full ? 0 : (1 - progress) * (BASE + HIDDEN_PAD)
   const restLeft = cardWidth > 0 ? cardWidth - 12 - BASE : null
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const node = rootRef.current
     if (!node) return
-    let animFrame = 0
+    let frame = 0
     const measure = () => {
-      window.cancelAnimationFrame(animFrame)
-      animFrame = window.requestAnimationFrame(() => {
-        const current = rootRef.current
-        if (!current) return
-        const w = current.clientWidth
-        if (w > 0) {
-          setCardWidth((prev) => (prev !== w ? w : prev))
-        }
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        const width = Math.round(node.clientWidth)
+        setCardWidth((current) => (current === width ? current : width))
       })
     }
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(node)
     return () => {
-      window.cancelAnimationFrame(animFrame)
+      cancelAnimationFrame(frame)
       observer.disconnect()
     }
   }, [])
