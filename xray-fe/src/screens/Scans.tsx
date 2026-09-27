@@ -36,6 +36,7 @@ export function Scans({
   const [pickClosing, setPickClosing] = useState(false)
   const [picked, setPicked] = useState<string[]>([])
   const [pickFont, setPickFont] = useState<{ fontFamily: string } | null>(null)
+  const [pickSlot, setPickSlot] = useState<HTMLElement | null>(null)
   const emptyTimer = useRef(0)
   const pickTimer = useRef(0)
   const leavingIdsRef = useRef<string[]>([])
@@ -53,7 +54,9 @@ export function Scans({
 
   useEffect(() => {
     void refresh()
+    setPickSlot(document.getElementById('diag-more-slot'))
     return () => {
+      setPickSlot(null)
       window.clearTimeout(emptyTimer.current)
       window.clearTimeout(pickTimer.current)
       Object.values(enterTimerRef.current).forEach((timer) => window.clearTimeout(timer))
@@ -64,9 +67,9 @@ export function Scans({
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     for (const id of enteringIds) {
       const row = document.querySelector<HTMLElement>(`[data-scan-id="${id}"]`)
-      if (!row || row.dataset.enterLock) continue
+      if (!row || !row.parentElement || row.dataset.enterLock) continue
       row.dataset.enterLock = '1'
-      const across = getComputedStyle(row.parentElement!).flexDirection === 'row'
+      const across = getComputedStyle(row.parentElement).flexDirection === 'row'
       const size = across ? row.getBoundingClientRect().width : row.getBoundingClientRect().height
       const prop = across ? 'width' : 'height'
       row.style.transition = 'none'
@@ -200,8 +203,8 @@ export function Scans({
     if (leavingIdsRef.current.includes(id)) return
     setError('')
     const row = document.querySelector<HTMLElement>(`[data-scan-id="${id}"]`)
-    if (row) {
-      const across = getComputedStyle(row.parentElement!).flexDirection === 'row'
+    if (row && row.parentElement) {
+      const across = getComputedStyle(row.parentElement).flexDirection === 'row'
       const size = across ? row.getBoundingClientRect().width : row.getBoundingClientRect().height
       if (across) row.style.width = `${size}px`
       else row.style.height = `${size}px`
@@ -230,7 +233,6 @@ export function Scans({
     }
   }
 
-  const pickSlot = document.getElementById('diag-more-slot')
   const visible = snapshots.filter((item) => !leavingIds.includes(item.snapshot_id))
   const canPick = scansLoaded && visible.length > 0
 

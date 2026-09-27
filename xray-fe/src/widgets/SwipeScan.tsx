@@ -1,8 +1,28 @@
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
 import { hapticImpact } from '../bridge/index.ts'
 
 const BASE = 156
 const HIDDEN_PAD = 72
+
+function safeSetPointerCapture(target: HTMLElement | EventTarget | null, pointerId: number) {
+  if (!target || !(target instanceof HTMLElement)) return
+  try {
+    target.setPointerCapture(pointerId)
+  } catch {
+    // Ignore DOMException if pointer is no longer active
+  }
+}
+
+function safeReleasePointerCapture(target: HTMLElement | EventTarget | null, pointerId: number) {
+  if (!target || !(target instanceof HTMLElement)) return
+  try {
+    if (target.hasPointerCapture(pointerId)) {
+      target.releasePointerCapture(pointerId)
+    }
+  } catch {
+    // Ignore DOMException
+  }
+}
 
 export function SwipeScan({
   open,
@@ -74,14 +94,28 @@ export function SwipeScan({
   const translate = full ? 0 : (1 - progress) * (BASE + HIDDEN_PAD)
   const restLeft = cardWidth > 0 ? cardWidth - 12 - BASE : null
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const node = rootRef.current
     if (!node) return
-    const measure = () => setCardWidth(node.clientWidth)
+    let animFrame = 0
+    const measure = () => {
+      window.cancelAnimationFrame(animFrame)
+      animFrame = window.requestAnimationFrame(() => {
+        const current = rootRef.current
+        if (!current) return
+        const w = current.clientWidth
+        if (w > 0) {
+          setCardWidth((prev) => (prev !== w ? w : prev))
+        }
+      })
+    }
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(node)
-    return () => observer.disconnect()
+    return () => {
+      window.cancelAnimationFrame(animFrame)
+      observer.disconnect()
+    }
   }, [])
 
   useEffect(() => {
@@ -280,14 +314,14 @@ export function SwipeScan({
       moved.current = 0
       startedOpen.current = false
       latest.current = 0
-      event.currentTarget.setPointerCapture(event.pointerId)
+      safeSetPointerCapture(event.currentTarget, event.pointerId)
       return
     }
     const target = event.target as HTMLElement
     if (target.closest('.history-delete') || overDelete(event.clientX, event.clientY)) {
       if (!target.closest('.history-delete')) {
         armDeletePress(event.clientX, event.clientY)
-        event.currentTarget.setPointerCapture(event.pointerId)
+        safeSetPointerCapture(event.currentTarget, event.pointerId)
       }
       return
     }
@@ -311,7 +345,7 @@ export function SwipeScan({
     startOffset.current = drag ?? (open ? BASE : latest.current)
     moved.current = 0
     latest.current = startOffset.current
-    event.currentTarget.setPointerCapture(event.pointerId)
+    safeSetPointerCapture(event.currentTarget, event.pointerId)
   }
 
   function onPointerMove(event: PointerEvent<HTMLDivElement>) {
@@ -337,9 +371,7 @@ export function SwipeScan({
     window.clearTimeout(longPressTimer.current)
     if (longPressed.current) {
       longPressed.current = false
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-        try { event.currentTarget.releasePointerCapture(event.pointerId) } catch {}
-      }
+      safeReleasePointerCapture(event.currentTarget, event.pointerId)
       return
     }
     if (event.type === 'pointercancel' && event.pointerType === 'touch') return
@@ -347,9 +379,7 @@ export function SwipeScan({
       pressingDelete.current = false
       const tap = deleteTap.current
       deleteTap.current = null
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-        event.currentTarget.releasePointerCapture(event.pointerId)
-      }
+      safeReleasePointerCapture(event.currentTarget, event.pointerId)
       if (!tap || confirming.current) return
       const travel = Math.hypot(event.clientX - tap.x, event.clientY - tap.y)
       if (travel <= 28) confirm()
@@ -357,9 +387,7 @@ export function SwipeScan({
     }
     if (!dragging.current) return
     dragging.current = false
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId)
-    }
+    safeReleasePointerCapture(event.currentTarget, event.pointerId)
     const pull = latest.current
     const gestureStartedOpen = startedOpen.current
     window.clearTimeout(pressTimer.current)
@@ -436,13 +464,11 @@ export function SwipeScan({
           event.stopPropagation()
           if (confirming.current) return
           armDeletePress(event.clientX, event.clientY)
-          event.currentTarget.setPointerCapture(event.pointerId)
+          safeSetPointerCapture(event.currentTarget, event.pointerId)
         }}
         onPointerUp={(event) => {
           event.stopPropagation()
-          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-            event.currentTarget.releasePointerCapture(event.pointerId)
-          }
+          safeReleasePointerCapture(event.currentTarget, event.pointerId)
           const tap = deleteTap.current
           deleteTap.current = null
           pressingDelete.current = false

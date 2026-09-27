@@ -1,5 +1,5 @@
 import { Panel } from '@maxhub/max-ui'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import type { ComparisonResult, Diagnosis as DiagnosisData, MetricId } from '../api/types.ts'
 import { api } from '../api/client.ts'
@@ -18,7 +18,20 @@ import { Templates } from '../screens/Templates.tsx'
 import { AnalyzeVeil } from '../widgets/AnalyzeVeil.tsx'
 import { LiveWallpaper } from '../widgets/LiveWallpaper.tsx'
 import { FlowProvider, useFlow } from './flow.tsx'
-import { go, tabOf, type TabName } from './nav.ts'
+import { backTarget, go, tabOf, type TabName } from './nav.ts'
+
+function playTabDrop(button: HTMLButtonElement) {
+  if (!button.classList.contains('is-on')) return
+  const nodes = [button, button.parentElement?.querySelector('.tab-pill')].filter(
+    (node): node is HTMLElement => node instanceof HTMLElement,
+  )
+  for (const node of nodes) {
+    node.classList.remove('is-drop')
+    void node.offsetWidth
+    node.classList.add('is-drop')
+    window.setTimeout(() => node.classList.remove('is-drop'), 360)
+  }
+}
 
 const TAB_ROOT: Record<TabName, string> = {
   home: '/',
@@ -59,19 +72,48 @@ function Shell() {
     location.pathname.startsWith('/processing/')
   const showBackBtn =
     !hostBack &&
+    !inChat &&
     (nested || onDiagnosis || onCompare || location.pathname.startsWith('/mapping') || location.pathname.startsWith('/templates'))
   const showTabs = true
+  const tabBarRef = useRef<HTMLElement>(null)
+  const pillReady = useRef(false)
+  const [pillMotion, setPillMotion] = useState(false)
+  const [pill, setPill] = useState({ x: 4, w: 0, stretch: false })
   const lastTabPath = useRef<Record<TabName, string>>({ ...TAB_ROOT })
   const skipBack = useRef(false)
+  useEffect(() => {
+    const scene = inChat ? 'chat' : 'home'
+    if (document.documentElement.dataset.scene !== scene) {
+      document.documentElement.dataset.scene = scene
+    }
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+  }, [location.pathname, inChat])
 
   useEffect(() => {
     if (location.pathname.startsWith('/processing/')) return
     lastTabPath.current[tab] = location.pathname
   }, [location.pathname, tab])
 
-  useEffect(() => {
-    document.documentElement.dataset.scene = inChat ? 'chat' : 'home'
-  }, [inChat])
+  useLayoutEffect(() => {
+    const bar = tabBarRef.current
+    if (!bar) return
+    const active = bar.querySelector('.tab-item.is-on')
+    if (!(active instanceof HTMLElement)) return
+    const barRect = bar.getBoundingClientRect()
+    const rect = active.getBoundingClientRect()
+    const next = {
+      x: rect.left - barRect.left,
+      w: rect.width,
+      stretch: pillReady.current,
+    }
+    if (!pillReady.current) {
+      pillReady.current = true
+      window.requestAnimationFrame(() => setPillMotion(true))
+    }
+    setPill(next)
+  }, [tab])
 
   useEffect(() => {
     initBridge()
@@ -79,36 +121,52 @@ function Shell() {
   }, [])
 
   useEffect(() => {
-    const reset = () => {
-      window.scrollTo(0, 0)
-      document.documentElement.scrollTop = 0
-      document.body.scrollTop = 0
-      document.querySelectorAll('.app-panel, #root').forEach((node) => {
-        node.scrollTop = 0
-      })
+    const overTabBar = (event: PointerEvent | MouseEvent) => {
+      const bar = document.querySelector('.tab-bar')
+      if (!bar) return false
+      const rect = bar.getBoundingClientRect()
+      return (
+        event.clientX >= rect.left &&
+        event.clientX <= rect.right &&
+        event.clientY >= rect.top &&
+        event.clientY <= rect.bottom
+      )
     }
-    reset()
-    const frame = window.requestAnimationFrame(reset)
-    return () => window.cancelAnimationFrame(frame)
-  }, [location.pathname])
+    const onPointerDown = (event: PointerEvent) => {
+      if (document.querySelector('.download-sheet') && overTabBar(event)) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+    }
+    const onClick = (event: MouseEvent) => {
+      if (document.querySelector('.download-sheet') && overTabBar(event)) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+    }
+    window.addEventListener('pointerdown', onPointerDown, true)
+    window.addEventListener('click', onClick, true)
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown, true)
+      window.removeEventListener('click', onClick, true)
+    }
+  }, [])
 
   const pop = useCallback(() => {
     if (skipBack.current) return
-    if (/^\/scan\/[^/]+$/.test(location.pathname) || (location.pathname.startsWith('/compare') && !location.pathname.endsWith('/chat'))) {
-      go(navigate, '/scans')
-      return
-    }
-    if (location.key === 'default') {
-      go(navigate, '/')
-      return
-    }
-    go(navigate, -1)
-  }, [location.pathname, location.key, navigate])
+    const next = backTarget(location.pathname)
+    if (next === location.pathname) return
+    go(navigate, next)
+  }, [location.pathname, navigate])
 
   const openTab = useCallback(
     (name: TabName) => {
-      let next = lastTabPath.current[name] || TAB_ROOT[name]
-      if (next.startsWith('/processing/') || tabOf(next) !== name) next = TAB_ROOT[name]
+      if (document.querySelector('.download-sheet')) return
+      const root = TAB_ROOT[name]
+      const onThisTab = tabOf(location.pathname) === name
+      if (name === 'chat' && onThisTab) return
+      let next = onThisTab ? root : lastTabPath.current[name] || root
+      if (next.startsWith('/processing/') || tabOf(next) !== name) next = root
       if (next === location.pathname) return
       skipBack.current = true
       window.setTimeout(() => {
@@ -183,7 +241,22 @@ function Shell() {
         ) : null}
 
         {showTabs ? (
-          <nav className="tab-bar" aria-label="Навигация">
+          <nav
+            ref={tabBarRef}
+            className="tab-bar"
+            aria-label="Навигация"
+            onPointerDown={(event) => {
+              if (document.querySelector('.download-sheet')) return
+              const button = event.target instanceof Element ? event.target.closest('.tab-item') : null
+              if (button instanceof HTMLButtonElement) playTabDrop(button)
+            }}
+          >
+            <span
+              className={`tab-pill${pill.stretch ? ' is-stretch' : ''}${pillMotion ? ' is-ready' : ''}`}
+              style={{ left: pill.x, width: pill.w }}
+              aria-hidden="true"
+              onAnimationEnd={() => setPill((current) => (current.stretch ? { ...current, stretch: false } : current))}
+            />
             <button type="button" className={`tab-item${tab === 'home' ? ' is-on' : ''}`} onClick={() => openTab('home')}>
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 11.2 12 5l8 6.2" />

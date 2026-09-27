@@ -2,6 +2,37 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function() {
+        function isBenign(msg, err) {
+          var s = String(msg || (err && (err.message || err.name)) || '');
+          return s.indexOf('ResizeObserver') !== -1 ||
+                 s.indexOf('Transition was skipped') !== -1 ||
+                 s.indexOf('AbortError') !== -1 ||
+                 s.indexOf('InvalidStateError') !== -1 ||
+                 s.indexOf('Script error.') !== -1;
+        }
+        window.addEventListener('error', function(event) {
+          if (isBenign(event.message, event.error)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return true;
+          }
+        }, true);
+        window.addEventListener('unhandledrejection', function(event) {
+          var reason = event.reason;
+          if (isBenign(reason && reason.message, reason)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        }, true);
+        var prevOnError = window.onerror;
+        window.onerror = function(msg, url, line, col, error) {
+          if (isBenign(msg, error)) return true;
+          if (prevOnError) return prevOnError.apply(this, arguments);
+        };
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>X-Ray</title>

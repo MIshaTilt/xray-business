@@ -1,25 +1,26 @@
-import { flushSync } from 'react-dom'
 import type { NavigateFunction, To } from 'react-router'
 
 type GoOptions = { replace?: boolean }
 
 export function go(navigate: NavigateFunction, to: To | number, options?: GoOptions) {
-  const run = () => {
-    if (typeof to === 'number') navigate(to)
-    else navigate(to, options)
+  if (typeof to === 'number') {
+    navigate(to)
+  } else {
+    navigate(to, options)
   }
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  const start = document.startViewTransition?.bind(document)
-  if (reduce || !start) {
-    run()
-    return
-  }
-  start(() => {
-    flushSync(run)
-  })
 }
 
 export type TabName = 'home' | 'scans' | 'chat' | 'menu'
+
+export function backTarget(pathname: string): string {
+  const tab = tabOf(pathname)
+  if (tab === 'home') return '/'
+  if (tab === 'chat') return '/chat'
+  if (tab === 'menu') return '/menu'
+  const nestedScan = pathname.match(/^\/scan\/([^/]+)\/(?:metric|missing)(?:\/|$)/)
+  if (nestedScan) return `/scan/${nestedScan[1]}`
+  return '/scans'
+}
 
 export function tabOf(pathname: string): TabName {
   if (pathname.startsWith('/menu') || pathname.startsWith('/settings')) return 'menu'
