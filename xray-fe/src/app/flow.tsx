@@ -31,7 +31,13 @@ function readUpload(): UploadResponse | null {
 
 export function FlowProvider({ children }: { children: ReactNode }) {
   const [upload, setUploadState] = useState<UploadResponse | null>(readUpload)
-  const [lastScanId, setLastScanState] = useState<string | null>(() => sessionStorage.getItem(SCAN_KEY))
+  const [lastScanId, setLastScanState] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(SCAN_KEY) || sessionStorage.getItem(SCAN_KEY)
+    } catch {
+      return null
+    }
+  })
   const [veil, setVeil] = useState(false)
   const [veilLeaving, setVeilLeaving] = useState(false)
   const [dark, setDark] = useState(() => window.localStorage.getItem('xray-theme') === 'dark')
@@ -54,8 +60,17 @@ export function FlowProvider({ children }: { children: ReactNode }) {
 
   const setLastScanId = useCallback((id: string | null) => {
     setLastScanState(id)
-    if (id) sessionStorage.setItem(SCAN_KEY, id)
-    else sessionStorage.removeItem(SCAN_KEY)
+    try {
+      if (id) {
+        localStorage.setItem(SCAN_KEY, id)
+        sessionStorage.setItem(SCAN_KEY, id)
+      } else {
+        localStorage.removeItem(SCAN_KEY)
+        sessionStorage.removeItem(SCAN_KEY)
+      }
+    } catch {
+      // ignore
+    }
   }, [])
 
   const beginVeil = useCallback(() => {

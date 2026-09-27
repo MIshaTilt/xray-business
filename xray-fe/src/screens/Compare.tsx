@@ -17,7 +17,7 @@ export function Compare({
   targetId: string
   onOpenSnapshot?: (snapshotId: string) => void
   onOpenChat?: (comparisonId?: string) => void
-  onLoaded?: () => void
+  onLoaded?: (comparisonId?: string) => void
 }) {
   const [data, setData] = useState<ComparisonResult | null>(null)
   const [error, setError] = useState('')
@@ -31,7 +31,7 @@ export function Compare({
       .then((result) => {
         if (!alive) return
         setData(result)
-        onLoaded?.()
+        onLoaded?.(result.comparison_id)
       })
       .catch((err) => {
         if (!alive) return

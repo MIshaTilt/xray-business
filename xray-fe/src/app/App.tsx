@@ -94,6 +94,12 @@ function Shell() {
     lastTabPath.current[tab] = location.pathname
   }, [location.pathname, tab])
 
+  useEffect(() => {
+    if (flow.lastScanId) {
+      lastTabPath.current.chat = `/scan/${flow.lastScanId}/chat`
+    }
+  }, [flow.lastScanId])
+
   useLayoutEffect(() => {
     const bar = tabBarRef.current
     if (!bar) return
@@ -162,8 +168,15 @@ function Shell() {
       const root = TAB_ROOT[name]
       const onThisTab = tabOf(location.pathname) === name
       if (name === 'chat' && onThisTab) return
-      let next = onThisTab ? root : lastTabPath.current[name] || root
-      if (next.startsWith('/processing/') || tabOf(next) !== name) next = root
+
+      let next: string
+      if (name === 'chat') {
+        next = flow.lastScanId ? `/scan/${flow.lastScanId}/chat` : '/chat'
+      } else {
+        next = onThisTab ? root : lastTabPath.current[name] || root
+        if (next.startsWith('/processing/') || tabOf(next) !== name) next = root
+      }
+
       if (next === location.pathname) return
       skipBack.current = true
       window.setTimeout(() => {
@@ -171,7 +184,7 @@ function Shell() {
       }, 500)
       go(navigate, next)
     },
-    [location.pathname, navigate],
+    [location.pathname, navigate, flow.lastScanId],
   )
 
   useEffect(() => {
@@ -350,7 +363,7 @@ function ScansPage() {
 function ComparePage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { finishVeil } = useFlow()
+  const { finishVeil, setLastScanId } = useFlow()
   const baseId = searchParams.get('base_id') || ''
   const targetId = searchParams.get('target_id') || ''
 
@@ -362,9 +375,19 @@ function ComparePage() {
     <Compare
       baseId={baseId}
       targetId={targetId}
-      onLoaded={finishVeil}
-      onOpenSnapshot={(snapshotId) => go(navigate, `/scan/${snapshotId}`)}
+      onLoaded={(comparisonId) => {
+        finishVeil()
+        if (comparisonId) {
+          setLastScanId(comparisonId)
+        }
+      }}
+      onOpenSnapshot={(snapshotId) => {
+        setLastScanId(snapshotId)
+        go(navigate, `/scan/${snapshotId}`)
+      }}
       onOpenChat={(comparisonId) => {
+        const effectiveId = comparisonId || baseId
+        if (effectiveId) setLastScanId(effectiveId)
         if (comparisonId) {
           go(navigate, `/scan/${comparisonId}/chat`)
         } else {
@@ -377,12 +400,64 @@ function ComparePage() {
 
 function ChatGatePage() {
   const flow = useFlow()
+  const navigate = useNavigate()
+  const [loading, setLoading] = useState(!flow.lastScanId)
+
+  useEffect(() => {
+    if (flow.lastScanId) return
+
+    let alive = true
+    api
+      .list()
+      .then((items) => {
+        if (!alive) return
+        if (items && items.length > 0) {
+          const latest = items[0]
+          flow.setLastScanId(latest.snapshot_id)
+        } else {
+          setLoading(false)
+        }
+      })
+      .catch(() => {
+        if (!alive) return
+        setLoading(false)
+      })
+
+    return () => {
+      alive = false
+    }
+  }, [flow.lastScanId, flow.setLastScanId])
+
   if (flow.lastScanId) return <Navigate to={`/scan/${flow.lastScanId}/chat`} replace />
+
+  if (loading) {
+    return (
+      <div className="stack">
+        <div className="lead">
+          <h1>Чат</h1>
+          <p className="home-hint">Поиск последнего анализа...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="stack">
       <div className="lead">
-        <h1>Чат</h1>
-        <p className="home-hint">Сначала откройте снимок в разделе «Сканы».</p>
+        <h1>Консультант</h1>
+        <p className="home-hint">
+          У вас пока нет загруженных данных для анализа. Загрузите таблицу на Главной, чтобы провести аудит и начать диалог с бизнес-ассистентом.
+        </p>
+      </div>
+      <div style={{ marginTop: 16 }}>
+        <button
+          type="button"
+          className="action action-primary"
+          onClick={() => go(navigate, '/')}
+          style={{ width: '100%', height: 48, borderRadius: 12, fontWeight: 600 }}
+        >
+          Загрузить таблицу
+        </button>
       </div>
     </div>
   )
@@ -509,6 +584,7 @@ function ChatPage() {
 function CompareChatPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { setLastScanId } = useFlow()
   const baseId = searchParams.get('base_id') || ''
   const targetId = searchParams.get('target_id') || ''
   const [comparison, setComparison] = useState<ComparisonResult | null>(null)
@@ -519,13 +595,17 @@ function CompareChatPage() {
     api
       .compare(baseId, targetId)
       .then((result) => {
-        if (alive) setComparison(result)
+        if (!alive) return
+        setComparison(result)
+        if (result.comparison_id) {
+          setLastScanId(result.comparison_id)
+        }
       })
       .catch(() => {})
     return () => {
       alive = false
     }
-  }, [baseId, targetId])
+  }, [baseId, targetId, setLastScanId])
 
   if (!baseId || !targetId) {
     return <Navigate to="/scans" replace />
