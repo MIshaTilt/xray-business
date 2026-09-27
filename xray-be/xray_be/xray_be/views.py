@@ -50,7 +50,7 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None, target_
         accumulated_prompt_tokens = 0
         accumulated_completion_tokens = 0
 
-        # 1. Step 1: Tool resolution loop (supports tool execution before live synthesis)
+        # 1. Step 1: Multi-turn tool resolution loop (up to 3 turns)
         if snapshot_id or target_snapshot_id:
             try:
                 tools_for_snapshot = get_ai_tools_definitions(snapshot_id, target_snapshot_id=target_snapshot_id)
@@ -78,8 +78,7 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None, target_
                     tool_calls = msg.get("tool_calls", [])
 
                     if not tool_calls:
-                        # Model did not call any tools.
-                        # If round_idx == 0 (no tools called), the model produced its direct textual answer
+                        # Model did not call further tools
                         if round_idx == 0 and msg.get("content"):
                             initial_final_content = msg.get("content")
                         break
@@ -111,15 +110,12 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None, target_
                             "name": func_name,
                             "content": tool_result
                         })
-
-                    # Once tools have executed, break out immediately so Step 2 streams the synthesis live!
-                    break
             except Exception as e:
                 # Fallback smoothly to standard completion without tools
                 print(f"[TOOL CALL ERROR]: {e}")
 
         # 2. Step 2: Stream final synthesized answer with SSE
-        if initial_final_content:
+        if initial_final_content and not executed_tools_for_saving:
             # Direct answer from model when no tools were needed (pacing with time.sleep for smooth SSE typewriter streaming)
             chunk_size = 14
             for i in range(0, len(initial_final_content), chunk_size):
@@ -134,9 +130,50 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None, target_
             yield "data: [DONE]\n\n"
             full_stream_response = initial_final_content
         else:
+            # If tools were executed, we construct structured synthesis messages
+            # containing the tool findings so the model is 100% focused on writing
+            # a rich, human-readable analytical answer to the user's question.
+            if executed_tools_for_saving:
+                last_user_msg = next((m for m in reversed(messages_list) if m.get("role") == "user"), None)
+                user_text = last_user_msg.get("content", "") if last_user_msg else "Проанализируй полученные данные."
+
+                tool_summaries = []
+                for tc in executed_tools_for_saving:
+                    t_name = tc.get("tool_name", "")
+                    t_args = json.dumps(tc.get("arguments", {}), ensure_ascii=False)
+                    t_res = tc.get("result", "")
+                    tool_summaries.append(f"Инструмент: {t_name}\nПараметры: {t_args}\nДанные из базы:\n{t_res}")
+
+                synthesis_messages = [
+                    {
+                        "role": "system",
+                        "content": (
+                            "Ты персональный бизнес-аналитик и консультант сервиса X-Ray.\n"
+                            "Твоя задача — дать прямой, исчерпывающий, профессиональный ответ на вопрос пользователя "
+                            "на основе полученных выше фактов и цифр из базы данных. Инструменты больше вызывать не нужно.\n\n"
+                            "ПРАВИЛА:\n"
+                            "1. Отвечай прямо на вопрос пользователя понятным языком предпринимателя.\n"
+                            "2. Обязательно поясни суть полученных цифр (если строк 0 — объясни почему: например, что все клиенты продолжили покупать и оттока не было, либо что таких записей нет в выборке).\n"
+                            "3. Дай практические советы и рекомендации для РОПа и владельца бизнеса."
+                        )
+                    },
+                    {"role": "user", "content": user_text},
+                    {
+                        "role": "assistant",
+                        "content": "Я исследовал базу данных сделок по вашему запросу. Вот факты, полученные из базы:\n\n" + "\n\n".join(tool_summaries)
+                    },
+                    {
+                        "role": "user",
+                        "content": "Отлично. Теперь на основе этих фактов подробно ответь на мой вопрос человеческим языком. Сделай понятные выводы для бизнеса и руководства."
+                    }
+                ]
+                stream_messages = anonymizer.anonymize_messages(synthesis_messages)
+            else:
+                stream_messages = anonymizer.anonymize_messages(current_messages)
+
             payload = {
                 "model": model_name,
-                "messages": anonymizer.anonymize_messages(current_messages),
+                "messages": stream_messages,
                 "stream": True,
                 "stream_options": {"include_usage": True}
             }
@@ -184,25 +221,27 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None, target_
                 print(f"[STREAM ERROR]: {stream_err}")
                 full_stream_response = ""
 
-            # If model emitted tools but no text tokens in stream, provide graceful summary text
+            # If for any reason stream returned empty, force a non-streamed synthesis call
             if not full_stream_response and executed_tools_for_saving:
-                chart_call = next((tc for tc in executed_tools_for_saving if tc.get("tool_name") == "render_chart"), None)
-                if chart_call and chart_call.get("result"):
-                    try:
-                        c_res = json.loads(chart_call["result"]) if isinstance(chart_call["result"], str) else chart_call["result"]
-                        full_stream_response = c_res.get("summary", "График успешно построен и отображен выше.")
-                    except Exception:
-                        full_stream_response = "График успешно построен и отображен выше."
-                else:
-                    full_stream_response = "Запрос к базе данных выполнен. Необходимые данные получены."
-
-                chunk_event = {
-                    "choices": [{
-                        "delta": {"content": full_stream_response}
-                    }]
-                }
-                yield f"data: {json.dumps(chunk_event, ensure_ascii=False)}\n\n"
-                yield "data: [DONE]\n\n"
+                try:
+                    retry_payload = {
+                        "model": model_name,
+                        "messages": stream_messages,
+                        "stream": False
+                    }
+                    retry_resp = requests.post(target_url, headers=headers, json=retry_payload, timeout=30)
+                    if retry_resp.status_code == 200:
+                        retry_msg = retry_resp.json().get('choices', [{}])[0].get('message', {})
+                        retry_content = retry_msg.get('content', '')
+                        if retry_content:
+                            full_stream_response = retry_content
+                            for i in range(0, len(full_stream_response), 14):
+                                sub = full_stream_response[i:i+14]
+                                yield f"data: {json.dumps({'choices': [{'delta': {'content': sub}}]}, ensure_ascii=False)}\n\n"
+                                time.sleep(0.015)
+                            yield "data: [DONE]\n\n"
+                except Exception as retry_err:
+                    print(f"[RETRY ERROR]: {retry_err}")
 
         log_llm_interaction(
             title="ПОТОКОВЫЙ ЧАТ: УСПЕШНЫЙ ОТВЕТ (RAG/TOOLS)",
