@@ -154,7 +154,7 @@ export function Diagnosis({
         <div className="template-dropdown-wrapper" ref={moreWrapRef}>
           <button
             type="button"
-            className="more-dot-btn"
+            className={`more-dot-btn${moreOpen && !moreClosing ? ' is-away' : ''}`}
             aria-label="Поделиться"
             aria-expanded={moreOpen && !moreClosing}
             onClick={() => {

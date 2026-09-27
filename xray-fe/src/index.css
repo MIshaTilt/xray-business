@@ -265,10 +265,12 @@ body {
 }
 
 .diag-more-slot {
+  position: relative;
   margin-left: auto;
   width: 44px;
   height: 44px;
   flex: none;
+  overflow: visible;
 }
 
 .diag-more-slot:empty {
@@ -294,6 +296,15 @@ body {
     0 4px 12px rgb(23 32 51 / 16%);
   color: inherit;
   cursor: pointer;
+}
+
+.diag-more-slot .more-dot-btn {
+  transition: opacity 0.32s ease;
+}
+
+.diag-more-slot .more-dot-btn.is-away {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .more-dot-btn svg {
@@ -325,8 +336,9 @@ body {
 
 .download-sheet-panel {
   position: absolute;
+  z-index: 1;
   left: 50%;
-  bottom: calc(66px + max(12px, env(safe-area-inset-bottom, 0px)));
+  top: 72px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -569,6 +581,11 @@ html[data-theme="dark"] .chat-clear-nav.is-on:hover {
   width: 44px;
   padding: 0;
   border-radius: 50%;
+}
+
+html:has(.download-sheet:not(.is-closing)) .back {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .home-btn,
@@ -885,6 +902,10 @@ html[data-scene="chat"] .app-panel {
 
 .tab-bar {
   view-transition-name: xray-tabs;
+}
+
+html:has(.download-sheet) .tab-bar {
+  pointer-events: none;
 }
 
 ::view-transition-group(xray-page),
@@ -2348,7 +2369,9 @@ html[data-theme="dark"] .app-shell .template-item-btn.is-current {
   .scans-pick-bar,
   .scans-pick-bar.is-closing,
   .scans-tool-face,
-  .scan-check {
+  .scan-check,
+  .diag-more-slot .more-dot-btn,
+  .back {
     animation: none;
     transition: none;
   }
@@ -3061,6 +3084,16 @@ html[data-theme="dark"] .app-shell .action-primary {
     background 0.45s ease,
     border-color 0.45s ease,
     box-shadow 0.45s ease;
+}
+
+.back {
+  transition:
+    color 0.45s ease,
+    background-color 0.45s ease,
+    background 0.45s ease,
+    border-color 0.45s ease,
+    box-shadow 0.45s ease,
+    opacity 0.32s ease;
 }
 
 .app-shell,

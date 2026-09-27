@@ -4,9 +4,61 @@ import type { NavigateFunction, To } from 'react-router'
 type GoOptions = { replace?: boolean }
 
 let activeTransition: ViewTransition | null = null
+let nextRun: (() => void) | null = null
+let queuedFrame = 0
+
+function stageElement() {
+  const stage = document.querySelector('.page-stage:not([data-page-ghost])')
+  return stage instanceof HTMLElement ? stage : null
+}
+
+function clearStageMotion() {
+  document.querySelectorAll('[data-page-ghost]').forEach((node) => node.remove())
+  const stage = stageElement()
+  if (!stage) return
+  stage.style.visibility = ''
+  stage.style.pointerEvents = ''
+  stage.style.opacity = ''
+  stage.style.transform = ''
+  stage.style.removeProperty('view-transition-name')
+}
+
+function begin() {
+  const run = nextRun
+  nextRun = null
+  if (!run) return
+  clearStageMotion()
+  const stage = stageElement()
+  let pending: ViewTransition
+  try {
+    pending = document.startViewTransition(() => {
+      flushSync(run)
+      if (stage instanceof HTMLElement) stage.style.viewTransitionName = 'xray-page-in'
+    })
+  } catch {
+    clearStageMotion()
+    run()
+    return
+  }
+  activeTransition = pending
+  void pending.finished.finally(() => {
+    if (activeTransition !== pending) return
+    activeTransition = null
+    clearStageMotion()
+    if (nextRun) queue()
+  })
+}
+
+function queue() {
+  if (queuedFrame) return
+  queuedFrame = window.requestAnimationFrame(() => {
+    queuedFrame = 0
+    begin()
+  })
+}
 
 export function go(navigate: NavigateFunction, to: To | number, options?: GoOptions) {
-  const run = () => {
+  nextRun = () => {
     if (typeof to === 'number') navigate(to)
     else navigate(to, options)
   }
@@ -14,33 +66,20 @@ export function go(navigate: NavigateFunction, to: To | number, options?: GoOpti
   if (reduce || !document.startViewTransition) {
     activeTransition?.skipTransition()
     activeTransition = null
+    clearStageMotion()
+    const run = nextRun
+    nextRun = null
     run()
     return
   }
-  const begin = () => {
-    const stage = document.querySelector('.page-stage')
-    let pending: ViewTransition
-    try {
-      pending = document.startViewTransition(() => {
-        flushSync(run)
-        if (stage instanceof HTMLElement) stage.style.viewTransitionName = 'xray-page-in'
-      })
-    } catch {
-      run()
-      return
-    }
-    activeTransition = pending
-    void pending.finished.finally(() => {
-      if (activeTransition !== pending) return
+  if (activeTransition || queuedFrame) {
+    if (activeTransition) {
+      const previous = activeTransition
       activeTransition = null
-      if (stage instanceof HTMLElement) stage.style.removeProperty('view-transition-name')
-    })
-  }
-  if (activeTransition) {
-    const previous = activeTransition
-    activeTransition = null
-    previous.skipTransition()
-    window.requestAnimationFrame(begin)
+      clearStageMotion()
+      previous.skipTransition()
+    }
+    queue()
     return
   }
   begin()

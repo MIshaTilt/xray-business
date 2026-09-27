@@ -121,7 +121,25 @@ function Shell() {
   }, [])
 
   useEffect(() => {
+    const overTabBar = (event: PointerEvent | MouseEvent) => {
+      const bar = document.querySelector('.tab-bar')
+      if (!bar) return false
+      const rect = bar.getBoundingClientRect()
+      return (
+        event.clientX >= rect.left &&
+        event.clientX <= rect.right &&
+        event.clientY >= rect.top &&
+        event.clientY <= rect.bottom
+      )
+    }
     const onPointerDown = (event: PointerEvent) => {
+      if (document.querySelector('.download-sheet')) {
+        if (overTabBar(event)) {
+          event.preventDefault()
+          event.stopPropagation()
+        }
+        return
+      }
       if (event.target instanceof Element && event.target.closest('.tab-bar')) return
       const bar = document.querySelector('.tab-bar')
       if (!bar) return
@@ -149,8 +167,17 @@ function Shell() {
       playTabDrop(hit)
       hit.click()
     }
+    const onClick = (event: MouseEvent) => {
+      if (!document.querySelector('.download-sheet') || !overTabBar(event)) return
+      event.preventDefault()
+      event.stopPropagation()
+    }
     window.addEventListener('pointerdown', onPointerDown, true)
-    return () => window.removeEventListener('pointerdown', onPointerDown, true)
+    window.addEventListener('click', onClick, true)
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown, true)
+      window.removeEventListener('click', onClick, true)
+    }
   }, [])
 
   const pop = useCallback(() => {
@@ -162,6 +189,7 @@ function Shell() {
 
   const openTab = useCallback(
     (name: TabName) => {
+      if (document.querySelector('.download-sheet')) return
       const root = TAB_ROOT[name]
       const onThisTab = tabOf(location.pathname) === name
       if (name === 'chat' && onThisTab) return
@@ -244,6 +272,7 @@ function Shell() {
             className="tab-bar"
             aria-label="Навигация"
             onPointerDown={(event) => {
+              if (document.querySelector('.download-sheet')) return
               const button = event.target instanceof Element ? event.target.closest('.tab-item') : null
               if (button instanceof HTMLButtonElement) playTabDrop(button)
             }}
