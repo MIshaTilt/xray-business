@@ -351,26 +351,9 @@ export function ChatScreen({
     <div className="stack chat-screen">
       {navSlot ? createPortal(clearIcon, navSlot) : null}
       {streaming ? <span className="chat-scan" aria-hidden="true" /> : null}
-      <div className="chat-header">
-        <div className="lead">
-          <h1>Консультант</h1>
-          <p className="home-hint chat-scan-label">
-            {diagnosis?.scan_no
-              ? `Снимок №${diagnosis.scan_no}`
-              : 'Снимок'}
-          </p>
-        </div>
-        <div className="chat-clear-slot">
-          <button
-            type="button"
-            className={`chat-clear-btn${canClear ? ' is-on' : ''}`}
-            tabIndex={canClear ? 0 : -1}
-            onClick={handleClear}
-          >
-            Очистить историю
-          </button>
-        </div>
-      </div>
+      <p className="chat-scan-label">
+        {diagnosis?.scan_no ? `Снимок №${diagnosis.scan_no}` : 'Снимок'}
+      </p>
 
       <div ref={listRef} className={`chat-messages-container${clearing ? ' is-clearing' : ''}`}>
         {messages.length === 0 && !streaming && !clearing ? (

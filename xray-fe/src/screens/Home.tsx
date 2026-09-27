@@ -18,7 +18,6 @@ export function Home({
   const [file, setFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [soon, setSoon] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   async function sendFile() {
@@ -46,23 +45,22 @@ export function Home({
       </header>
       {usesFixtures() ? <p className="home-hint">Сейчас ответы локальные: сервер для проверки экранов не нужен.</p> : null}
       {error ? <Notice tone="error">{error}</Notice> : null}
-      {soon ? <Notice tone="ok">{soon}</Notice> : null}
       <div className="home-actions">
         <p className="home-lead-in">Можно подключить базу данных</p>
         <div className="source-grid">
-          <button type="button" className="source-tile source-1c" onClick={() => setSoon('Подключение 1С скоро появится')}>
+          <button type="button" className="source-tile source-1c">
             <span className="source-tile-icon" aria-hidden="true">
               <Logo1C />
             </span>
             <span className="source-tile-label">1С</span>
           </button>
-          <button type="button" className="source-tile source-bitrix" onClick={() => setSoon('Подключение Битрикс24 скоро появится')}>
+          <button type="button" className="source-tile source-bitrix">
             <span className="source-tile-icon" aria-hidden="true">
               <LogoBitrix24 />
             </span>
             <span className="source-tile-label">Битрикс24</span>
           </button>
-          <button type="button" className="source-tile source-moysklad" onClick={() => setSoon('Подключение МойСклад скоро появится')}>
+          <button type="button" className="source-tile source-moysklad">
             <span className="source-tile-icon" aria-hidden="true">
               <LogoMoySklad />
             </span>

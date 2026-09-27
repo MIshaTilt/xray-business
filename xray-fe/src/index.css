@@ -290,8 +290,8 @@ body {
   backdrop-filter: blur(18px) saturate(160%);
   -webkit-backdrop-filter: blur(18px) saturate(160%);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 85%),
-    0 10px 24px rgb(23 32 51 / 10%);
+    inset 0 1px 4px rgb(23 32 51 / 18%),
+    0 4px 12px rgb(23 32 51 / 16%);
   color: inherit;
   cursor: pointer;
 }
@@ -316,9 +316,11 @@ body {
   position: absolute;
   inset: 0;
   border: 0;
-  background: rgb(23 32 51 / 28%);
+  background: rgb(23 32 51 / 22%);
   cursor: pointer;
-  animation: veil-in 0.28s ease both;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  animation: sheet-veil-in 0.32s ease both;
 }
 
 .download-sheet-panel {
@@ -345,15 +347,15 @@ body {
   font-family: inherit;
   font-size: 15px;
   transform: translateX(-50%);
-  animation: sheet-up 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: sheet-down-in 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .download-sheet.is-closing .download-sheet-backdrop {
-  animation: veil-out 0.32s ease both;
+  animation: sheet-veil-out 0.32s ease both;
 }
 
 .download-sheet.is-closing .download-sheet-panel {
-  animation: sheet-down 0.32s ease both;
+  animation: sheet-up-out 0.32s ease both;
 }
 
 .download-sheet-title {
@@ -413,10 +415,10 @@ body {
   text-align: left;
 }
 
-@keyframes sheet-up {
+@keyframes sheet-down-in {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(24px);
+    transform: translateX(-50%) translateY(-28px);
   }
   to {
     opacity: 1;
@@ -424,14 +426,40 @@ body {
   }
 }
 
-@keyframes sheet-down {
+@keyframes sheet-up-out {
   from {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
   to {
     opacity: 0;
-    transform: translateX(-50%) translateY(24px);
+    transform: translateX(-50%) translateY(-22px);
+  }
+}
+
+@keyframes sheet-veil-in {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+}
+
+@keyframes sheet-veil-out {
+  from {
+    opacity: 1;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  to {
+    opacity: 0;
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
   }
 }
 
@@ -463,7 +491,7 @@ body {
 }
 
 html[data-theme="dark"] .download-sheet-backdrop {
-  background: rgb(0 0 0 / 42%);
+  background: rgb(0 0 0 / 34%);
 }
 
 html[data-theme="dark"] .download-sheet-panel {
@@ -529,8 +557,8 @@ html[data-theme="dark"] .chat-clear-nav.is-on:hover {
   backdrop-filter: blur(18px) saturate(160%);
   -webkit-backdrop-filter: blur(18px) saturate(160%);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 85%),
-    0 10px 24px rgb(23 32 51 / 10%);
+    inset 0 1px 4px rgb(23 32 51 / 18%),
+    0 4px 12px rgb(23 32 51 / 16%);
   cursor: pointer;
   font: inherit;
   font-weight: 650;
@@ -812,12 +840,25 @@ html[data-scene="chat"] .app-panel {
   height: auto;
   max-height: 100%;
   min-height: 0;
-  padding-left: 20px;
-  padding-right: 20px;
+  padding-top: 28px;
+  padding-left: 16px;
+  padding-right: 16px;
   padding-bottom: max(28px, env(safe-area-inset-bottom, 0px));
   overflow: hidden;
   overscroll-behavior: none;
   gap: 0;
+}
+
+.chat-screen .chat-scan-label {
+  margin: 0 52px 8px 0;
+  overflow: hidden;
+  font-size: 1.15rem;
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #172033;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .back-spacer {
@@ -826,6 +867,7 @@ html[data-scene="chat"] .app-panel {
 }
 
 .app-shell.with-tabs {
+  min-height: 100vh;
   padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px));
 }
 
@@ -841,59 +883,82 @@ html[data-scene="chat"] .app-panel {
   view-transition-name: xray-page;
 }
 
-.live-wallpaper {
-  view-transition-name: xray-bg;
-}
-
 .tab-bar {
   view-transition-name: xray-tabs;
 }
 
-.nav-bar {
-  view-transition-name: xray-nav;
+::view-transition-group(xray-page),
+::view-transition-group(xray-page-in) {
+  z-index: 1;
+  animation-duration: 0.64s;
+  animation-fill-mode: both;
 }
 
-::view-transition-group(xray-bg),
-::view-transition-group(xray-tabs),
-::view-transition-group(xray-nav),
-::view-transition-group(xray-veil),
-::view-transition-new(xray-bg),
-::view-transition-new(xray-tabs),
-::view-transition-new(xray-nav),
-::view-transition-new(xray-veil) {
-  animation: none;
+::view-transition-group(xray-tabs) {
+  z-index: 30;
+  animation-duration: 0.64s;
+  animation-fill-mode: both;
 }
 
-::view-transition-old(xray-bg),
-::view-transition-old(xray-tabs),
-::view-transition-old(xray-nav),
-::view-transition-old(xray-veil) {
+::view-transition-new(xray-tabs) {
+  animation-name: vt-tabs-hold;
+  animation-duration: 0.64s;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+  opacity: 1;
+}
+
+::view-transition-old(xray-tabs) {
   display: none;
+}
+
+@keyframes vt-tabs-hold {
+  from, to { opacity: 1; }
 }
 
 ::view-transition {
   background: transparent;
+  pointer-events: none;
 }
 
-html:active-view-transition {
-  overflow: hidden !important;
+::view-transition-image-pair(xray-page),
+::view-transition-image-pair(xray-page-in) {
+  isolation: none;
+}
+
+::view-transition-old(xray-page),
+::view-transition-new(xray-page-in) {
+  mix-blend-mode: normal;
 }
 
 ::view-transition-old(xray-page) {
-  animation: vt-leave 0.28s ease both;
+  animation: vt-leave 0.32s ease both;
 }
 
-::view-transition-new(xray-page) {
-  animation: vt-enter 0.32s ease both;
+::view-transition-new(xray-page-in) {
+  animation: vt-enter 0.32s ease 0.32s both;
 }
 
 @keyframes vt-leave {
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(28px);
+  }
 }
 
 @keyframes vt-enter {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .tab-bar {
@@ -938,21 +1003,46 @@ html:active-view-transition {
   cursor: pointer;
 }
 
+.tab-pill {
+  position: absolute;
+  top: 4px;
+  z-index: 0;
+  height: calc(100% - 8px);
+  border-radius: 18px;
+  background: rgb(206 214 218 / 76%);
+  box-shadow:
+    inset 0 2px 5px rgb(23 32 51 / 22%),
+    0 2px 6px rgb(15 118 110 / 16%);
+  pointer-events: none;
+  transform-origin: center center;
+}
+
+.tab-pill.is-ready {
+  transition:
+    left 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.42s ease,
+    box-shadow 0.42s ease;
+}
+
+.tab-pill.is-stretch {
+  animation: tab-stretch 0.42s ease;
+}
+
+.tab-item {
+  position: relative;
+  z-index: 1;
+}
+
 .tab-item.is-on {
   opacity: 1;
   color: #0f766e;
-  background: rgb(255 255 255 / 38%);
+  background: none;
 }
 
-.tab-item.tab-chat {
-  color: #2563eb;
-  opacity: 0.78;
-}
-
-.tab-item.tab-chat.is-on {
-  color: #1d4ed8;
-  background: rgb(37 99 235 / 16%);
-  opacity: 1;
+.tab-item.is-on.is-drop,
+.tab-pill.is-drop {
+  animation: tab-drop 0.36s ease;
 }
 
 .tab-item svg {
@@ -963,6 +1053,16 @@ html:active-view-transition {
   stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
+  filter: drop-shadow(0 1px 1.5px rgb(23 32 51 / 28%));
+}
+
+.tab-item.tab-chat.is-on,
+.tab-item.tab-chat.is-on svg {
+  color: #1d4ed8;
+}
+
+.tab-item.is-on svg {
+  filter: none;
 }
 
 .settings-card {
@@ -1811,17 +1911,16 @@ html[data-theme="dark"] .app-shell .template-item-btn.is-current {
 }
 
 .mapping-screen {
-  padding-bottom: 56px;
+  flex: 1;
+  padding-bottom: 8px;
 }
 
 .mapping-cta {
-  position: fixed;
-  left: 50%;
-  bottom: calc(66px + max(12px, env(safe-area-inset-bottom, 0px)));
-  z-index: 20;
-  box-sizing: border-box;
-  width: min(398px, calc(100% - 32px));
-  transform: translateX(-50%);
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  margin-top: auto;
+  animation: none;
 }
 
 .data-table tbody tr:last-child td {
@@ -1914,7 +2013,7 @@ html[data-theme="dark"] .app-shell .template-item-btn.is-current {
 }
 
 .stack {
-  animation: rise 0.46s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: none;
 }
 
 .hero {
@@ -2224,6 +2323,7 @@ html[data-theme="dark"] .app-shell .template-item-btn.is-current {
   .live-shimmer,
   .ai-veil,
   .ai-veil-scan,
+  .mapping-cta,
   .diagnosis,
   .tab-pane.is-on,
   .page-in,
@@ -2489,23 +2589,42 @@ html[data-theme="dark"] .tab-bar {
   border-color: rgb(255 255 255 / 18%);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 14%),
-    0 10px 24px rgb(0 0 0 / 22%);
+    0 10px 24px rgb(0 0 0 / 28%);
   backdrop-filter: blur(18px) saturate(160%);
   -webkit-backdrop-filter: blur(18px) saturate(160%);
 }
 
+html[data-theme="dark"] .back,
+html[data-theme="dark"] .home-btn,
+html[data-theme="dark"] .theme-btn,
+html[data-theme="dark"] .more-dot-btn,
+html[data-theme="dark"] .chat-clear-nav,
+html[data-theme="dark"] .chat-clear-btn,
+html[data-theme="dark"] .scans-pick-btn {
+  box-shadow:
+    inset 0 1px 5px rgb(0 0 0 / 46%),
+    0 4px 12px rgb(0 0 0 / 34%);
+}
+
+html[data-theme="dark"] .tab-pill {
+  background: rgb(0 0 0 / 22%);
+  box-shadow:
+    inset 0 2px 6px rgb(0 0 0 / 55%),
+    0 2px 6px rgb(0 0 0 / 28%);
+}
+
+html[data-theme="dark"] .tab-item:not(.is-on) svg {
+  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 55%));
+}
+
+html[data-theme="dark"] .tab-item.tab-chat.is-on,
+html[data-theme="dark"] .tab-item.tab-chat.is-on svg {
+  color: #60a5fa;
+}
+
 html[data-theme="dark"] .tab-item.is-on {
   color: #5eead4;
-  background: rgb(255 255 255 / 8%);
-}
-
-html[data-theme="dark"] .tab-item.tab-chat {
-  color: #93c5fd;
-}
-
-html[data-theme="dark"] .tab-item.tab-chat.is-on {
-  color: #bfdbfe;
-  background: rgb(59 130 246 / 22%);
+  background: none;
 }
 
 html[data-theme="dark"] .home-splash {
@@ -2594,6 +2713,14 @@ html[data-theme="dark"] .coverage-group li {
   color: #fff;
   border-color: rgb(255 255 255 / 14%);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+}
+
+html[data-theme="dark"] .app-shell .action-secondary,
+html[data-theme="dark"] .app-shell .action-quiet,
+html[data-theme="dark"] .app-shell .action-neutral {
+  box-shadow:
+    inset 0 1px 5px rgb(0 0 0 / 46%),
+    0 4px 12px rgb(0 0 0 / 34%);
 }
 
 html[data-theme="dark"] .coverage-group li.is-on {
@@ -2880,8 +3007,8 @@ html[data-theme="dark"] .app-shell .action-accent {
   background: linear-gradient(180deg, rgb(37 78 168 / 58%), rgb(18 42 110 / 50%));
   border-color: rgb(96 140 196 / 42%);
   box-shadow:
-    inset 0 1px 0 rgb(150 190 235 / 22%),
-    0 10px 24px rgb(6 16 40 / 22%);
+    inset 0 1px 5px rgb(0 0 0 / 40%),
+    0 4px 12px rgb(6 16 40 / 28%);
 }
 
 html[data-theme="dark"] .app-shell .action-primary,
@@ -2893,8 +3020,8 @@ html[data-theme="dark"] .app-shell .action-primary {
   background: linear-gradient(180deg, rgb(22 122 112 / 58%), rgb(8 64 58 / 50%));
   border-color: rgb(72 168 154 / 42%);
   box-shadow:
-    inset 0 1px 0 rgb(150 220 208 / 22%),
-    0 10px 24px rgb(4 28 24 / 22%);
+    inset 0 1px 5px rgb(0 0 0 / 42%),
+    0 4px 12px rgb(4 28 24 / 30%);
 }
 
 @keyframes shimmer-pass {
@@ -3617,8 +3744,8 @@ html[data-theme="dark"] .app-shell .source-tile-icon {
   background: linear-gradient(180deg, rgb(255 255 255 / 72%), rgb(255 255 255 / 38%));
   color: #172033;
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 85%),
-    0 10px 24px rgb(23 32 51 / 10%);
+    inset 0 1px 4px rgb(23 32 51 / 18%),
+    0 4px 12px rgb(23 32 51 / 16%);
   backdrop-filter: blur(18px) saturate(160%);
   -webkit-backdrop-filter: blur(18px) saturate(160%);
 }
@@ -4036,8 +4163,8 @@ html[data-theme="dark"] .history-delete.is-sealed .is-done {
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 55%),
-    0 10px 24px rgb(23 32 51 / 12%);
+    inset 0 1px 4px rgb(23 32 51 / 16%),
+    0 4px 12px rgb(23 32 51 / 14%);
 }
 
 .app-shell .action-accent,
@@ -4048,16 +4175,16 @@ html[data-theme="dark"] .history-delete.is-sealed .is-done {
 .app-shell .action-accent {
   background: linear-gradient(180deg, rgb(96 165 250 / 92%), rgb(37 99 235 / 78%));
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 45%),
-    0 10px 24px rgb(37 99 235 / 28%);
+    inset 0 1px 4px rgb(15 40 90 / 28%),
+    0 4px 12px rgb(37 99 235 / 28%);
 }
 
 .app-shell .action-primary {
   background: linear-gradient(180deg, rgb(45 168 158 / 92%), rgb(15 118 110 / 78%));
   color: #fff;
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 45%),
-    0 10px 24px rgb(15 118 110 / 28%);
+    inset 0 1px 4px rgb(4 40 36 / 28%),
+    0 4px 12px rgb(15 118 110 / 28%);
 }
 
 .app-shell .action-primary span {
@@ -4069,8 +4196,8 @@ html[data-theme="dark"] .history-delete.is-sealed .is-done {
   background: linear-gradient(180deg, rgb(255 255 255 / 72%), rgb(255 255 255 / 40%));
   color: #172033;
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 85%),
-    0 10px 24px rgb(23 32 51 / 10%);
+    inset 0 1px 4px rgb(23 32 51 / 16%),
+    0 4px 12px rgb(23 32 51 / 14%);
 }
 
 .app-shell .action-neutral {
@@ -4299,7 +4426,6 @@ html[data-theme="dark"] .copy-action.is-copied .is-done {
   position: fixed;
   inset: 0;
   z-index: 40;
-  view-transition-name: xray-veil;
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -4389,7 +4515,7 @@ html[data-theme="dark"] .copy-action.is-copied .is-done {
 }
 
 .diagnosis {
-  animation: diagnosis-in 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: none;
 }
 
 .ai-veil.is-leaving {
@@ -4408,14 +4534,8 @@ html[data-theme="dark"] .copy-action.is-copied .is-done {
 }
 
 @keyframes diagnosis-in {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes veil-scan {
@@ -4451,6 +4571,7 @@ html[data-theme="dark"] .copy-action.is-copied .is-done {
   gap: 0;
   flex: 1;
   min-height: 0;
+  padding-top: 0;
   overflow: visible;
   animation: none;
 }
@@ -4530,15 +4651,7 @@ html[data-theme="dark"] .copy-action.is-copied .is-done {
   gap: 0;
 }
 
-.app-shell .chat-header .chat-scan-label {
-  font-size: 1.15rem;
-  font-weight: 750;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-  color: #172033;
-}
-
-html[data-theme="dark"] .app-shell .chat-header .chat-scan-label {
+html[data-theme="dark"] .chat-screen .chat-scan-label {
   color: #fff;
 }
 
@@ -4570,8 +4683,8 @@ html[data-theme="dark"] .app-shell .chat-header .chat-scan-label {
   backdrop-filter: blur(18px) saturate(160%);
   -webkit-backdrop-filter: blur(18px) saturate(160%);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 85%),
-    0 10px 24px rgb(23 32 51 / 10%);
+    inset 0 1px 4px rgb(23 32 51 / 18%),
+    0 4px 12px rgb(23 32 51 / 16%);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.38s ease, color 0.35s ease;
@@ -4594,7 +4707,7 @@ html[data-theme="dark"] .chat-clear-btn.is-on:hover {
   overflow-y: hidden;
   overscroll-behavior: none;
   touch-action: none;
-  padding: 28px 28px 44px 28px;
+  padding: 8px 8px 28px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -5178,6 +5291,19 @@ html[data-theme="dark"] .template-dropdown-menu {
   30% { transform: scale(0.95); }
   60% { transform: scale(1.02); }
   100% { transform: scale(1); }
+}
+
+@keyframes tab-drop {
+  0% { transform: scale(1); }
+  30% { transform: scale(0.78); }
+  58% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes tab-stretch {
+  0% { transform: scaleX(1); }
+  42% { transform: scaleX(1.2); }
+  100% { transform: scaleX(1); }
 }
 
 @keyframes drop-twitch-field {

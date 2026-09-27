@@ -1,6 +1,5 @@
 import { Button, Typography } from '@maxhub/max-ui'
 import { useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { api } from '../api/client.ts'
 import { errorText } from '../api/errors.ts'
 import type { CanonicalField, Coverage, Mapping as MappingValue, UploadResponse } from '../api/types.ts'
@@ -225,14 +224,11 @@ export function MappingScreen({
       {ready ? null : (
         <Typography.Body variant="medium">Нужны сумма и дата или статус.</Typography.Body>
       )}
-      {createPortal(
-        <div className="mapping-cta">
-          <Button className="action action-primary" type="button" size="large" stretched variant="primary" disabled={!ready} loading={busy} onClick={() => void enlighten()}>
-            Сделать снимок
-          </Button>
-        </div>,
-        document.querySelector('.app-shell') ?? document.body,
-      )}
+      <div className="mapping-cta">
+        <Button className="action action-primary" type="button" size="large" stretched variant="primary" disabled={!ready} loading={busy} onClick={() => void enlighten()}>
+          Сделать снимок
+        </Button>
+      </div>
     </div>
   )
 }
