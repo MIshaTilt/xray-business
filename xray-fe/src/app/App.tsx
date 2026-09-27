@@ -62,7 +62,6 @@ function Shell() {
   const location = useLocation()
   const navigate = useNavigate()
   const flow = useFlow()
-  const [hostBack, setHostBack] = useState(false)
   const tab = tabOf(location.pathname)
   const inChat = location.pathname.endsWith('/chat')
   const onDiagnosis = /^\/scan\/[^/]+$/.test(location.pathname)
@@ -71,7 +70,6 @@ function Shell() {
     /\/scan\/[^/]+\/(metric|missing|chat)/.test(location.pathname) ||
     location.pathname.startsWith('/processing/')
   const showBackBtn =
-    !hostBack &&
     !inChat &&
     (nested || onDiagnosis || onCompare || location.pathname.startsWith('/mapping') || location.pathname.startsWith('/templates'))
   const showTabs = true
@@ -117,7 +115,6 @@ function Shell() {
 
   useEffect(() => {
     initBridge()
-    setHostBack(Boolean(window.WebApp?.initData && window.WebApp.BackButton))
   }, [])
 
   useEffect(() => {
