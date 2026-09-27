@@ -323,6 +323,10 @@ function HomePage() {
         go(navigate, '/mapping')
       }}
       onTemplates={() => go(navigate, '/templates')}
+      onAmoReady={(snapshotId) => {
+        flow.setLastScanId(snapshotId)
+        go(navigate, `/scan/${snapshotId}`)
+      }}
     />
   )
 }

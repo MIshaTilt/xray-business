@@ -3133,6 +3133,27 @@ html[data-theme="dark"] .app-shell .action-primary {
   margin-bottom: 28px;
 }
 
+.amo-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.amo-input {
+  width: 100%;
+  border: 1px solid var(--line, #d5dde6);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font: inherit;
+  background: #fff;
+  color: inherit;
+}
+
+html[data-theme="dark"] .amo-input {
+  background: #1c2430;
+}
+
 .home-actions {
   position: relative;
   z-index: 8;
