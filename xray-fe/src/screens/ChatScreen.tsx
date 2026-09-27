@@ -698,11 +698,7 @@ export function ChatScreen({
       {navSlot ? createPortal(clearIcon, navSlot) : null}
       {streaming ? <span className="chat-scan" aria-hidden="true" /> : null}
       <p className="chat-scan-label">
-        {comparison
-          ? 'Сравнение срезов'
-          : diagnosis?.scan_no
-            ? `Снимок №${diagnosis.scan_no}`
-            : 'Снимок'}
+        {comparison ? 'Сравнение срезов' : 'Снимок'}
       </p>
 
       <div ref={listRef} className={`chat-messages-container${clearing ? ' is-clearing' : ''}`}>

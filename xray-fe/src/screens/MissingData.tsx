@@ -7,7 +7,6 @@ import { Notice } from '../widgets/Notice.tsx'
 
 export function MissingData({ snapshotId }: { snapshotId: string }) {
   const [skipped, setSkipped] = useState<MetricId[]>([])
-  const [scanNo, setScanNo] = useState<number | undefined>()
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -17,7 +16,6 @@ export function MissingData({ snapshotId }: { snapshotId: string }) {
       .then((result) => {
         if (!alive) return
         setSkipped(result.coverage.skipped)
-        setScanNo(result.scan_no)
       })
       .catch((reason: unknown) => {
         if (alive) setError(errorText(reason))
@@ -30,9 +28,7 @@ export function MissingData({ snapshotId }: { snapshotId: string }) {
   return (
     <div className="stack">
       <div className="lead">
-        <h1>
-          {scanNo ? `Чего не хватило по снимку №${scanNo}` : 'Чего не хватило'}
-        </h1>
+        <h1>Чего не хватило</h1>
         <p className="home-hint">Показатели, которые не посчитались: в таблице нет нужных колонок.</p>
       </div>
       {error ? <Notice tone="error">{error}</Notice> : null}
