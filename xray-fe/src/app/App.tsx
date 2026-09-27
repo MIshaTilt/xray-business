@@ -133,39 +133,9 @@ function Shell() {
       )
     }
     const onPointerDown = (event: PointerEvent) => {
-      if (document.querySelector('.download-sheet')) {
-        if (overTabBar(event)) {
-          event.preventDefault()
-          event.stopPropagation()
-        }
-        return
-      }
-      if (event.target instanceof Element && event.target.closest('.tab-bar')) return
-      const bar = document.querySelector('.tab-bar')
-      if (!bar) return
-      const barRect = bar.getBoundingClientRect()
-      if (
-        event.clientX < barRect.left ||
-        event.clientX > barRect.right ||
-        event.clientY < barRect.top ||
-        event.clientY > barRect.bottom
-      ) {
-        return
-      }
-      const hit = [...bar.querySelectorAll<HTMLButtonElement>('.tab-item')].find((button) => {
-        const rect = button.getBoundingClientRect()
-        return (
-          event.clientX >= rect.left &&
-          event.clientX <= rect.right &&
-          event.clientY >= rect.top &&
-          event.clientY <= rect.bottom
-        )
-      })
-      if (!hit) return
+      if (!document.querySelector('.download-sheet') || !overTabBar(event)) return
       event.preventDefault()
       event.stopPropagation()
-      playTabDrop(hit)
-      hit.click()
     }
     const onClick = (event: MouseEvent) => {
       if (!document.querySelector('.download-sheet') || !overTabBar(event)) return

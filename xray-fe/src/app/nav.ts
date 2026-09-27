@@ -6,6 +6,14 @@ type GoOptions = { replace?: boolean }
 let activeTransition: ViewTransition | null = null
 let nextRun: (() => void) | null = null
 let queuedFrame = 0
+let hostLeaving = false
+let hostTimer = 0
+
+function insideHostWebView() {
+  const app = window.WebApp ?? window.Telegram?.WebApp
+  if (typeof app?.initData === 'string' && app.initData.length > 0) return true
+  return /\bwv\b/.test(navigator.userAgent)
+}
 
 function stageElement() {
   const stage = document.querySelector('.page-stage:not([data-page-ghost])')
@@ -28,12 +36,10 @@ function begin() {
   nextRun = null
   if (!run) return
   clearStageMotion()
-  const stage = stageElement()
   let pending: ViewTransition
   try {
     pending = document.startViewTransition(() => {
       flushSync(run)
-      if (stage instanceof HTMLElement) stage.style.viewTransitionName = 'xray-page-in'
     })
   } catch {
     clearStageMotion()
@@ -41,12 +47,68 @@ function begin() {
     return
   }
   activeTransition = pending
+  void pending.ready.catch(() => {})
   void pending.finished.finally(() => {
     if (activeTransition !== pending) return
     activeTransition = null
     clearStageMotion()
     if (nextRun) queue()
-  })
+  }).catch(() => {})
+}
+
+function finishHost() {
+  if (!hostLeaving) return
+  hostLeaving = false
+  window.clearTimeout(hostTimer)
+  const stage = stageElement()
+  stage?.getAnimations().forEach((motion) => motion.cancel())
+  if (stage) {
+    stage.style.pointerEvents = ''
+    stage.style.opacity = ''
+    stage.style.transform = ''
+  }
+  const run = nextRun
+  nextRun = null
+  if (run) flushSync(run)
+  const next = stageElement()
+  if (!next) return
+  const enter = next.animate(
+    [
+      { opacity: 0, transform: 'translateY(28px)' },
+      { opacity: 1, transform: 'translateY(0px)' },
+    ],
+    { duration: 320, easing: 'ease', fill: 'forwards' },
+  )
+  const clear = () => {
+    enter.cancel()
+    next.style.opacity = ''
+    next.style.transform = ''
+  }
+  window.setTimeout(clear, 340)
+  void enter.finished.then(clear).catch(() => undefined)
+}
+
+function beginHost() {
+  const stage = stageElement()
+  if (!stage) {
+    const run = nextRun
+    nextRun = null
+    if (run) flushSync(run)
+    return
+  }
+  if (hostLeaving) return
+  hostLeaving = true
+  stage.getAnimations().forEach((motion) => motion.cancel())
+  stage.style.pointerEvents = 'none'
+  const leave = stage.animate(
+    [
+      { opacity: 1, transform: 'translateY(0px)' },
+      { opacity: 0, transform: 'translateY(28px)' },
+    ],
+    { duration: 320, easing: 'ease', fill: 'forwards' },
+  )
+  hostTimer = window.setTimeout(() => finishHost(), 340)
+  void leave.finished.then(() => finishHost()).catch(() => undefined)
 }
 
 function queue() {
@@ -61,6 +123,10 @@ export function go(navigate: NavigateFunction, to: To | number, options?: GoOpti
   nextRun = () => {
     if (typeof to === 'number') navigate(to)
     else navigate(to, options)
+  }
+  if (insideHostWebView()) {
+    beginHost()
+    return
   }
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   if (reduce || !document.startViewTransition) {

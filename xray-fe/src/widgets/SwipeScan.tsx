@@ -70,11 +70,21 @@ export function SwipeScan({
   useLayoutEffect(() => {
     const node = rootRef.current
     if (!node) return
-    const measure = () => setCardWidth(node.clientWidth)
+    let frame = 0
+    const measure = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        const width = Math.round(node.clientWidth)
+        setCardWidth((current) => (current === width ? current : width))
+      })
+    }
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(node)
-    return () => observer.disconnect()
+    return () => {
+      cancelAnimationFrame(frame)
+      observer.disconnect()
+    }
   }, [])
 
   useEffect(() => {
