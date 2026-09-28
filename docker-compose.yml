@@ -32,13 +32,16 @@ services:
       DEBUG: ${DEBUG:-false}
       SECRET_KEY: ${SECRET_KEY:-django-insecure-xray-business-hackathon-2026}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-*}
-      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost,http://127.0.0.1,http://localhost:5173}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost,http://127.0.0.1,http://localhost:5173,https://xray-business-bot.online,http://87.120.165.142}
       DB_ENGINE: postgres
       POSTGRES_DB: ${POSTGRES_DB:-xray_db}
       POSTGRES_USER: ${POSTGRES_USER:-xray_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-xray_secret_password}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-http://144.31.157.209:8317/v1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-sk-TnEv9ZcsfpQN3n40amQjP377qkMOOndbkIyrOveacIUX6}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gemini-3.8-flash-high}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       MAX_BOT_TOKEN: ${MAX_BOT_TOKEN:-}
       CORS_ALLOW_ALL_ORIGINS: "true"
