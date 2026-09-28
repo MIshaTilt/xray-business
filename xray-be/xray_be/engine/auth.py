@@ -98,20 +98,6 @@ def cleanup_expired_guest_data(max_age_seconds: int = 86400) -> int:
     expired_ids = list(expired_snaps.values_list("id", flat=True))
 
     if expired_ids:
-        # Delete from disk/in-memory store if views_api is imported
-        try:
-            from engine.views_api import SNAPSHOTS_STORE, save_disk_store
-            changed = False
-            for sid in expired_ids:
-                s_key = str(sid)
-                if s_key in SNAPSHOTS_STORE:
-                    del SNAPSHOTS_STORE[s_key]
-                    changed = True
-            if changed:
-                save_disk_store()
-        except Exception:
-            pass
-
         count, _ = expired_snaps.delete()
         deleted_count += len(expired_ids)
 

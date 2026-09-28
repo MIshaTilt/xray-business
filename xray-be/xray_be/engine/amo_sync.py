@@ -69,7 +69,7 @@ def public_status(connection: AmoConnection | None) -> dict:
 
 
 def sync_connection(connection: AmoConnection) -> str:
-    from engine.views_api import SNAPSHOTS_STORE, get_coverage, next_scan_no, save_disk_store
+    from engine.views_api import get_coverage, next_scan_no
 
     try:
         host, rows = fetch_lead_rows(connection.account, _token(connection))
@@ -105,39 +105,6 @@ def sync_connection(connection: AmoConnection) -> str:
     scan_no = next_scan_no()
     ident_user = connection.user
 
-    SNAPSHOTS_STORE[snapshot_id] = {
-        "snapshot_id": snapshot_id,
-        "user_id": ident_user.max_user_id if ident_user else None,
-        "guest_session": connection.guest_session,
-        "is_guest": ident_user is None,
-        "scan_no": scan_no,
-        "status": "ready",
-        "progress": 100,
-        "error": "",
-        "created_at": datetime.datetime.now().isoformat(),
-        "filename": filename,
-        "source": "amocrm",
-        "diagnosis": {
-            "snapshot_id": snapshot_id,
-            "headline": headline,
-            "card_title": card_title,
-            "body": body,
-            "findings": findings,
-            "coverage": coverage,
-            "period": {"from": period_from, "to": period_to},
-            "totals": {
-                "deals": len(deals) + len(rejected),
-                "amount": f"{total_amount:.2f}",
-                "accepted": len(deals),
-                "rejected": len(rejected),
-            },
-            "ok": ok_list,
-            "low_sample": low_sample,
-        },
-        "all_metrics": all_metrics,
-    }
-    save_disk_store()
-
     snap = Snapshot.objects.create(
         id=snapshot_id,
         user=ident_user,
@@ -150,7 +117,12 @@ def sync_connection(connection: AmoConnection) -> str:
         body=body,
         findings=findings,
         coverage=coverage,
-        totals=SNAPSHOTS_STORE[snapshot_id]["diagnosis"]["totals"],
+        totals={
+            "deals": len(deals) + len(rejected),
+            "amount": f"{total_amount:.2f}",
+            "accepted": len(deals),
+            "rejected": len(rejected),
+        },
         all_metrics=all_metrics,
         ok_list=ok_list,
         low_sample=low_sample,

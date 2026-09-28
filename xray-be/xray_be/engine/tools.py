@@ -126,39 +126,9 @@ def ensure_snapshot_deals(snapshot_id: str):
     from engine.normalizer import normalize_records
 
     snap_obj = Snapshot.objects.filter(Q(id=s_id) | Q(id=clean_id)).first()
-    filename = snap_obj.filename if snap_obj else ""
-
-    # Check SNAPSHOTS_STORE if not in DB or filename missing
-    if not filename or not snap_obj:
-        try:
-            from engine.views_api import SNAPSHOTS_STORE, load_disk_store
-            load_disk_store()
-            s_dict = SNAPSHOTS_STORE.get(s_id) or SNAPSHOTS_STORE.get(clean_id)
-            if s_dict:
-                filename = s_dict.get('filename', '')
-                if not snap_obj:
-                    diag = s_dict.get('diagnosis', {})
-                    snap_obj, _ = Snapshot.objects.get_or_create(
-                        id=s_id,
-                        defaults={
-                            'scan_no': s_dict.get('scan_no'),
-                            'filename': filename,
-                            'headline': diag.get('headline', ''),
-                            'body': diag.get('body', ''),
-                            'findings': diag.get('findings', []),
-                            'coverage': diag.get('coverage', {}),
-                            'totals': diag.get('totals', {}),
-                            'all_metrics': s_dict.get('all_metrics', {}),
-                            'ok_list': diag.get('ok', []),
-                            'low_sample': diag.get('low_sample', []),
-                            'is_guest': False,
-                        }
-                    )
-        except Exception as e:
-            print(f"[RECOVERY ERROR] Failed to recover snapshot metadata: {e}")
-
     if not snap_obj:
         return
+    filename = snap_obj.filename or ""
 
     all_rows = []
     cols = []

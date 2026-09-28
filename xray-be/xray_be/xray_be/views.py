@@ -340,10 +340,9 @@ def chat_stream(request):
                 try:
                     cmp_uuid1 = uuid.uuid5(uuid.NAMESPACE_DNS, f"comparison:{snapshot_id}:{target_snapshot_id}")
                     cmp_uuid2 = uuid.uuid5(uuid.NAMESPACE_DNS, f"comparison:{target_snapshot_id}:{snapshot_id}")
-                    from engine.views_api import SNAPSHOTS_STORE
-                    if Snapshot.objects.filter(id=cmp_uuid1).exists() or str(cmp_uuid1) in SNAPSHOTS_STORE:
+                    if Snapshot.objects.filter(id=cmp_uuid1).exists():
                         comparison_id = str(cmp_uuid1)
-                    elif Snapshot.objects.filter(id=cmp_uuid2).exists() or str(cmp_uuid2) in SNAPSHOTS_STORE:
+                    elif Snapshot.objects.filter(id=cmp_uuid2).exists():
                         comparison_id = str(cmp_uuid2)
                     else:
                         comparison_id = str(cmp_uuid1)
