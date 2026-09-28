@@ -203,12 +203,18 @@ def load_disk_store():
     if dropped:
         save_disk_store()
 
+import threading
+
+_store_lock = threading.Lock()
+
 def save_disk_store():
     try:
         STORE_FILE.parent.mkdir(parents=True, exist_ok=True)
         tmp = STORE_FILE.with_suffix('.json.tmp')
+        with _store_lock:
+            data = dict(SNAPSHOTS_STORE)
         with open(tmp, 'w', encoding='utf-8') as f:
-            json.dump(SNAPSHOTS_STORE, f, ensure_ascii=False, indent=2)
+            json.dump(data, f, ensure_ascii=False, indent=2)
             f.flush()
             os.fsync(f.fileno())
         os.replace(tmp, STORE_FILE)

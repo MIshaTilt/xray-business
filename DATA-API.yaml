@@ -1,0 +1,262 @@
+# Конфигурация проверок API платформы автоматической оценки
+version: "1.0.0"
+solution_name: "X-Ray: Анализ бизнес-метрик и рентген продаж"
+team_id: "xray-team"
+base_url: "https://xray-business-bot.online"
+
+# Роли пользователей и тестовые учетные записи:
+# 1. guest - Анонимный гость (заголовок: X-Guest-Session: evaluation_guest_session_1)
+# 2. user  - Авторизованный пользователь MAX (заголовок: X-Max-Init-Data: user=%7B%22id%22%3A1001%2C%22first_name%22%3A%22EvaluationUser%22%7D)
+# 3. admin - Администратор платформы (Basic Auth или сессия в /admin/ с логином admin и паролем admin)
+
+checks:
+  # 1. Получение списка шаблонов
+  - name: "Получение списка отраслевых шаблонов данных"
+    method: "GET"
+    path: "/api/templates"
+    role: "guest"
+    headers:
+      Accept: "application/json"
+    expected_status:
+      - 200
+    expected_response:
+      content_type: "application/json"
+      required_fields:
+        - "items"
+      schema:
+        type: "object"
+        properties:
+          items:
+            type: "array"
+            items:
+              type: "object"
+              required:
+                - "id"
+                - "name"
+                - "label"
+                - "size_bytes"
+
+  # 2. Загрузка шаблона данных
+  - name: "Загрузка шаблона продаж (B2B срезы)"
+    method: "POST"
+    path: "/api/templates/b2b_sales_before.csv/load"
+    role: "user"
+    headers:
+      Accept: "application/json"
+      X-Max-Init-Data: "user=%7B%22id%22%3A1001%2C%22first_name%22%3A%22EvaluationUser%22%7D"
+    expected_status:
+      - 200
+    expected_response:
+      content_type: "application/json"
+      required_fields:
+        - "upload_id"
+        - "filename"
+        - "columns"
+        - "sample_rows"
+        - "suggested_mapping"
+      schema:
+        type: "object"
+        properties:
+          upload_id:
+            type: "string"
+          filename:
+            type: "string"
+          columns:
+            type: "array"
+          suggested_mapping:
+            type: "object"
+
+  # 3. Расчет аналитического снимка
+  - name: "Создание и расчет аналитического снимка (Snapshot)"
+    method: "POST"
+    path: "/api/snapshots"
+    role: "user"
+    headers:
+      Content-Type: "application/json"
+      Accept: "application/json"
+      X-Max-Init-Data: "user=%7B%22id%22%3A1001%2C%22first_name%22%3A%22EvaluationUser%22%7D"
+    body:
+      upload_id: "05647a02-7aca-4ee1-9ed8-47c9c90f6273"
+      mapping:
+        amount: "total_amount"
+        status: "status"
+        created_at: "order_date"
+        client: "customer_name"
+        contact: "phone"
+        manager: "manager"
+        list_price: "unit_price"
+        discount_pct: "Скидка, % (авто)"
+        first_contact_at: "first_response_time"
+        source: "channel"
+        deal_id: "order_id"
+    expected_status:
+      - 200
+      - 201
+    expected_response:
+      content_type: "application/json"
+      required_fields:
+        - "snapshot_id"
+        - "status"
+      schema:
+        type: "object"
+        properties:
+          snapshot_id:
+            type: "string"
+          status:
+            type: "string"
+            enum: ["ready", "processing"]
+
+  # 4. Список снимков пользователя
+  - name: "Получение истории снимков текущего пользователя"
+    method: "GET"
+    path: "/api/snapshots"
+    role: "user"
+    headers:
+      Accept: "application/json"
+      X-Max-Init-Data: "user=%7B%22id%22%3A1001%2C%22first_name%22%3A%22EvaluationUser%22%7D"
+    expected_status:
+      - 200
+    expected_response:
+      content_type: "application/json"
+      required_fields:
+        - "items"
+      schema:
+        type: "object"
+        properties:
+          items:
+            type: "array"
+
+  # 5. Получение диагноза и выводов LLM
+  - name: "Получение итоговой бизнес-диагностики снимка"
+    method: "GET"
+    path: "/api/snapshots/0d201a2e-b8ad-4092-8383-7b0c91ba71f2/diagnosis"
+    role: "user"
+    headers:
+      Accept: "application/json"
+      X-Max-Init-Data: "user=%7B%22id%22%3A1001%2C%22first_name%22%3A%22EvaluationUser%22%7D"
+    expected_status:
+      - 200
+    expected_response:
+      content_type: "application/json"
+      required_fields:
+        - "snapshot_id"
+        - "card_title"
+        - "headline"
+        - "totals"
+        - "coverage"
+      schema:
+        type: "object"
+        properties:
+          snapshot_id:
+            type: "string"
+          headline:
+            type: "string"
+          card_title:
+            type: "string"
+          total_saved_money:
+            type: "number"
+          totals:
+            type: "object"
+
+  # 6. Детализация метрики
+  - name: "Получение расшифровки метрики 'Зависшие сделки' (stagnation)"
+    method: "GET"
+    path: "/api/snapshots/0d201a2e-b8ad-4092-8383-7b0c91ba71f2/metrics/stagnation"
+    role: "user"
+    headers:
+      Accept: "application/json"
+      X-Max-Init-Data: "user=%7B%22id%22%3A1001%2C%22first_name%22%3A%22EvaluationUser%22%7D"
+    expected_status:
+      - 200
+    expected_response:
+      content_type: "application/json"
+      required_fields:
+        - "metric_id"
+        - "verdict"
+        - "value"
+        - "unit"
+      schema:
+        type: "object"
+        properties:
+          metric_id:
+            type: "string"
+          verdict:
+            type: "string"
+          value:
+            type: "number"
+
+  # 7. Сравнение срезов продаж ДО и ПОСЛЕ
+  - name: "Расчет сравнения периодов продаж"
+    method: "GET"
+    path: "/api/snapshots/compare"
+    role: "user"
+    headers:
+      Accept: "application/json"
+      X-Max-Init-Data: "user=%7B%22id%22%3A1001%2C%22first_name%22%3A%22EvaluationUser%22%7D"
+    query_params:
+      base_id: "0d201a2e-b8ad-4092-8383-7b0c91ba71f2"
+      target_id: "0d201a2e-b8ad-4092-8383-7b0c91ba71f2"
+    expected_status:
+      - 200
+    expected_response:
+      content_type: "application/json"
+      required_fields:
+        - "comparison_id"
+        - "summary"
+        - "metrics_diff"
+        - "totals_diff"
+      schema:
+        type: "object"
+        properties:
+          comparison_id:
+            type: "string"
+          summary:
+            type: "object"
+          metrics_diff:
+            type: "array"
+
+  # 8. Потоковый чат с бизнес-ассистентом
+  - name: "Запрос к AI-ассистенту через Server-Sent Events (SSE)"
+    method: "POST"
+    path: "/api/chat/stream/"
+    role: "user"
+    headers:
+      Content-Type: "application/json"
+      Accept: "text/event-stream"
+      X-Max-Init-Data: "user=%7B%22id%22%3A1001%2C%22first_name%22%3A%22EvaluationUser%22%7D"
+    body:
+      message: "Где воронка теряет больше всего выручки?"
+      snapshot_id: "0d201a2e-b8ad-4092-8383-7b0c91ba71f2"
+    expected_status:
+      - 200
+    expected_response:
+      content_type: "text/event-stream"
+
+  # 9. Проверка статуса amoCRM
+  - name: "Проверка статуса подключения amoCRM"
+    method: "GET"
+    path: "/api/amo"
+    role: "user"
+    headers:
+      Accept: "application/json"
+      X-Max-Init-Data: "user=%7B%22id%22%3A1001%2C%22first_name%22%3A%22EvaluationUser%22%7D"
+    expected_status:
+      - 200
+    expected_response:
+      content_type: "application/json"
+      required_fields:
+        - "connected"
+      schema:
+        type: "object"
+        properties:
+          connected:
+            type: "boolean"
+
+  # 10. Проверка доступа к панели администратора
+  - name: "Доступ к веб-интерфейсу администратора"
+    method: "GET"
+    path: "/admin/"
+    role: "admin"
+    expected_status:
+      - 200
+      - 302
