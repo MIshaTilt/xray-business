@@ -816,6 +816,8 @@ class LoadTemplateView(APIView):
     def post(self, request, template_id):
         tmpl_dir = Path(__file__).resolve().parent.parent.parent.parent / 'templates'
         target_file = tmpl_dir / template_id
+        if not target_file.exists() and (tmpl_dir / f"{template_id}.csv").exists():
+            target_file = tmpl_dir / f"{template_id}.csv"
 
         # Security check: ensure path stays inside templates
         if not target_file.exists() or not target_file.is_file():
@@ -1029,13 +1031,23 @@ def cached_comparison(id_a: str, id_b: str) -> dict | None:
 class SnapshotCompareView(APIView):
     """
     GET /api/snapshots/compare?base_id=<uuid>&target_id=<uuid>
+    POST /api/snapshots/compare {"base_snapshot_id": "<uuid>", "target_snapshot_id": "<uuid>"}
     Compares two snapshots (Before vs After) for the authenticated user / guest session.
     """
     def get(self, request):
         cleanup_expired_guest_data()
-        base_id = request.query_params.get('base_id')
-        target_id = request.query_params.get('target_id')
+        base_id = request.query_params.get('base_id') or request.query_params.get('base_snapshot_id')
+        target_id = request.query_params.get('target_id') or request.query_params.get('target_snapshot_id')
+        return self._compare(request, base_id, target_id)
 
+    def post(self, request):
+        cleanup_expired_guest_data()
+        data = request.data if isinstance(request.data, dict) else {}
+        base_id = data.get('base_snapshot_id') or data.get('base_id') or request.query_params.get('base_id')
+        target_id = data.get('target_snapshot_id') or data.get('target_id') or request.query_params.get('target_id')
+        return self._compare(request, base_id, target_id)
+
+    def _compare(self, request, base_id, target_id):
         if not base_id or not target_id:
             return Response(
                 {'code': 'bad_request', 'message': 'Требуются параметры base_id и target_id'},
