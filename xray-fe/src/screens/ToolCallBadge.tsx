@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import type { ToolCallData } from './ChatScreen.tsx'
+import { DataTable } from '../widgets/DataTable.tsx'
 
 export function ToolCallBadge({ toolCall }: { toolCall: ToolCallData }) {
   const [open, setOpen] = useState(false)
@@ -106,7 +107,7 @@ export function ToolCallBadge({ toolCall }: { toolCall: ToolCallData }) {
                   {parsedResult.rows.length === 0 ? (
                     <div className="tool-sql-empty">0 строк найдено</div>
                   ) : (
-                    <div className="tool-sql-table-wrap">
+                    <DataTable tone="chat">
                       <table className="tool-sql-table">
                         <thead>
                           <tr>
@@ -129,7 +130,7 @@ export function ToolCallBadge({ toolCall }: { toolCall: ToolCallData }) {
                           ))}
                         </tbody>
                       </table>
-                    </div>
+                    </DataTable>
                   )}
                 </div>
               ) : (

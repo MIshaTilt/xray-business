@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { DataTable } from './DataTable.tsx'
 
 export interface ChartItem {
   label: string
@@ -125,7 +126,7 @@ export function ChartCard({
 
       <div className="chart-card-body">
         {viewMode === 'table' ? (
-          <div className="chart-table-wrapper">
+          <DataTable tone="chat">
             <table className="chart-mini-table">
               <thead>
                 <tr>
@@ -154,7 +155,7 @@ export function ChartCard({
                 ))}
               </tbody>
             </table>
-          </div>
+          </DataTable>
         ) : effectiveType === 'donut' ? (
           <DonutChartWidget
             items={items}

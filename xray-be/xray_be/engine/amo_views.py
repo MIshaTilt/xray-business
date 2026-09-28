@@ -7,14 +7,15 @@ from rest_framework.views import APIView
 from rest_framework import status
 
 from engine.amo_client import AmoError, fetch_lead_rows
-from engine.amo_sync import connection_for, public_status, save_token, sync_all, sync_connection
+from engine.amo_sync import connections_for, public_session, save_token, sync_all, sync_connection
 from engine.auth import get_request_identity
 
 
 class AmoStatusView(APIView):
     def get(self, request):
         ident = get_request_identity(request)
-        return Response(public_status(connection_for(ident)))
+        sessions = [public_session(item) for item in connections_for(ident)]
+        return Response({"connected": bool(sessions), "sessions": sessions})
 
 
 class AmoConnectView(APIView):
@@ -28,31 +29,23 @@ class AmoConnectView(APIView):
             return Response({"code": "crm_auth", "message": exc.message}, status=status.HTTP_400_BAD_REQUEST)
         connection = save_token(ident, host, token)
         if not rows:
-            connection.last_error = "Кабинет подключен. В сделках нет бюджета. В карточке сделки заполните поле «Бюджет» суммой больше нуля и нажмите «Обновить»."
+            connection.last_error = "Кабинет подключен. В сделках нет бюджета. Заполните поле «Бюджет» и заберите сделки из меню."
             connection.save(update_fields=["last_error", "account"])
-            payload = public_status(connection)
+            payload = public_session(connection)
+            payload["connected"] = True
             payload["message"] = connection.last_error
             return Response(payload, status=status.HTTP_200_OK)
-        try:
-            snapshot_id = sync_connection(connection)
-        except AmoError as exc:
-            return Response({"code": "crm_unavailable", "message": exc.message}, status=status.HTTP_502_BAD_GATEWAY)
-        except Exception as exc:
-            print(f"[AMO CONNECT] {exc}")
-            return Response(
-                {"code": "crm_unavailable", "message": "Сделки прочитаны, но снимок не собрался. Повторите ещё раз."},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
-        connection.refresh_from_db()
-        payload = public_status(connection)
-        payload["snapshot_id"] = snapshot_id
+        payload = public_session(connection)
+        payload["connected"] = True
         return Response(payload, status=status.HTTP_201_CREATED)
 
 
 class AmoSyncView(APIView):
     def post(self, request):
         ident = get_request_identity(request)
-        connection = connection_for(ident)
+        connection_id = request.data.get("id")
+        found = connections_for(ident)
+        connection = found.filter(id=connection_id).first() if connection_id else found.first()
         if connection is None:
             return Response(
                 {"code": "not_found", "message": "Сначала подключите amoCRM."},

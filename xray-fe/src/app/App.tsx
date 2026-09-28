@@ -196,6 +196,27 @@ function Shell() {
     return bindBack(pop)
   }, [pop, showBackBtn])
 
+  useEffect(() => {
+    const root = document.documentElement
+    const apply = () => {
+      const viewport = window.visualViewport
+      const inset = viewport
+        ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+        : 0
+      root.style.setProperty('--keyboard-inset', `${Math.round(inset)}px`)
+    }
+    apply()
+    window.visualViewport?.addEventListener('resize', apply)
+    window.visualViewport?.addEventListener('scroll', apply)
+    window.addEventListener('resize', apply)
+    return () => {
+      window.visualViewport?.removeEventListener('resize', apply)
+      window.visualViewport?.removeEventListener('scroll', apply)
+      window.removeEventListener('resize', apply)
+      root.style.removeProperty('--keyboard-inset')
+    }
+  }, [])
+
   return (
     <Panel mode="secondary" className="app-panel">
       <LiveWallpaper />
@@ -323,10 +344,6 @@ function HomePage() {
         go(navigate, '/mapping')
       }}
       onTemplates={() => go(navigate, '/templates')}
-      onAmoReady={(snapshotId) => {
-        flow.setLastScanId(snapshotId)
-        go(navigate, `/scan/${snapshotId}`)
-      }}
     />
   )
 }
@@ -468,8 +485,18 @@ function ChatGatePage() {
 }
 
 function MenuPage() {
+  const navigate = useNavigate()
   const flow = useFlow()
-  return <Menu dark={flow.dark} onToggleTheme={flow.toggleTheme} />
+  return (
+    <Menu
+      dark={flow.dark}
+      onToggleTheme={flow.toggleTheme}
+      onOpenSnapshot={(snapshotId) => {
+        flow.setLastScanId(snapshotId)
+        go(navigate, `/scan/${snapshotId}`)
+      }}
+    />
+  )
 }
 
 function MappingPage() {

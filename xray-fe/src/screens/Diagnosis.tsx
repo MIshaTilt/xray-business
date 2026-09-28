@@ -1,8 +1,8 @@
 import { Button } from '@maxhub/max-ui'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { api } from '../api/client.ts'
-import { errorText } from '../api/errors.ts'
+import { api, rememberRemovedScan } from '../api/client.ts'
+import { ApiError, errorText } from '../api/errors.ts'
 import type { Diagnosis as DiagnosisData, MetricId } from '../api/types.ts'
 import { hapticSuccess } from '../bridge/index.ts'
 import { buildConclusion } from '../domain/conclusion.ts'
@@ -46,6 +46,7 @@ export function Diagnosis({
       })
       .catch((reason: unknown) => {
         if (!alive) return
+        if (reason instanceof ApiError && reason.status === 404) rememberRemovedScan(snapshotId)
         setError(errorText(reason))
         onLoaded()
       })

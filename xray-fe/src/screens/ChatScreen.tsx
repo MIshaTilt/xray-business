@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect, useMemo, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { marked } from 'marked'
 import type { Diagnosis as DiagnosisData, ComparisonResult } from '../api/types.ts'
 import { ToolCallBadge } from './ToolCallBadge.tsx'
 import { ChartCard } from '../widgets/ChartCard.tsx'
+import { DataTable } from '../widgets/DataTable.tsx'
 import { api, authHeaders } from '../api/client.ts'
 
 // Configure marked for clean inline rendering with breaks
@@ -11,6 +12,29 @@ marked.setOptions({
   breaks: true,
   gfm: true,
 })
+
+function withSameFontRuble(html: string) {
+  return html.replaceAll(
+    '₽',
+    '<span class="ruble-sign" role="img" aria-label="рубль"><span aria-hidden="true">Р</span></span>',
+  )
+}
+
+function MarkdownBody({ text }: { text: string }) {
+  const html = withSameFontRuble(marked.parse(text) as string)
+  const parts = html.split(/(<table\b[\s\S]*?<\/table>)/gi)
+  return (
+    <>
+      {parts.map((part, index) =>
+        /^<table\b/i.test(part) ? (
+          <DataTable key={index} tone="chat" tableHtml={part} />
+        ) : (
+          <span key={index} dangerouslySetInnerHTML={{ __html: part }} />
+        ),
+      )}
+    </>
+  )
+}
 
 export type ToolCallData = {
   tool_name: string
@@ -141,7 +165,7 @@ export function getSuggestedPrompts(
   const keyAccountFinding = findings.find((f) => f.metric_id === 'key_account_risk')
 
   if (stagnationFinding) {
-    const amtStr = stagnationFinding.money_impact ? ` (${stagnationFinding.money_impact} ₽)` : ''
+    const amtStr = stagnationFinding.money_impact ? ` (${stagnationFinding.money_impact} руб.)` : ''
     suggestions.push({
       label: `⏳ Зависшие сделки${amtStr}`,
       query: 'Покажи зависшие сделки, где застряли деньги, и предложи план действий для РОПа.',
@@ -226,6 +250,26 @@ export function ChatScreen({
     () => getSuggestedPrompts(diagnosis, comparison),
     [diagnosis, comparison]
   )
+
+  useEffect(() => {
+    const node = suggestionsRef.current
+    if (!node) return
+    const update = () => {
+      const max = node.scrollWidth - node.clientWidth
+      setChipEdge({
+        left: max <= 0 ? 0 : Math.min(1, node.scrollLeft / 72),
+        right: max <= 0 ? 0 : Math.min(1, (max - node.scrollLeft) / 72),
+      })
+    }
+    update()
+    node.addEventListener('scroll', update, { passive: true })
+    const observer = new ResizeObserver(update)
+    observer.observe(node)
+    return () => {
+      node.removeEventListener('scroll', update)
+      observer.disconnect()
+    }
+  }, [suggestedPrompts])
 
   const defaultGreeting = comparison || effectiveComparisonId
     ? 'Здравствуйте! Я изучил динамику между двумя срезами бизнеса. Готов ответить на любые вопросы по причинам изменений выручки, спаду или росту менеджеров, динамике зависших сделок и точкам роста.'
@@ -324,6 +368,8 @@ export function ChatScreen({
   const [sweeping, setSweeping] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
   const areaRef = useRef<HTMLTextAreaElement>(null)
+  const suggestionsRef = useRef<HTMLDivElement>(null)
+  const [chipEdge, setChipEdge] = useState({ left: 0, right: 0 })
   const clearTimer = useRef(0)
   const sweepTimer = useRef(0)
   const [navSlot, setNavSlot] = useState<HTMLElement | null>(null)
@@ -332,12 +378,17 @@ export function ChatScreen({
     setNavSlot(document.getElementById('chat-nav-actions'))
   }, [])
 
+  const markOverscroll = (box: HTMLElement) => {
+    box.classList.toggle('is-overscrolled', box.scrollTop > 1)
+  }
+
   const syncListOverflow = () => {
     const box = listRef.current
     if (!box) return
     const canScroll = box.scrollHeight > box.clientHeight + 1
     box.classList.toggle('is-scrollable', canScroll)
     if (canScroll) box.scrollTop = box.scrollHeight
+    markOverscroll(box)
   }
 
   useLayoutEffect(() => {
@@ -351,22 +402,95 @@ export function ChatScreen({
     const box = listRef.current
     const ro = box ? new ResizeObserver(syncListOverflow) : null
     if (box && ro) ro.observe(box)
+    const onScroll = () => {
+      if (box) markOverscroll(box)
+    }
+    box?.addEventListener('scroll', onScroll, { passive: true })
 
     const allowInnerScroll = (target: EventTarget | null, node: HTMLElement | null) => {
       if (!node || !target || !(target instanceof Node) || !node.contains(target)) return false
       return node.scrollHeight > node.clientHeight + 1
     }
 
+    const wideTable = (target: EventTarget | null) => {
+      if (!(target instanceof Element)) return null
+      const node = target.closest('.data-table-scroll')
+      if (!(node instanceof HTMLElement) || node.scrollWidth <= node.clientWidth + 1) return null
+      return node
+    }
+
+    let tableGesture: { id: number; x: number; y: number; axis: 'x' | 'y' | null; table: HTMLElement } | null = null
+
+    const onTouchStart = (event: TouchEvent) => {
+      const touch = event.changedTouches[0]
+      const table = wideTable(event.target)
+      tableGesture = touch && table
+        ? { id: touch.identifier, x: touch.clientX, y: touch.clientY, axis: null, table }
+        : null
+    }
+
+    const endTableGesture = () => {
+      tableGesture = null
+    }
+
     const blockPageScroll = (event: Event) => {
+      const table = wideTable(event.target)
+      if (table && event instanceof WheelEvent) {
+        if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+          table.scrollLeft += event.deltaX
+          event.preventDefault()
+          return
+        }
+        const list = listRef.current
+        if (list && list.scrollHeight > list.clientHeight + 1) {
+          list.scrollTop += event.deltaY
+          event.preventDefault()
+          return
+        }
+      }
+      if (event instanceof TouchEvent && tableGesture) {
+        const touch = Array.from(event.touches).find((item) => item.identifier === tableGesture?.id)
+        if (touch && tableGesture) {
+          const dx = touch.clientX - tableGesture.x
+          const dy = touch.clientY - tableGesture.y
+          if (!tableGesture.axis) {
+            if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return
+            tableGesture.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'
+          }
+          tableGesture.x = touch.clientX
+          tableGesture.y = touch.clientY
+          if (tableGesture.axis === 'x') {
+            tableGesture.table.scrollLeft -= dx
+            event.preventDefault()
+            return
+          }
+        }
+      }
       if (allowInnerScroll(event.target, listRef.current)) return
       if (allowInnerScroll(event.target, areaRef.current)) return
+      const bar = suggestionsRef.current
+      if (bar && event.target instanceof Node && bar.contains(event.target) && bar.scrollWidth > bar.clientWidth + 1) {
+        if (event instanceof WheelEvent) {
+          const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY
+          bar.scrollLeft += delta
+          event.preventDefault()
+        }
+        return
+      }
       event.preventDefault()
     }
 
+    document.addEventListener('touchstart', onTouchStart, { passive: true })
+    document.addEventListener('touchend', endTableGesture)
+    document.addEventListener('touchcancel', endTableGesture)
     document.addEventListener('touchmove', blockPageScroll, { passive: false })
     document.addEventListener('wheel', blockPageScroll, { passive: false })
     return () => {
       ro?.disconnect()
+      box?.removeEventListener('scroll', onScroll)
+      document.removeEventListener('touchstart', onTouchStart)
+      document.removeEventListener('touchend', endTableGesture)
+      document.removeEventListener('touchcancel', endTableGesture)
       document.removeEventListener('touchmove', blockPageScroll)
       document.removeEventListener('wheel', blockPageScroll)
     }
@@ -733,10 +857,9 @@ export function ChatScreen({
             )}
 
             {m.role === 'assistant' ? (
-              <div
-                className="chat-bubble-content markdown-body"
-                dangerouslySetInnerHTML={{ __html: marked.parse(m.content) as string }}
-              />
+              <div className="chat-bubble-content markdown-body">
+                <MarkdownBody text={m.content} />
+              </div>
             ) : (
               <div className="chat-bubble-content">{m.content}</div>
             )}
@@ -760,11 +883,7 @@ export function ChatScreen({
             )}
 
             <div className="chat-bubble-content markdown-body">
-              <span
-                dangerouslySetInnerHTML={{
-                  __html: marked.parse(currentStreamText) as string,
-                }}
-              />
+              <MarkdownBody text={currentStreamText} />
               <span className="cursor" />
             </div>
           </div>
@@ -773,7 +892,38 @@ export function ChatScreen({
 
       <div className={`chat-input-row${input.trim() ? ' has-text' : ''}`}>
         {!streaming && suggestedPrompts.length > 0 && (
-          <div className="chat-suggestions-bar" aria-label="Быстрые вопросы">
+          <div className="chat-suggestions">
+          <div
+            ref={suggestionsRef}
+            className="chat-suggestions-bar"
+            aria-label="Быстрые вопросы"
+            onPointerDown={(event) => {
+              if (event.pointerType !== 'mouse' || event.button !== 0) return
+              const bar = suggestionsRef.current
+              if (!bar || bar.scrollWidth <= bar.clientWidth + 1) return
+              const startX = event.clientX
+              const startScroll = bar.scrollLeft
+              let dragged = false
+              const move = (ev: PointerEvent) => {
+                const dx = ev.clientX - startX
+                if (Math.abs(dx) > 4) dragged = true
+                bar.scrollLeft = startScroll - dx
+              }
+              const up = () => {
+                window.removeEventListener('pointermove', move)
+                window.removeEventListener('pointerup', up)
+                if (!dragged) return
+                const stopClick = (ev: Event) => {
+                  ev.preventDefault()
+                  ev.stopPropagation()
+                  bar.removeEventListener('click', stopClick, true)
+                }
+                bar.addEventListener('click', stopClick, true)
+              }
+              window.addEventListener('pointermove', move)
+              window.addEventListener('pointerup', up)
+            }}
+          >
             {suggestedPrompts.map((p, idx) => (
               <button
                 key={idx}
@@ -783,9 +933,16 @@ export function ChatScreen({
                 disabled={streaming}
                 title={p.query}
               >
-                {p.label}
+                {p.label.replaceAll('₽', 'руб.')}
               </button>
             ))}
+          </div>
+          <span className="data-table-edge data-table-edge-left" style={{ '--edge': chipEdge.left } as CSSProperties}>
+            <span className="data-table-edge-blur" />
+          </span>
+          <span className="data-table-edge data-table-edge-right" style={{ '--edge': chipEdge.right } as CSSProperties}>
+            <span className="data-table-edge-blur" />
+          </span>
           </div>
         )}
         <div className="chat-composer">

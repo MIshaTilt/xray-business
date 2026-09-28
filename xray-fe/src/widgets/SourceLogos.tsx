@@ -28,6 +28,24 @@ export function LogoBitrix24() {
   )
 }
 
+export function LogoAmo() {
+  return (
+    <svg viewBox="0 0 78 32" aria-hidden="true">
+      <text
+        x="39"
+        y="25"
+        textAnchor="middle"
+        fill="currentColor"
+        fontFamily="-apple-system, system-ui, Helvetica Neue, Roboto, sans-serif"
+        fontSize="28"
+        fontWeight="700"
+      >
+        amo
+      </text>
+    </svg>
+  )
+}
+
 export function LogoMoySklad() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">

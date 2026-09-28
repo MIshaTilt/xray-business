@@ -2,7 +2,15 @@ import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from '
 
 const FADE = 72
 
-export function DataTable({ children }: { children: ReactNode }) {
+export function DataTable({
+  children,
+  tone,
+  tableHtml,
+}: {
+  children?: ReactNode
+  tone?: 'chat'
+  tableHtml?: string
+}) {
   const scroller = useRef<HTMLDivElement>(null)
   const drag = useRef<{ pointerId: number; startX: number; startScroll: number; track: HTMLElement } | null>(null)
   const [left, setLeft] = useState(0)
@@ -36,7 +44,7 @@ export function DataTable({ children }: { children: ReactNode }) {
       node.removeEventListener('scroll', update)
       observer.disconnect()
     }
-  }, [])
+  }, [tableHtml])
 
   function seek(clientX: number, track: HTMLElement) {
     const node = scroller.current
@@ -82,16 +90,20 @@ export function DataTable({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="data-table">
+    <div className={`data-table${tone === 'chat' ? ' is-chat' : ''}`}>
       <span className="data-table-edge data-table-edge-left" style={{ ['--edge' as string]: left }} aria-hidden="true">
         <span className="data-table-edge-blur" />
       </span>
       <span className="data-table-edge data-table-edge-right" style={{ ['--edge' as string]: right }} aria-hidden="true">
         <span className="data-table-edge-blur" />
       </span>
-      <div className="data-table-scroll" ref={scroller}>
-        {children}
-      </div>
+      {tableHtml ? (
+        <div className="data-table-scroll" ref={scroller} dangerouslySetInnerHTML={{ __html: tableHtml }} />
+      ) : (
+        <div className="data-table-scroll" ref={scroller}>
+          {children}
+        </div>
+      )}
       {thumb.show ? (
         <span
           className="data-table-hscroll"

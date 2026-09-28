@@ -1,7 +1,7 @@
 import { Button } from '@maxhub/max-ui'
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { createPortal } from 'react-dom'
-import { api, usesFixtures } from '../api/client.ts'
+import { api, rememberRemovedScan, removedScanIds, usesFixtures } from '../api/client.ts'
 import { errorText } from '../api/errors.ts'
 import type { SnapshotListItem } from '../api/types.ts'
 import { formatRub, formatWhen, scanCaption } from '../domain/metrics.ts'
@@ -15,6 +15,32 @@ const STATUS: Record<SnapshotListItem['status'], string> = {
   failed: 'Не вышло',
 }
 
+const SCANS_CACHE_KEY = 'xray-scans-cache'
+
+function withoutRemoved(items: SnapshotListItem[]) {
+  const hidden = removedScanIds()
+  if (!hidden.size) return items
+  return items.filter((item) => {
+    if (hidden.has(item.snapshot_id)) return false
+    if (item.compare_base_id && hidden.has(item.compare_base_id)) return false
+    if (item.compare_target_id && hidden.has(item.compare_target_id)) return false
+    return true
+  })
+}
+
+function readCachedScans(): SnapshotListItem[] {
+  try {
+    const raw: unknown = JSON.parse(sessionStorage.getItem(SCANS_CACHE_KEY) || '[]')
+    return withoutRemoved(Array.isArray(raw) ? (raw as SnapshotListItem[]) : [])
+  } catch {
+    return []
+  }
+}
+
+function writeCachedScans(items: SnapshotListItem[]) {
+  sessionStorage.setItem(SCANS_CACHE_KEY, JSON.stringify(items))
+}
+
 export function Scans({
   onDiagnosis,
   onProcessing,
@@ -26,8 +52,8 @@ export function Scans({
 }) {
   const [busy, setBusy] = useState<'seed' | null>(null)
   const [error, setError] = useState('')
-  const [snapshots, setSnapshots] = useState<SnapshotListItem[]>([])
-  const [scansLoaded, setScansLoaded] = useState(false)
+  const [snapshots, setSnapshots] = useState<SnapshotListItem[]>(readCachedScans)
+  const [scansLoaded, setScansLoaded] = useState(() => readCachedScans().length > 0)
   const [openSwipeId, setOpenSwipeId] = useState<string | null>(null)
   const [leavingIds, setLeavingIds] = useState<string[]>([])
   const [emptyLeaving, setEmptyLeaving] = useState(false)
@@ -44,7 +70,9 @@ export function Scans({
 
   async function refresh() {
     try {
-      setSnapshots(await api.list())
+      const items = withoutRemoved(await api.list())
+      setSnapshots(items)
+      writeCachedScans(items)
     } catch (reason) {
       setError(errorText(reason))
     } finally {
@@ -225,6 +253,12 @@ export function Scans({
     if (id.startsWith('stub-')) return
     try {
       await api.remove(id)
+      rememberRemovedScan(id)
+      setSnapshots((current) => {
+        const next = withoutRemoved(current.filter((item) => item.snapshot_id !== id))
+        writeCachedScans(next)
+        return next
+      })
     } catch (reason) {
       leavingIdsRef.current = leavingIdsRef.current.filter((item) => item !== id)
       setLeavingIds(leavingIdsRef.current)

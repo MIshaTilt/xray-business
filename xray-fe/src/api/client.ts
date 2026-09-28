@@ -26,6 +26,23 @@ export function authHeaders(json: boolean): Headers {
   return headers
 }
 
+const REMOVED_SCANS_KEY = 'xray-removed-scans'
+
+export function removedScanIds(): Set<string> {
+  try {
+    const raw: unknown = JSON.parse(sessionStorage.getItem(REMOVED_SCANS_KEY) || '[]')
+    return new Set(Array.isArray(raw) ? raw.map((item) => String(item)) : [])
+  } catch {
+    return new Set()
+  }
+}
+
+export function rememberRemovedScan(id: string) {
+  const ids = removedScanIds()
+  ids.add(id)
+  sessionStorage.setItem(REMOVED_SCANS_KEY, JSON.stringify([...ids]))
+}
+
 async function detailOf(response: Response): Promise<string> {
   try {
     const body: unknown = await response.json()
@@ -55,7 +72,7 @@ async function detailOf(response: Response): Promise<string> {
 async function request<T>(path: string, init: RequestInit, jsonBody: boolean): Promise<T> {
   let response: Response
   try {
-    response = await fetch(apiUrl(path), { ...init, headers: authHeaders(jsonBody) })
+    response = await fetch(apiUrl(path), { ...init, cache: 'no-store', headers: authHeaders(jsonBody) })
   } catch {
     throw new ApiError(0, 'Нет связи с сервером')
   }
@@ -65,28 +82,35 @@ async function request<T>(path: string, init: RequestInit, jsonBody: boolean): P
 }
 
 export const api = {
-  amoStatus() {
+  amoSessions() {
     return request<{
       connected: boolean
-      account?: string
-      last_sync_at?: string | null
-      last_error?: string
-      last_snapshot_id?: string
+      sessions: {
+        id: number
+        account: string
+        last_sync_at: string | null
+        last_error: string
+        last_snapshot_id: string
+      }[]
     }>('/api/amo', { method: 'GET' }, false)
   },
 
   connectAmo(account: string, token: string) {
     return request<{
       connected: boolean
+      id: number
       account: string
-      snapshot_id?: string
       message?: string
       last_sync_at: string | null
     }>('/api/amo/connect', { method: 'POST', body: JSON.stringify({ account, token }) }, true)
   },
 
-  syncAmo() {
-    return request<{ snapshot_id: string; status: string }>('/api/amo/sync', { method: 'POST' }, true)
+  syncAmo(id: number) {
+    return request<{ snapshot_id: string; status: string }>(
+      '/api/amo/sync',
+      { method: 'POST', body: JSON.stringify({ id }) },
+      true,
+    )
   },
 
   upload(file: File) {
@@ -174,11 +198,13 @@ export const api = {
 
   async list(): Promise<SnapshotListItem[]> {
     if (usesFixtures()) return fixtures.list()
+    const controller = new AbortController()
+    const timer = window.setTimeout(() => controller.abort(), 12000)
     const res = await request<{ items: SnapshotListItem[]; next_cursor: string | null }>(
       '/api/snapshots',
-      { method: 'GET' },
+      { method: 'GET', signal: controller.signal },
       false,
-    )
+    ).finally(() => window.clearTimeout(timer))
     return (res?.items || []).map((item) => ({
       ...item,
       coverage_label: item.coverage_label || `${(item as any).coverage_ready ?? 0} из ${(item as any).coverage_total ?? 7}`,

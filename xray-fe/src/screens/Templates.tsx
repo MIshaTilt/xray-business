@@ -32,24 +32,26 @@ export function Templates({ onPicked }: { onPicked: (upload: UploadResponse) => 
         <p className="home-hint">Готовый CSV, чтобы сразу проверить колонки</p>
       </div>
       {error ? <Notice tone="error">{error}</Notice> : null}
-      <ul className="template-page-list">
-        {items.map((item) => (
-          <li key={item.id}>
-            <button
-              type="button"
-              className="settings-card template-page-item"
-              disabled={Boolean(busy)}
-              onClick={() => void pick(item.id)}
-            >
-              <span className="settings-copy">
-                <strong>{item.label}</strong>
-                <span>{item.name}</span>
-              </span>
-              {busy === item.id ? <span className="connector-status">Открываю…</span> : null}
-            </button>
-          </li>
-        ))}
-      </ul>
+      {items.length > 0 ? (
+        <ul className="template-page-list">
+          {items.map((item) => (
+            <li key={item.id}>
+              <button
+                type="button"
+                className="settings-card template-page-item"
+                disabled={Boolean(busy)}
+                onClick={() => void pick(item.id)}
+              >
+                <span className="settings-copy">
+                  <strong>{item.label}</strong>
+                  <span>{item.name}</span>
+                </span>
+                {busy === item.id ? <span className="connector-status">Открываю…</span> : null}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   )
 }

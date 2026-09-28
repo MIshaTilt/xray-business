@@ -20,21 +20,27 @@ def _token(connection: AmoConnection) -> str:
     return signing.loads(connection.token)
 
 
-def connection_for(ident: RequestIdentity) -> AmoConnection | None:
+def connections_for(ident: RequestIdentity):
     if ident.user:
-        return AmoConnection.objects.filter(user=ident.user).order_by("-id").first()
+        return AmoConnection.objects.filter(user=ident.user).order_by("-created_at", "-id")
     if not ident.guest_session:
-        return None
-    return AmoConnection.objects.filter(guest_session=ident.guest_session, user__isnull=True).order_by("-id").first()
+        return AmoConnection.objects.none()
+    return AmoConnection.objects.filter(guest_session=ident.guest_session, user__isnull=True).order_by("-created_at", "-id")
+
+
+def connection_for(ident: RequestIdentity) -> AmoConnection | None:
+    return connections_for(ident).first()
 
 
 def save_token(ident: RequestIdentity, account: str, token: str) -> AmoConnection:
     packed = signing.dumps(token)
-    connection = connection_for(ident)
+    account = (account or "").strip()
+    connection = connections_for(ident).filter(account__iexact=account).first()
     if connection is None:
         connection = AmoConnection(
             user=ident.user,
             guest_session="" if ident.user else ident.guest_session,
+            account=account,
         )
     connection.account = account
     connection.token = packed
@@ -43,16 +49,23 @@ def save_token(ident: RequestIdentity, account: str, token: str) -> AmoConnectio
     return connection
 
 
-def public_status(connection: AmoConnection | None) -> dict:
-    if connection is None:
-        return {"connected": False}
+def public_session(connection: AmoConnection) -> dict:
     return {
-        "connected": True,
+        "id": connection.id,
         "account": connection.account,
         "last_sync_at": connection.last_sync_at.isoformat() if connection.last_sync_at else None,
         "last_error": connection.last_error,
         "last_snapshot_id": connection.last_snapshot_id,
     }
+
+
+def public_status(connection: AmoConnection | None) -> dict:
+    if connection is None:
+        return {"connected": False, "sessions": []}
+    payload = public_session(connection)
+    payload["connected"] = True
+    payload["sessions"] = [payload.copy()]
+    return payload
 
 
 def sync_connection(connection: AmoConnection) -> str:

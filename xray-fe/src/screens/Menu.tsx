@@ -1,19 +1,24 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { api } from '../api/client.ts'
+import { errorText } from '../api/errors.ts'
 import { getMaxUser, getPlatform, isInsideMax } from '../bridge/index.ts'
+import { Notice } from '../widgets/Notice.tsx'
 import { ThemeToggle } from '../widgets/ThemeToggle.tsx'
 
-const CONNECTORS = [
-  { id: '1c', title: '1С', hint: 'Обмен справочниками и сделками' },
-  { id: 'bitrix', title: 'Битрикс24', hint: 'Воронка и менеджеры из CRM' },
-  { id: 'moysklad', title: 'МойСклад', hint: 'Отгрузки и остатки' },
-] as const
+type AmoSession = {
+  id: number
+  account: string
+  last_error: string
+}
 
 export function Menu({
   dark,
   onToggleTheme,
+  onOpenSnapshot,
 }: {
   dark: boolean
   onToggleTheme: () => void
+  onOpenSnapshot: (snapshotId: string) => void
 }) {
   const user = useMemo(() => getMaxUser(), [])
   const name = user
@@ -22,6 +27,36 @@ export function Menu({
   const initials = user ? initialsOf(name) : 'XR'
   const platform = platformLabel(getPlatform())
   const inside = isInsideMax()
+  const [sessions, setSessions] = useState<AmoSession[] | null>(null)
+  const [busyId, setBusyId] = useState<number | null>(null)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let alive = true
+    api.amoSessions()
+      .then((payload) => {
+        if (alive) setSessions(payload.sessions)
+      })
+      .catch(() => {
+        if (alive) setSessions([])
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  async function fetchDeals(session: AmoSession) {
+    setBusyId(session.id)
+    setError('')
+    try {
+      const result = await api.syncAmo(session.id)
+      onOpenSnapshot(result.snapshot_id)
+    } catch (reason) {
+      setError(errorText(reason))
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   return (
     <div className="stack menu-screen">
@@ -58,18 +93,31 @@ export function Menu({
         <ThemeToggle dark={dark} onToggle={onToggleTheme} />
       </div>
 
-      <p className="eyebrow">Подключения</p>
-      <ul className="connector-list">
-        {CONNECTORS.map((item) => (
-          <li key={item.id} className="settings-card connector-card">
-            <div className="settings-copy">
-              <strong>{item.title}</strong>
-              <span>{item.hint}</span>
-            </div>
-            <span className="connector-status">Скоро</span>
-          </li>
-        ))}
-      </ul>
+      <p className="eyebrow">Активные сессии</p>
+      {error ? <Notice tone="error">{error}</Notice> : null}
+      {sessions && sessions.length === 0 ? (
+        <p className="session-empty">Нет активных сессий</p>
+      ) : (
+        <ul className="connector-list">
+          {(sessions ?? []).map((session) => (
+            <li key={session.id} className="settings-card connector-card">
+              <div className="settings-copy">
+                <strong>amoCRM</strong>
+                <span>{session.account}</span>
+                {session.last_error ? <span>{session.last_error}</span> : null}
+              </div>
+              <button
+                type="button"
+                className="session-fetch"
+                disabled={busyId === session.id}
+                onClick={() => void fetchDeals(session)}
+              >
+                {busyId === session.id ? 'Читаем…' : 'Забрать сделки'}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

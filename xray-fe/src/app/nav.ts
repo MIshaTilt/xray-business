@@ -20,6 +20,16 @@ function stageElement() {
   return stage instanceof HTMLElement ? stage : null
 }
 
+function markRouteLeave() {
+  document.documentElement.classList.add('is-route-leave')
+}
+
+function clearRouteLeave() {
+  window.requestAnimationFrame(() => {
+    document.documentElement.classList.remove('is-route-leave')
+  })
+}
+
 function clearStageMotion() {
   document.querySelectorAll('[data-page-ghost]').forEach((node) => node.remove())
   const stage = stageElement()
@@ -36,6 +46,7 @@ function begin() {
   nextRun = null
   if (!run) return
   clearStageMotion()
+  markRouteLeave()
   let pending: ViewTransition
   try {
     pending = document.startViewTransition(() => {
@@ -44,9 +55,11 @@ function begin() {
   } catch {
     clearStageMotion()
     run()
+    clearRouteLeave()
     return
   }
   activeTransition = pending
+  void pending.ready.then(() => clearRouteLeave()).catch(() => {})
   void pending.ready.catch(() => {})
   void pending.finished.finally(() => {
     if (activeTransition !== pending) return
@@ -70,6 +83,7 @@ function finishHost() {
   const run = nextRun
   nextRun = null
   if (run) flushSync(run)
+  clearRouteLeave()
   const next = stageElement()
   if (!next) return
   const enter = next.animate(
@@ -98,6 +112,7 @@ function beginHost() {
   }
   if (hostLeaving) return
   hostLeaving = true
+  markRouteLeave()
   stage.getAnimations().forEach((motion) => motion.cancel())
   stage.style.pointerEvents = 'none'
   const leave = stage.animate(

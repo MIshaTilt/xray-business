@@ -162,21 +162,84 @@ def persist_upload_mapping(upload_id, mapping: dict, status_map: dict) -> None:
         print(f"[DB ERROR] Не удалось обновить mapping: {e}")
 
 
+_forgotten_ids: set[str] = set()
+
+
+def _is_forgotten(key, snap) -> bool:
+    key = str(key)
+    if key in _forgotten_ids:
+        return True
+    if not isinstance(snap, dict):
+        return False
+    sid = str(snap.get('snapshot_id') or '')
+    if sid and sid in _forgotten_ids:
+        return True
+    for field in ('compare_base_id', 'compare_target_id'):
+        ref = str(snap.get(field) or '')
+        if ref and ref in _forgotten_ids:
+            return True
+    return False
+
+
 def load_disk_store():
     global SNAPSHOTS_STORE
+    loaded = {}
     if STORE_FILE.exists():
         try:
             with open(STORE_FILE, 'r', encoding='utf-8') as f:
-                SNAPSHOTS_STORE = json.load(f)
+                loaded = json.load(f)
         except Exception:
-            SNAPSHOTS_STORE = {}
+            loaded = {}
+    if not isinstance(loaded, dict):
+        loaded = {}
+    cleaned = {}
+    dropped = False
+    for key, snap in loaded.items():
+        if _is_forgotten(key, snap):
+            dropped = True
+            continue
+        cleaned[key] = snap
+    SNAPSHOTS_STORE = cleaned
+    if dropped:
+        save_disk_store()
 
 def save_disk_store():
     try:
-        with open(STORE_FILE, 'w', encoding='utf-8') as f:
+        STORE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        tmp = STORE_FILE.with_suffix('.json.tmp')
+        with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(SNAPSHOTS_STORE, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, STORE_FILE)
     except Exception as e:
         print(f"[STORE ERROR] Не удалось сохранить на диск: {e}")
+
+
+def forget_snapshot(snapshot_id) -> None:
+    """Удаляет снимок и сравнения, которые на него ссылаются, из памяти, файла и базы."""
+    s_id = str(snapshot_id)
+    _forgotten_ids.add(s_id)
+    doomed = []
+    for key, snap in list(SNAPSHOTS_STORE.items()):
+        if not isinstance(snap, dict):
+            continue
+        if key == s_id or str(snap.get('snapshot_id') or '') == s_id:
+            doomed.append(key)
+            continue
+        if str(snap.get('compare_base_id') or '') == s_id or str(snap.get('compare_target_id') or '') == s_id:
+            doomed.append(key)
+    ids = {s_id}
+    for key in doomed:
+        snap = SNAPSHOTS_STORE.pop(key, None) or {}
+        ids.add(str(key))
+        _forgotten_ids.add(str(key))
+        if snap.get('snapshot_id'):
+            sid = str(snap['snapshot_id'])
+            ids.add(sid)
+            _forgotten_ids.add(sid)
+    Snapshot.objects.filter(id__in=list(ids)).delete()
+    save_disk_store()
 
 load_disk_store()
 
@@ -400,6 +463,9 @@ def snapshot_card(snap: dict) -> dict:
                 topics.append(metric_id)
             if len(topics) == 2:
                 break
+    coverage = diag.get('coverage') if isinstance(diag, dict) else None
+    available = coverage.get('available') if isinstance(coverage, dict) else None
+    coverage_ready = len(available) if isinstance(available, list) else 0
     return {
         'snapshot_id': snap['snapshot_id'],
         'item_type': 'snapshot',
@@ -414,7 +480,7 @@ def snapshot_card(snap: dict) -> dict:
         or filename_to_title(snap.get('filename') or ''),
         'topics': topics,
         'verdict': crit,
-        'coverage_ready': len(diag['coverage']['available']) if diag else 0,
+        'coverage_ready': coverage_ready,
         'coverage_total': 7,
     }
 
@@ -437,6 +503,8 @@ class SnapshotCreateView(APIView):
 
         for db_snap in qs:
             db_key = str(db_snap.id)
+            if db_key in _forgotten_ids:
+                continue
             if db_key not in SNAPSHOTS_STORE:
                 SNAPSHOTS_STORE[db_key] = snapshot_model_to_dict(db_snap)
 
@@ -464,10 +532,18 @@ class SnapshotCreateView(APIView):
             reverse=True,
         )
 
+        known_ids = {str(snap.get('snapshot_id') or '') for snap in matching_snaps}
         for snap in matching_snaps:
+            if snap.get('item_type') == 'comparison' or snap.get('source') == 'comparison':
+                base_id = str(snap.get('compare_base_id') or '')
+                target_id = str(snap.get('compare_target_id') or '')
+                if base_id not in known_ids or target_id not in known_ids:
+                    continue
             items.append(snapshot_card(snap))
 
-        return Response({'items': items, 'next_cursor': None})
+        response = Response({'items': items, 'next_cursor': None})
+        response['Cache-Control'] = 'no-store'
+        return response
 
     def post(self, request):
         cleanup_expired_guest_data()
@@ -621,13 +697,10 @@ class SnapshotPollView(APIView):
         snap, snap_obj = get_snapshot_for_request(snapshot_id, request)
         if not snap:
             return Response({'code': 'not_found', 'message': 'Снимок не найден'}, status=status.HTTP_404_NOT_FOUND)
-        s_id = str(snapshot_id)
-        if s_id in SNAPSHOTS_STORE:
-            del SNAPSHOTS_STORE[s_id]
-            save_disk_store()
-        if snap_obj:
-            snap_obj.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        forget_snapshot(snapshot_id)
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        response['Cache-Control'] = 'no-store'
+        return response
 
 
 class SnapshotDiagnosisView(APIView):
@@ -661,7 +734,9 @@ class SnapshotDiagnosisView(APIView):
 
         payload['available_columns'] = cols
 
-        return Response(payload)
+        response = Response(payload)
+        response['Cache-Control'] = 'no-store'
+        return response
 
 
 class SnapshotMetricDetailView(APIView):
@@ -896,6 +971,55 @@ class SnapshotExportPdfView(APIView):
         return response
 
 
+def snapshot_from_store_dict(snap: dict) -> Snapshot:
+    diag = snap.get('diagnosis') if isinstance(snap.get('diagnosis'), dict) else {}
+    created = snap.get('created_at')
+    when = None
+    if isinstance(created, str) and created:
+        try:
+            when = datetime.datetime.fromisoformat(created)
+        except ValueError:
+            when = None
+    if when is not None and when.tzinfo is None:
+        when = when.replace(tzinfo=datetime.timezone.utc)
+    obj = Snapshot(
+        id=snap.get('snapshot_id'),
+        filename=snap.get('filename') or '',
+        headline=diag.get('headline') or snap.get('headline') or '',
+        body=diag.get('body') or snap.get('body') or '',
+        findings=diag.get('findings') or [],
+        coverage=diag.get('coverage') or {},
+        totals=diag.get('totals') or snap.get('totals') or {},
+        all_metrics=snap.get('all_metrics') or {},
+        status=snap.get('status') or Snapshot.Status.READY,
+        is_guest=bool(snap.get('is_guest')),
+        guest_session=snap.get('guest_session') or '',
+    )
+    if when is not None:
+        obj.created_at = when
+    return obj
+
+
+def cached_comparison(id_a: str, id_b: str) -> dict | None:
+    for left, right in ((str(id_a), str(id_b)), (str(id_b), str(id_a))):
+        try:
+            cmp_id = uuid.uuid5(uuid.NAMESPACE_DNS, f"comparison:{left}:{right}")
+        except ValueError:
+            continue
+        s_cmp_id = str(cmp_id)
+        stored = SNAPSHOTS_STORE.get(s_cmp_id)
+        if isinstance(stored, dict) and isinstance(stored.get('diff_result'), dict):
+            cached = dict(stored['diff_result'])
+            cached['comparison_id'] = s_cmp_id
+            return cached
+        existing = Snapshot.objects.filter(id=cmp_id).first()
+        if existing and isinstance(existing.quality, dict) and isinstance(existing.quality.get('diff_result'), dict):
+            cached = dict(existing.quality['diff_result'])
+            cached['comparison_id'] = s_cmp_id
+            return cached
+    return None
+
+
 class SnapshotCompareView(APIView):
     """
     GET /api/snapshots/compare?base_id=<uuid>&target_id=<uuid>
@@ -912,14 +1036,27 @@ class SnapshotCompareView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        _, snap1 = get_snapshot_for_request(base_id, request)
-        _, snap2 = get_snapshot_for_request(target_id, request)
+        base_dict, snap1 = get_snapshot_for_request(base_id, request)
+        target_dict, snap2 = get_snapshot_for_request(target_id, request)
 
-        if not snap1 or not snap2:
+        if not base_dict or not target_dict:
             return Response(
-                {'code': 'not_found', 'message': 'Один или оба снимка не найдены или доступ ограничен'},
+                {'code': 'not_found', 'message': 'Снимок не найден'},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+        id_a = str(base_dict.get('snapshot_id') or base_id)
+        id_b = str(target_dict.get('snapshot_id') or target_id)
+        cached = cached_comparison(id_a, id_b)
+        if cached:
+            response = Response(cached, status=status.HTTP_200_OK)
+            response['Cache-Control'] = 'no-store'
+            return response
+
+        if snap1 is None:
+            snap1 = snapshot_from_store_dict(base_dict)
+        if snap2 is None:
+            snap2 = snapshot_from_store_dict(target_dict)
 
         # Determine chronological base and target
         if snap1.created_at <= snap2.created_at:
