@@ -14,10 +14,16 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf import settings
 from django.contrib import admin
 from django.http import HttpResponse
 from django.urls import path
 from django.views.generic import RedirectView
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
 from .views import chat_stream
 from engine.amo_views import AmoConnectView, AmoStatusView, AmoSyncView
 from engine.views_api import (
@@ -36,13 +42,35 @@ from engine.views_api import (
     SnapshotCompareView,
 )
 
+def serve_spec_file(filename):
+    def _view(_request):
+        candidates = [
+            settings.BASE_DIR.parent / filename,
+            settings.BASE_DIR.parent.parent / filename,
+            settings.BASE_DIR / filename,
+        ]
+        for p in candidates:
+            if p.exists():
+                with open(p, 'r', encoding='utf-8') as f:
+                    return HttpResponse(f.read(), content_type='text/yaml; charset=utf-8')
+        return HttpResponse(f"File {filename} not found", status=404)
+    return _view
+
 def api_home(_request):
     return HttpResponse(
-        """<!doctype html><meta charset="utf-8"><title>X-Ray</title>
-        <body style="font-family:Segoe UI,sans-serif;padding:40px;line-height:1.5">
-        <h1>Сервер X-Ray запущен</h1>
-        <p>Это только API. Само приложение открывается здесь:
-        <a href="http://localhost:5173/">http://localhost:5173/</a></p>
+        """<!doctype html><meta charset="utf-8"><title>X-Ray Business API</title>
+        <body style="font-family:Segoe UI,sans-serif;padding:40px;line-height:1.6;max-width:800px;margin:0 auto">
+        <h1 style="color:#0f172a">X-Ray Business API</h1>
+        <p>Интеллектуальная система экспресс-диагностики и аудита B2B-продаж для платформы MAX.</p>
+        <hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0"/>
+        <h3>Быстрые ссылки для жюри:</h3>
+        <ul>
+          <li><a href="/api/docs/" style="font-weight:bold;color:#2563eb">Интерактивная документация Swagger UI (/api/docs/)</a></li>
+          <li><a href="/api/redoc/" style="color:#2563eb">Документация ReDoc (/api/redoc/)</a></li>
+          <li><a href="/openapi.yaml" style="color:#2563eb">Спецификация OpenAPI 3.1 (/openapi.yaml)</a></li>
+          <li><a href="/DATA-API.yaml" style="color:#2563eb">План проверки DATA-API.yaml (/DATA-API.yaml)</a></li>
+          <li><a href="/admin/" style="color:#2563eb">Панель администратора Django (/admin/)</a></li>
+        </ul>
         </body>""",
         content_type="text/html; charset=utf-8",
     )
@@ -77,4 +105,17 @@ urlpatterns = [
     path('api/amo', AmoStatusView.as_view(), name='api_amo_status'),
     path('api/amo/connect', AmoConnectView.as_view(), name='api_amo_connect'),
     path('api/amo/sync', AmoSyncView.as_view(), name='api_amo_sync'),
+
+    # Swagger / OpenAPI documentation endpoints for Jury & Platform verification
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url='/openapi.yaml'), name='swagger-ui'),
+    path('api/redoc/', SpectacularRedocView.as_view(url='/openapi.yaml'), name='redoc'),
+    path('docs', RedirectView.as_view(url='/api/docs/', permanent=False)),
+    path('docs/', RedirectView.as_view(url='/api/docs/', permanent=False)),
+    path('swagger', RedirectView.as_view(url='/api/docs/', permanent=False)),
+    path('swagger/', RedirectView.as_view(url='/api/docs/', permanent=False)),
+
+    # Automated check specification files
+    path('openapi.yaml', serve_spec_file('openapi.yaml'), name='spec_openapi'),
+    path('DATA-API.yaml', serve_spec_file('DATA-API.yaml'), name='spec_data_api'),
 ]
