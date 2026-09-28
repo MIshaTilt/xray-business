@@ -136,13 +136,13 @@ function Shell() {
       )
     }
     const onPointerDown = (event: PointerEvent) => {
-      if (document.querySelector('.download-sheet') && overTabBar(event)) {
+      if (document.querySelector('.download-sheet, .chat-drawer') && overTabBar(event)) {
         event.preventDefault()
         event.stopPropagation()
       }
     }
     const onClick = (event: MouseEvent) => {
-      if (document.querySelector('.download-sheet') && overTabBar(event)) {
+      if (document.querySelector('.download-sheet, .chat-drawer') && overTabBar(event)) {
         event.preventDefault()
         event.stopPropagation()
       }
@@ -164,7 +164,7 @@ function Shell() {
 
   const openTab = useCallback(
     (name: TabName) => {
-      if (document.querySelector('.download-sheet')) return
+      if (document.querySelector('.download-sheet, .chat-drawer')) return
       const root = TAB_ROOT[name]
       const onThisTab = tabOf(location.pathname) === name
       if (name === 'chat' && onThisTab) return
@@ -277,7 +277,7 @@ function Shell() {
             className="tab-bar"
             aria-label="Навигация"
             onPointerDown={(event) => {
-              if (document.querySelector('.download-sheet')) return
+              if (document.querySelector('.download-sheet, .chat-drawer')) return
               const button = event.target instanceof Element ? event.target.closest('.tab-item') : null
               if (button instanceof HTMLButtonElement) playTabDrop(button)
             }}
@@ -344,6 +344,10 @@ function HomePage() {
         go(navigate, '/mapping')
       }}
       onTemplates={() => go(navigate, '/templates')}
+      onCrmReady={(snapshotId) => {
+        flow.setLastScanId(snapshotId)
+        go(navigate, `/scan/${snapshotId}`)
+      }}
     />
   )
 }
@@ -562,6 +566,7 @@ function MissingPage() {
 function ChatPage() {
   const { snapshotId = '' } = useParams()
   const navigate = useNavigate()
+  const { setLastScanId } = useFlow()
   const [diagnosis, setDiagnosis] = useState<DiagnosisData | null>(null)
   const [comparison, setComparison] = useState<ComparisonResult | null>(null)
 
@@ -599,6 +604,10 @@ function ChatPage() {
       targetSnapshotId={targetId}
       comparison={comparison}
       diagnosis={diagnosis}
+      onOpenChat={(id) => {
+        setLastScanId(id)
+        go(navigate, `/scan/${id}/chat`)
+      }}
       onBack={() => {
         if (isComparison && (diagnosis?.compare_base_id || comparison?.base.snapshot_id)) {
           const b = comparison?.base.snapshot_id || diagnosis?.compare_base_id
@@ -648,6 +657,10 @@ function CompareChatPage() {
       snapshotId={baseId}
       targetSnapshotId={targetId}
       comparison={comparison}
+      onOpenChat={(id) => {
+        setLastScanId(id)
+        go(navigate, `/scan/${id}/chat`)
+      }}
       onBack={() =>
         go(
           navigate,

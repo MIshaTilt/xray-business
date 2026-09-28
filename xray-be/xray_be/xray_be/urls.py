@@ -25,7 +25,9 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 from .views import chat_stream
-from engine.amo_views import AmoConnectView, AmoStatusView, AmoSyncView
+from engine.amo_views import AmoConnectView, AmoDeleteView, AmoStatusView, AmoSyncView
+from engine.bitrix_views import BitrixConnectView, BitrixDeleteView, BitrixStatusView, BitrixSyncView
+from engine.moysklad_views import MoySkladConnectView, MoySkladDeleteView, MoySkladStatusView, MoySkladSyncView
 from engine.views_api import (
     UploadView,
     SaveMappingView,
@@ -37,6 +39,7 @@ from engine.views_api import (
     TemplatesListView,
     LoadTemplateView,
     SnapshotChatHistoryView,
+    ChatListView,
     SnapshotExportExcelView,
     SnapshotExportPdfView,
     SnapshotCompareView,
@@ -92,6 +95,7 @@ urlpatterns = [
 
     # Chat history endpoints
     path('api/snapshots/<uuid:snapshot_id>/chat', SnapshotChatHistoryView.as_view(), name='api_snapshot_chat_history'),
+    path('api/chats', ChatListView.as_view(), name='api_chats'),
 
     # Export endpoints
     path('api/snapshots/<uuid:snapshot_id>/export-excel', SnapshotExportExcelView.as_view(), name='api_snapshot_export_excel'),
@@ -105,6 +109,19 @@ urlpatterns = [
     path('api/amo', AmoStatusView.as_view(), name='api_amo_status'),
     path('api/amo/connect', AmoConnectView.as_view(), name='api_amo_connect'),
     path('api/amo/sync', AmoSyncView.as_view(), name='api_amo_sync'),
+    path('api/amo/<int:connection_id>', AmoDeleteView.as_view(), name='api_amo_delete'),
+
+    # Bitrix24 endpoints
+    path('api/bitrix', BitrixStatusView.as_view(), name='api_bitrix_status'),
+    path('api/bitrix/connect', BitrixConnectView.as_view(), name='api_bitrix_connect'),
+    path('api/bitrix/sync', BitrixSyncView.as_view(), name='api_bitrix_sync'),
+    path('api/bitrix/<int:connection_id>', BitrixDeleteView.as_view(), name='api_bitrix_delete'),
+
+    # MoySklad endpoints
+    path('api/moysklad', MoySkladStatusView.as_view(), name='api_moysklad_status'),
+    path('api/moysklad/connect', MoySkladConnectView.as_view(), name='api_moysklad_connect'),
+    path('api/moysklad/sync', MoySkladSyncView.as_view(), name='api_moysklad_sync'),
+    path('api/moysklad/<int:connection_id>', MoySkladDeleteView.as_view(), name='api_moysklad_delete'),
 
     # Swagger / OpenAPI documentation endpoints for Jury & Platform verification
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

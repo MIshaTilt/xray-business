@@ -5,6 +5,7 @@ import uuid
 import datetime
 from decimal import Decimal
 from django.conf import settings
+from django.db.models import Count, F, OuterRef, Q, Subquery
 from django.http import JsonResponse, HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -778,6 +779,58 @@ class SnapshotChatHistoryView(APIView):
 
         ChatMessage.objects.filter(snapshot=snap_obj).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ChatListView(APIView):
+    """Список чатов по снимкам текущего пользователя, чтобы переключаться между диалогами."""
+
+    def get(self, request):
+        cleanup_expired_guest_data()
+        ident = get_request_identity(request)
+        qs = Snapshot.objects.filter(status=Snapshot.Status.READY)
+        if ident.user:
+            qs = qs.filter(user=ident.user)
+        elif ident.guest_session:
+            qs = qs.filter(is_guest=True, guest_session=ident.guest_session)
+        else:
+            qs = Snapshot.objects.none()
+
+        last_content = (
+            ChatMessage.objects.filter(snapshot_id=OuterRef("pk"))
+            .exclude(role=ChatMessage.Role.SYSTEM)
+            .order_by("-created_at")
+            .values("content")[:1]
+        )
+        last_at = (
+            ChatMessage.objects.filter(snapshot_id=OuterRef("pk"))
+            .exclude(role=ChatMessage.Role.SYSTEM)
+            .order_by("-created_at")
+            .values("created_at")[:1]
+        )
+        qs = qs.annotate(
+            message_count=Count("messages", filter=~Q(messages__role=ChatMessage.Role.SYSTEM)),
+            last_message=Subquery(last_content),
+            last_at=Subquery(last_at),
+        ).order_by(F("last_at").desc(nulls_last=True), "-created_at")
+
+        items = []
+        for snap in qs[:50]:
+            preview = str(snap.last_message or "").replace("\n", " ").strip()
+            if len(preview) > 140:
+                preview = preview[:137] + "…"
+            title = (snap.headline or "").strip() or filename_to_title(snap.filename or "") or "Снимок"
+            items.append(
+                {
+                    "snapshot_id": str(snap.id),
+                    "title": title,
+                    "filename": snap.filename or "",
+                    "created_at": snap.created_at.isoformat(),
+                    "message_count": int(snap.message_count or 0),
+                    "last_message": preview,
+                    "last_at": snap.last_at.isoformat() if snap.last_at else None,
+                }
+            )
+        return Response({"items": items})
 
 
 class SnapshotExportExcelView(APIView):

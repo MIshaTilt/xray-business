@@ -126,6 +126,36 @@ class AmoConnection(models.Model):
         verbose_name_plural = "Подключения amoCRM"
 
 
+class BitrixConnection(models.Model):
+    user = models.ForeignKey(MaxUser, on_delete=models.CASCADE, null=True, blank=True)
+    guest_session = models.CharField(max_length=128, blank=True, default="", db_index=True)
+    account = models.CharField(max_length=255)
+    token = models.TextField()
+    last_sync_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.TextField(blank=True)
+    last_snapshot_id = models.CharField(max_length=64, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Подключение Битрикс24"
+        verbose_name_plural = "Подключения Битрикс24"
+
+
+class MoySkladConnection(models.Model):
+    user = models.ForeignKey(MaxUser, on_delete=models.CASCADE, null=True, blank=True)
+    guest_session = models.CharField(max_length=128, blank=True, default="", db_index=True)
+    account = models.CharField(max_length=255)
+    token = models.TextField()
+    last_sync_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.TextField(blank=True)
+    last_snapshot_id = models.CharField(max_length=64, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Подключение МойСклад"
+        verbose_name_plural = "Подключения МойСклад"
+
+
 class ChatMessage(models.Model):
     class Role(models.TextChoices):
         USER = "user"

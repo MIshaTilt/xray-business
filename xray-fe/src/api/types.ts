@@ -90,6 +90,16 @@ export type DiagnosisResponse = Diagnosis & {
   snapshot_id: string
 }
 
+export type ChatListItem = {
+  snapshot_id: string
+  title: string
+  filename: string
+  created_at: string
+  message_count: number
+  last_message: string
+  last_at: string | null
+}
+
 export type SnapshotListItem = {
   snapshot_id: string
   item_type?: 'snapshot' | 'comparison'
