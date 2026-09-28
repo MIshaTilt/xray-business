@@ -1,19 +1,11 @@
 """Сохраняет сделки amoCRM как обычный снимок X-Ray."""
 
-import datetime
-import uuid
-from decimal import Decimal
-
 from django.core import signing
 from django.utils import timezone
 
 from engine.amo_client import AmoError, fetch_lead_rows
-from engine.analyzer import calculate_metrics_and_findings
 from engine.auth import RequestIdentity
-from engine.mapping import guess_column_mapping
-from engine.models import AmoConnection, Deal, Snapshot
-from engine.narrator import generate_llm_narrative
-from engine.normalizer import normalize_records
+from engine.models import AmoConnection
 
 
 def _token(connection: AmoConnection) -> str:
@@ -69,7 +61,7 @@ def public_status(connection: AmoConnection | None) -> dict:
 
 
 def sync_connection(connection: AmoConnection) -> str:
-    from engine.views_api import SNAPSHOTS_STORE, get_coverage, next_scan_no, save_disk_store
+    from engine.row_snapshot import publish_rows
 
     try:
         host, rows = fetch_lead_rows(connection.account, _token(connection))
@@ -83,106 +75,12 @@ def sync_connection(connection: AmoConnection) -> str:
         connection.save(update_fields=["last_error"])
         raise AmoError(connection.last_error)
 
-    columns = list(rows[0].keys())
-    mapping = guess_column_mapping(columns, rows[:5])
-    deals, rejected = normalize_records(rows, mapping, {})
-    if not deals:
+    try:
+        snapshot_id = publish_rows(connection.user, connection.guest_session, f"amoCRM {host}", "amocrm", rows)
+    except ValueError:
         connection.last_error = "Сделки amoCRM прочитаны, но ни одна не прошла разбор."
         connection.save(update_fields=["last_error"])
         raise AmoError(connection.last_error)
-
-    findings, all_metrics, ok_list, low_sample = calculate_metrics_and_findings(deals, mapping)
-    coverage = get_coverage(mapping)
-    total_amount = sum((item.amount for item in deals), Decimal("0.00"))
-    dates = [item.created_at for item in deals if item.created_at]
-    period_from = min(dates).strftime("%Y-%m-%d") if dates else None
-    period_to = max(dates).strftime("%Y-%m-%d") if dates else None
-    filename = f"amoCRM {host}"
-    headline = findings[0]["action"] if findings else "По этому файлу критичных утечек не видно."
-    headline, findings, card_title = generate_llm_narrative(findings, headline, filename)
-    body = " ".join(item["action"] for item in findings)
-    snapshot_id = str(uuid.uuid4())
-    scan_no = next_scan_no()
-    ident_user = connection.user
-
-    SNAPSHOTS_STORE[snapshot_id] = {
-        "snapshot_id": snapshot_id,
-        "user_id": ident_user.max_user_id if ident_user else None,
-        "guest_session": connection.guest_session,
-        "is_guest": ident_user is None,
-        "scan_no": scan_no,
-        "status": "ready",
-        "progress": 100,
-        "error": "",
-        "created_at": datetime.datetime.now().isoformat(),
-        "filename": filename,
-        "source": "amocrm",
-        "diagnosis": {
-            "snapshot_id": snapshot_id,
-            "headline": headline,
-            "card_title": card_title,
-            "body": body,
-            "findings": findings,
-            "coverage": coverage,
-            "period": {"from": period_from, "to": period_to},
-            "totals": {
-                "deals": len(deals) + len(rejected),
-                "amount": f"{total_amount:.2f}",
-                "accepted": len(deals),
-                "rejected": len(rejected),
-            },
-            "ok": ok_list,
-            "low_sample": low_sample,
-        },
-        "all_metrics": all_metrics,
-    }
-    save_disk_store()
-
-    snap = Snapshot.objects.create(
-        id=snapshot_id,
-        user=ident_user,
-        scan_no=scan_no,
-        guest_session=connection.guest_session,
-        is_guest=ident_user is None,
-        filename=filename,
-        headline=headline,
-        quality={"card_title": card_title} if card_title else {},
-        body=body,
-        findings=findings,
-        coverage=coverage,
-        totals=SNAPSHOTS_STORE[snapshot_id]["diagnosis"]["totals"],
-        all_metrics=all_metrics,
-        ok_list=ok_list,
-        low_sample=low_sample,
-        period_from=dates and min(dates).date() or None,
-        period_to=dates and max(dates).date() or None,
-        status=Snapshot.Status.READY,
-        progress=100,
-    )
-    Deal.objects.bulk_create(
-        [
-            Deal(
-                snapshot=snap,
-                deal_id=item.deal_id,
-                client=item.client,
-                contact=item.contact,
-                manager=item.manager,
-                amount=item.amount,
-                list_price=item.list_price,
-                discount_pct=item.discount_pct,
-                status_raw=item.status_raw,
-                status=item.status,
-                created_at=item.created_at,
-                first_contact_at=item.first_contact_at,
-                status_changed_at=item.status_changed_at,
-                last_activity_at=item.last_activity_at,
-                closed_at=item.closed_at,
-                source=item.source or "amocrm",
-                raw_data=item.raw_data or {},
-            )
-            for item in deals
-        ]
-    )
 
     connection.account = host
     connection.last_sync_at = timezone.now()

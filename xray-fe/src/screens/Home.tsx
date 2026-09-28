@@ -9,12 +9,16 @@ import { Notice } from '../widgets/Notice.tsx'
 import { LogoAmo, LogoBitrix24, LogoMoySklad } from '../widgets/SourceLogos.tsx'
 import { XRayLogo } from '../widgets/XRayLogo.tsx'
 
+type SourceKind = 'amo' | 'bitrix' | 'moysklad'
+
 export function Home({
   onUploaded,
   onTemplates,
+  onCrmReady,
 }: {
   onUploaded: (upload: UploadResponse) => void
   onTemplates: () => void
+  onCrmReady: (snapshotId: string) => void
 }) {
   const [file, setFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
@@ -23,8 +27,11 @@ export function Home({
   const [soon, setSoon] = useState('')
   const [amoOpen, setAmoOpen] = useState(false)
   const [amoClosing, setAmoClosing] = useState(false)
+  const [source, setSource] = useState<SourceKind>('amo')
   const [amoAccount, setAmoAccount] = useState('')
   const [amoToken, setAmoToken] = useState('')
+  const [bitrixUrl, setBitrixUrl] = useState('')
+  const [msToken, setMsToken] = useState('')
   const [sheetFont, setSheetFont] = useState<CSSProperties>()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const amoTimer = useRef(0)
@@ -61,16 +68,35 @@ export function Home({
     setSheetFont({ fontFamily: style.fontFamily, fontSize: style.fontSize })
   }, [amoOpen])
 
-  async function connectAmo() {
+  function openSource(kind: SourceKind) {
+    if (amoClosing) return
+    if (amoOpen && source === kind) {
+      closeAmo()
+      return
+    }
+    setSource(kind)
+    setSheetError('')
+    setAmoOpen(true)
+    setAmoClosing(false)
+  }
+
+  async function connectSource() {
     setBusy(true)
     setSheetError('')
     try {
-      const result = await api.connectAmo(amoAccount.trim(), amoToken.trim())
+      const result =
+        source === 'bitrix'
+          ? await api.connectBitrix(bitrixUrl.trim())
+          : source === 'moysklad'
+            ? await api.connectMoySklad(msToken.trim())
+            : await api.connectAmo(amoAccount.trim(), amoToken.trim())
       setAmoToken('')
+      setMsToken('')
       setSheetError('')
       setAmoOpen(false)
       setAmoClosing(false)
-      if (result.message) setSoon(result.message)
+      if (result.snapshot_id) onCrmReady(result.snapshot_id)
+      else if (result.message) setSoon(result.message)
     } catch (reason) {
       const message = errorText(reason)
       amoErrorText.current = message
@@ -110,30 +136,39 @@ export function Home({
         <div className="source-grid">
           <button
             type="button"
-            className={`source-tile source-amo${amoOpen ? ' is-on' : ''}`}
+            className={`source-tile source-amo${amoOpen && source === 'amo' ? ' is-on' : ''}`}
             aria-label="Подключить amoCRM"
-            aria-expanded={amoOpen && !amoClosing}
-            onClick={() => {
-              if (amoClosing) return
-              if (amoOpen) closeAmo()
-              else setAmoOpen(true)
-            }}
+            aria-expanded={amoOpen && !amoClosing && source === 'amo'}
+            onClick={() => openSource('amo')}
           >
             <span className="source-tile-icon" aria-hidden="true">
               <LogoAmo />
             </span>
+            <span className="source-tile-name">amoCRM</span>
           </button>
-          <button type="button" className="source-tile source-bitrix source-soon" aria-disabled="true">
+          <button
+            type="button"
+            className={`source-tile source-bitrix${amoOpen && source === 'bitrix' ? ' is-on' : ''}`}
+            aria-label="Подключить Битрикс24"
+            aria-expanded={amoOpen && !amoClosing && source === 'bitrix'}
+            onClick={() => openSource('bitrix')}
+          >
             <span className="source-tile-icon" aria-hidden="true">
               <LogoBitrix24 />
             </span>
-            <span className="source-tile-soon">Скоро</span>
+            <span className="source-tile-name">Битрикс24</span>
           </button>
-          <button type="button" className="source-tile source-moysklad source-soon" aria-disabled="true">
+          <button
+            type="button"
+            className={`source-tile source-moysklad${amoOpen && source === 'moysklad' ? ' is-on' : ''}`}
+            aria-label="Подключить МойСклад"
+            aria-expanded={amoOpen && !amoClosing && source === 'moysklad'}
+            onClick={() => openSource('moysklad')}
+          >
             <span className="source-tile-icon" aria-hidden="true">
               <LogoMoySklad />
             </span>
-            <span className="source-tile-soon">Скоро</span>
+            <span className="source-tile-name">МойСклад</span>
           </button>
         </div>
         {soon ? <Notice tone="ok">{soon}</Notice> : null}
@@ -148,28 +183,51 @@ export function Home({
                   <form
                     className="download-sheet-panel"
                     role="dialog"
-                    aria-label="Подключить AMOCRM"
+                    aria-label={sheetTitle(source)}
                     onSubmit={(event) => {
                       event.preventDefault()
-                      void connectAmo()
+                      void connectSource()
                     }}
                   >
-                    <p className="download-sheet-title">Подключить AMOCRM</p>
-                    <input
-                      className="amo-input"
-                      placeholder="Поддомен, например demo"
-                      value={amoAccount}
-                      onChange={(event) => setAmoAccount(event.target.value)}
-                      autoComplete="off"
-                    />
-                    <input
-                      className="amo-input"
-                      placeholder="Долгосрочный токен"
-                      value={amoToken}
-                      onChange={(event) => setAmoToken(event.target.value)}
-                      autoComplete="off"
-                      type="password"
-                    />
+                    <p className="download-sheet-title">{sheetTitle(source)}</p>
+                    {source === 'amo' ? (
+                      <>
+                        <input
+                          className="amo-input"
+                          placeholder="Поддомен, например demo"
+                          value={amoAccount}
+                          onChange={(event) => setAmoAccount(event.target.value)}
+                          autoComplete="off"
+                        />
+                        <input
+                          className="amo-input"
+                          placeholder="Долгосрочный токен"
+                          value={amoToken}
+                          onChange={(event) => setAmoToken(event.target.value)}
+                          autoComplete="off"
+                          type="password"
+                        />
+                      </>
+                    ) : null}
+                    {source === 'bitrix' ? (
+                      <input
+                        className="amo-input"
+                        placeholder="https://имя.bitrix24.ru/rest/1/код/"
+                        value={bitrixUrl}
+                        onChange={(event) => setBitrixUrl(event.target.value)}
+                        autoComplete="off"
+                      />
+                    ) : null}
+                    {source === 'moysklad' ? (
+                      <input
+                        className="amo-input"
+                        placeholder="Bearer-токен МоегоСклада"
+                        value={msToken}
+                        onChange={(event) => setMsToken(event.target.value)}
+                        autoComplete="off"
+                        type="password"
+                      />
+                    ) : null}
                     <button
                       type="submit"
                       className="amo-connect"
@@ -228,4 +286,10 @@ export function Home({
       </div>
     </div>
   )
+}
+
+function sheetTitle(source: SourceKind): string {
+  if (source === 'bitrix') return 'Подключить Битрикс24'
+  if (source === 'moysklad') return 'Подключить МойСклад'
+  return 'Подключить amoCRM'
 }

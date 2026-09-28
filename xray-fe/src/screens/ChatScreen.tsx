@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect, useMemo, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { marked } from 'marked'
-import type { Diagnosis as DiagnosisData, ComparisonResult } from '../api/types.ts'
+import type { ChatListItem, Diagnosis as DiagnosisData, ComparisonResult } from '../api/types.ts'
 import { ToolCallBadge } from './ToolCallBadge.tsx'
 import { ChartCard } from '../widgets/ChartCard.tsx'
 import { DataTable } from '../widgets/DataTable.tsx'
@@ -12,6 +12,14 @@ marked.setOptions({
   breaks: true,
   gfm: true,
 })
+
+function formatChatWhen(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(
+    date,
+  )
+}
 
 function withSameFontRuble(html: string) {
   return html.replaceAll(
@@ -230,6 +238,7 @@ export function ChatScreen({
   comparison,
   diagnosis,
   onBack: _onBack,
+  onOpenChat,
 }: {
   comparisonId?: string
   snapshotId: string
@@ -237,6 +246,7 @@ export function ChatScreen({
   comparison?: ComparisonResult | null
   diagnosis?: DiagnosisData | null
   onBack: () => void
+  onOpenChat?: (snapshotId: string) => void
 }) {
   const effectiveComparisonId = comparisonId || comparison?.comparison_id
   const historyId = effectiveComparisonId || snapshotId
@@ -366,6 +376,10 @@ export function ChatScreen({
   const [activeToolCalls, setActiveToolCalls] = useState<ToolCallData[]>([])
   const [clearing, setClearing] = useState(false)
   const [sweeping, setSweeping] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [historyClosing, setHistoryClosing] = useState(false)
+  const [chats, setChats] = useState<ChatListItem[]>([])
+  const historyTimer = useRef(0)
   const listRef = useRef<HTMLDivElement>(null)
   const areaRef = useRef<HTMLTextAreaElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
@@ -373,9 +387,18 @@ export function ChatScreen({
   const clearTimer = useRef(0)
   const sweepTimer = useRef(0)
   const [navSlot, setNavSlot] = useState<HTMLElement | null>(null)
+  const [drawerHost, setDrawerHost] = useState<HTMLElement | null>(null)
 
   useLayoutEffect(() => {
     setNavSlot(document.getElementById('chat-nav-actions'))
+    const shell = document.querySelector('.app-shell')
+    setDrawerHost(shell instanceof HTMLElement ? shell : document.body)
+  }, [])
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('chats') === '1') {
+      setHistoryOpen(true)
+    }
   }, [])
 
   const markOverscroll = (box: HTMLElement) => {
@@ -510,9 +533,68 @@ export function ChatScreen({
     () => () => {
       window.clearTimeout(clearTimer.current)
       window.clearTimeout(sweepTimer.current)
+      window.clearTimeout(historyTimer.current)
     },
     [],
   )
+
+  useEffect(() => {
+    if (!historyOpen || historyClosing) return
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') closeHistory()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [historyOpen, historyClosing])
+
+  useEffect(() => {
+    if (!historyOpen || historyClosing) return
+    let alive = true
+    api
+      .listChats()
+      .then((items) => {
+        if (alive) setChats(items)
+      })
+      .catch(() => {
+        if (alive) setChats([])
+      })
+    return () => {
+      alive = false
+    }
+  }, [historyOpen, historyClosing])
+
+  function closeHistory() {
+    if (!historyOpen || historyClosing) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setHistoryOpen(false)
+      return
+    }
+    setHistoryClosing(true)
+    window.clearTimeout(historyTimer.current)
+    historyTimer.current = window.setTimeout(() => {
+      setHistoryOpen(false)
+      setHistoryClosing(false)
+    }, 420)
+  }
+
+  function openHistory() {
+    if (historyClosing) return
+    if (historyOpen) {
+      closeHistory()
+      return
+    }
+    setHistoryOpen(true)
+    setHistoryClosing(false)
+  }
+
+  function pickChat(item: ChatListItem) {
+    if (item.snapshot_id === historyId || item.snapshot_id === snapshotId) {
+      closeHistory()
+      return
+    }
+    closeHistory()
+    onOpenChat?.(item.snapshot_id)
+  }
 
   // Build rich system prompt with diagnosis or comparison context
   function buildSystemPrompt(): string {
@@ -795,31 +877,85 @@ export function ChatScreen({
     sweepTimer.current = window.setTimeout(() => setSweeping(false), 780)
   }
 
-  const clearIcon = (
-    <button
-      type="button"
-      className={`chat-clear-nav${showClear ? ' is-on' : ''}${sweeping ? ' is-sweeping' : ''}`}
-      aria-label="Очистить историю"
-      tabIndex={canClear ? 0 : -1}
-      onClick={handleClear}
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <g transform="rotate(-20 12 14)">
-          <path d="M12 3.4v9.8" />
-          <path d="M5.2 13.2h13.6v3.4H5.2z" />
-          <path d="M6.4 16.6v4.2" />
-          <path d="M9.2 16.6v4.2" />
-          <path d="M12 16.6v4.2" />
-          <path d="M14.8 16.6v4.2" />
-          <path d="M17.6 16.6v4.2" />
-        </g>
-      </svg>
-    </button>
+  const navActions = (
+    <>
+      <button
+        type="button"
+        className={`chat-history-nav${historyOpen ? ' is-on' : ''}`}
+        aria-label="История чатов"
+        aria-expanded={historyOpen && !historyClosing}
+        onClick={openHistory}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 6.5h14v9.5H9.2L5 19.2V6.5Z" />
+          <path d="M8.5 10h7M8.5 13h4.5" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        className={`chat-clear-nav${showClear ? ' is-on' : ''}${sweeping ? ' is-sweeping' : ''}`}
+        aria-label="Очистить историю"
+        tabIndex={canClear ? 0 : -1}
+        onClick={handleClear}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <g transform="rotate(-20 12 14)">
+            <path d="M12 3.4v9.8" />
+            <path d="M5.2 13.2h13.6v3.4H5.2z" />
+            <path d="M6.4 16.6v4.2" />
+            <path d="M9.2 16.6v4.2" />
+            <path d="M12 16.6v4.2" />
+            <path d="M14.8 16.6v4.2" />
+            <path d="M17.6 16.6v4.2" />
+          </g>
+        </svg>
+      </button>
+    </>
   )
+
+  const historySheet =
+    historyOpen && drawerHost
+      ? createPortal(
+          <div className={`chat-drawer${historyClosing ? ' is-closing' : ''}`}>
+            <button type="button" className="chat-drawer-backdrop" aria-label="Закрыть" onClick={closeHistory} />
+            <aside className="chat-drawer-panel" role="dialog" aria-label="История чатов">
+              <p className="chat-drawer-title">Чаты</p>
+              {chats.length === 0 ? (
+                <p className="chat-history-empty">Пока нет других диалогов. Сделайте снимок, чтобы начать новый чат.</p>
+              ) : (
+                <ul className="chat-history-list">
+                  {chats.map((item) => {
+                    const current = item.snapshot_id === historyId || item.snapshot_id === snapshotId
+                    return (
+                      <li key={item.snapshot_id}>
+                        <button
+                          type="button"
+                          className={`chat-history-item${current ? ' is-current' : ''}`}
+                          onClick={() => pickChat(item)}
+                        >
+                          <strong>{item.title}</strong>
+                          <span>{item.last_message || 'Новый диалог'}</span>
+                          <span className="chat-history-meta">
+                            {item.filename ? `${item.filename} · ` : ''}
+                            {item.message_count > 0 ? `${item.message_count} сообщ. · ` : ''}
+                            {formatChatWhen(item.last_at || item.created_at)}
+                          </span>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </aside>
+          </div>,
+          drawerHost,
+        )
+      : null
 
   return (
     <div className="stack chat-screen">
-      {navSlot ? createPortal(clearIcon, navSlot) : null}
+      {navSlot ? createPortal(navActions, navSlot) : null}
+      {historySheet}
       {streaming ? <span className="chat-scan" aria-hidden="true" /> : null}
       <p className="chat-scan-label">
         {comparison ? 'Сравнение срезов' : 'Снимок'}

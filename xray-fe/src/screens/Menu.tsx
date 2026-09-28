@@ -5,8 +5,13 @@ import { getMaxUser, getPlatform, isInsideMax } from '../bridge/index.ts'
 import { Notice } from '../widgets/Notice.tsx'
 import { ThemeToggle } from '../widgets/ThemeToggle.tsx'
 
-type AmoSession = {
+type SessionKind = 'amo' | 'bitrix' | 'moysklad'
+
+type CrmSession = {
+  key: string
   id: number
+  kind: SessionKind
+  label: string
   account: string
   last_error: string
 }
@@ -27,34 +32,59 @@ export function Menu({
   const initials = user ? initialsOf(name) : 'XR'
   const platform = platformLabel(getPlatform())
   const inside = isInsideMax()
-  const [sessions, setSessions] = useState<AmoSession[] | null>(null)
-  const [busyId, setBusyId] = useState<number | null>(null)
+  const [sessions, setSessions] = useState<CrmSession[] | null>(null)
+  const [busyKey, setBusyKey] = useState<string | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
     let alive = true
-    api.amoSessions()
-      .then((payload) => {
-        if (alive) setSessions(payload.sessions)
-      })
-      .catch(() => {
-        if (alive) setSessions([])
-      })
+    Promise.all([
+      api.amoSessions().catch(() => ({ sessions: [] as { id: number; account: string; last_error: string }[] })),
+      api.bitrixSessions().catch(() => ({ sessions: [] as { id: number; account: string; last_error: string }[] })),
+      api.moyskladSessions().catch(() => ({ sessions: [] as { id: number; account: string; last_error: string }[] })),
+    ]).then(([amo, bitrix, moysklad]) => {
+      if (!alive) return
+      setSessions([
+        ...asSessions(amo.sessions, 'amo', 'amoCRM'),
+        ...asSessions(bitrix.sessions, 'bitrix', 'Битрикс24'),
+        ...asSessions(moysklad.sessions, 'moysklad', 'МойСклад'),
+      ])
+    })
     return () => {
       alive = false
     }
   }, [])
 
-  async function fetchDeals(session: AmoSession) {
-    setBusyId(session.id)
+  async function fetchDeals(session: CrmSession) {
+    setBusyKey(session.key)
     setError('')
     try {
-      const result = await api.syncAmo(session.id)
+      const result =
+        session.kind === 'bitrix'
+          ? await api.syncBitrix(session.id)
+          : session.kind === 'moysklad'
+            ? await api.syncMoySklad(session.id)
+            : await api.syncAmo(session.id)
       onOpenSnapshot(result.snapshot_id)
     } catch (reason) {
       setError(errorText(reason))
     } finally {
-      setBusyId(null)
+      setBusyKey(null)
+    }
+  }
+
+  async function removeSession(session: CrmSession) {
+    setBusyKey(session.key)
+    setError('')
+    try {
+      if (session.kind === 'bitrix') await api.deleteBitrix(session.id)
+      else if (session.kind === 'moysklad') await api.deleteMoySklad(session.id)
+      else await api.deleteAmo(session.id)
+      setSessions((current) => (current ?? []).filter((item) => item.key !== session.key))
+    } catch (reason) {
+      setError(errorText(reason))
+    } finally {
+      setBusyKey(null)
     }
   }
 
@@ -100,26 +130,51 @@ export function Menu({
       ) : (
         <ul className="connector-list">
           {(sessions ?? []).map((session) => (
-            <li key={session.id} className="settings-card connector-card">
+            <li key={session.key} className="settings-card connector-card">
               <div className="settings-copy">
-                <strong>amoCRM</strong>
+                <strong>{session.label}</strong>
                 <span>{session.account}</span>
                 {session.last_error ? <span>{session.last_error}</span> : null}
               </div>
-              <button
-                type="button"
-                className="session-fetch"
-                disabled={busyId === session.id}
-                onClick={() => void fetchDeals(session)}
-              >
-                {busyId === session.id ? 'Читаем…' : 'Забрать сделки'}
-              </button>
+              <div className="session-actions">
+                <button
+                  type="button"
+                  className="session-fetch"
+                  disabled={busyKey === session.key}
+                  onClick={() => void fetchDeals(session)}
+                >
+                  {busyKey === session.key ? 'Читаем…' : 'Забрать сделки'}
+                </button>
+                <button
+                  type="button"
+                  className="session-delete"
+                  disabled={busyKey === session.key}
+                  onClick={() => void removeSession(session)}
+                >
+                  Удалить
+                </button>
+              </div>
             </li>
           ))}
         </ul>
       )}
     </div>
   )
+}
+
+function asSessions(
+  items: { id: number; account: string; last_error: string }[],
+  kind: SessionKind,
+  label: string,
+): CrmSession[] {
+  return items.map((item) => ({
+    key: `${kind}-${item.id}`,
+    id: item.id,
+    kind,
+    label,
+    account: item.account,
+    last_error: item.last_error,
+  }))
 }
 
 function initialsOf(name: string): string {

@@ -1,5 +1,5 @@
 import { downloadBlob, downloadByBridge, getGuestSessionId, getInitData } from '../bridge/index.ts'
-import type { ComparisonResult, Mapping, MetricId, SnapshotListItem, UploadResponse } from './types.ts'
+import type { ChatListItem, ComparisonResult, Mapping, MetricId, SnapshotListItem, UploadResponse } from './types.ts'
 import { ApiError } from './errors.ts'
 import { fixtures } from './fixtures.ts'
 
@@ -95,12 +95,39 @@ export const api = {
     }>('/api/amo', { method: 'GET' }, false)
   },
 
+  bitrixSessions() {
+    return request<{
+      connected: boolean
+      sessions: {
+        id: number
+        account: string
+        last_sync_at: string | null
+        last_error: string
+        last_snapshot_id: string
+      }[]
+    }>('/api/bitrix', { method: 'GET' }, false)
+  },
+
+  moyskladSessions() {
+    return request<{
+      connected: boolean
+      sessions: {
+        id: number
+        account: string
+        last_sync_at: string | null
+        last_error: string
+        last_snapshot_id: string
+      }[]
+    }>('/api/moysklad', { method: 'GET' }, false)
+  },
+
   connectAmo(account: string, token: string) {
     return request<{
       connected: boolean
       id: number
       account: string
       message?: string
+      snapshot_id?: string
       last_sync_at: string | null
     }>('/api/amo/connect', { method: 'POST', body: JSON.stringify({ account, token }) }, true)
   },
@@ -111,6 +138,56 @@ export const api = {
       { method: 'POST', body: JSON.stringify({ id }) },
       true,
     )
+  },
+
+  syncBitrix(id: number) {
+    return request<{ snapshot_id: string; status: string }>(
+      '/api/bitrix/sync',
+      { method: 'POST', body: JSON.stringify({ id }) },
+      true,
+    )
+  },
+
+  syncMoySklad(id: number) {
+    return request<{ snapshot_id: string; status: string }>(
+      '/api/moysklad/sync',
+      { method: 'POST', body: JSON.stringify({ id }) },
+      true,
+    )
+  },
+
+  deleteAmo(id: number) {
+    return request<void>(`/api/amo/${id}`, { method: 'DELETE' }, false)
+  },
+
+  deleteBitrix(id: number) {
+    return request<void>(`/api/bitrix/${id}`, { method: 'DELETE' }, false)
+  },
+
+  deleteMoySklad(id: number) {
+    return request<void>(`/api/moysklad/${id}`, { method: 'DELETE' }, false)
+  },
+
+  connectBitrix(webhookUrl: string) {
+    return request<{
+      connected: boolean
+      id: number
+      account: string
+      snapshot_id?: string
+      message?: string
+      last_sync_at: string | null
+    }>('/api/bitrix/connect', { method: 'POST', body: JSON.stringify({ webhook_url: webhookUrl }) }, true)
+  },
+
+  connectMoySklad(token: string) {
+    return request<{
+      connected: boolean
+      id: number
+      account: string
+      snapshot_id?: string
+      message?: string
+      last_sync_at: string | null
+    }>('/api/moysklad/connect', { method: 'POST', body: JSON.stringify({ token }) }, true)
   },
 
   upload(file: File) {
@@ -177,6 +254,25 @@ export const api = {
       { method: 'POST' },
       false,
     )
+  },
+
+  async listChats(): Promise<ChatListItem[]> {
+    if (usesFixtures()) {
+      const items = await fixtures.list()
+      return items
+        .filter((item) => item.status === 'ready')
+        .map((item) => ({
+          snapshot_id: item.snapshot_id,
+          title: item.card_title || item.headline || item.filename || 'Снимок',
+          filename: item.filename || '',
+          created_at: item.created_at,
+          message_count: 0,
+          last_message: '',
+          last_at: null,
+        }))
+    }
+    const res = await request<{ items: ChatListItem[] }>('/api/chats', { method: 'GET' }, false)
+    return res?.items || []
   },
 
   async getChatHistory(snapshotId: string): Promise<any[]> {
