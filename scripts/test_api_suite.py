@@ -215,6 +215,33 @@ def run_all_tests():
     except Exception as e:
         log_test("GET /api/amo (Check amoCRM Integration Status)", False, str(e))
 
+    # Test 17: GET /api/bitrix (Bitrix24 integration status)
+    try:
+        r = session.get(f"{BASE_URL}/api/bitrix", timeout=10)
+        data = r.json()
+        success = r.status_code == 200 and 'connected' in data and 'sessions' in data
+        log_test("GET /api/bitrix (Check Bitrix24 Integration Status)", success, f"HTTP {r.status_code}, connected={data.get('connected')}")
+    except Exception as e:
+        log_test("GET /api/bitrix (Check Bitrix24 Integration Status)", False, str(e))
+
+    # Test 18: GET /api/moysklad (MoySklad integration status)
+    try:
+        r = session.get(f"{BASE_URL}/api/moysklad", timeout=10)
+        data = r.json()
+        success = r.status_code == 200 and 'connected' in data and 'sessions' in data
+        log_test("GET /api/moysklad (Check MoySklad Integration Status)", success, f"HTTP {r.status_code}, connected={data.get('connected')}")
+    except Exception as e:
+        log_test("GET /api/moysklad (Check MoySklad Integration Status)", False, str(e))
+
+    # Test 19: GET /api/chats (Chat conversations list)
+    try:
+        r = session.get(f"{BASE_URL}/api/chats", timeout=10)
+        data = r.json()
+        success = r.status_code == 200 and 'items' in data
+        log_test("GET /api/chats (List User Chat Dialogs)", success, f"HTTP {r.status_code}, {len(data.get('items', []))} chats found")
+    except Exception as e:
+        log_test("GET /api/chats (List User Chat Dialogs)", False, str(e))
+
     print(f"\n--------------------------------------------------------")
     print(f"  TEST RESULTS SUMMARY:")
     print(f"  TOTAL:  {PASSED + FAILED}")
