@@ -18,8 +18,9 @@ COPY xray-be/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r /app/requirements.txt
 
-# Copy specifications and backend code
+# Copy specifications, templates, and backend code
 COPY openapi.yaml DATA-API.yaml /app/
+COPY templates /app/templates
 COPY xray-be /app/xray-be
 
 WORKDIR /app/xray-be/xray_be
