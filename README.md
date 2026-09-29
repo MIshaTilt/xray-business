@@ -200,7 +200,7 @@ docker compose up -d --build
 | :--- | :--- | :--- |
 | **Веб-интерфейс / Mini App** | [http://localhost:5173](http://localhost:5173) | Главное пользовательское приложение |
 | **Интерактивный Swagger UI** | [http://localhost:5173/api/docs/](http://localhost:5173/api/docs/) | Документация и тестирование API |
-| **Django Admin** | [http://localhost:5173/admin/](http://localhost:5173/admin/) | Панель администратора (`admin` / `xray2026admin`) |
+| **Django Admin** | [http://localhost:5173/admin/](http://localhost:5173/admin/) | Служебная панель Django (для разработчиков) |
 | **Спецификация OpenAPI 3.1** | [http://localhost:5173/openapi.yaml](http://localhost:5173/openapi.yaml) | Машиночитаемая схема API |
 | **План проверки DATA-API** | [http://localhost:5173/DATA-API.yaml](http://localhost:5173/DATA-API.yaml) | Конфигурация сценариев автопроверки |
 
@@ -417,13 +417,11 @@ docker compose up -d --build
 - **Интерактивный просмотр (Swagger UI):** [https://xray-business-bot.online/api/docs/](https://xray-business-bot.online/api/docs/)
 - **Интерактивный просмотр (ReDoc):** [https://xray-business-bot.online/api/redoc/](https://xray-business-bot.online/api/redoc/)
 
-### 15.3. Тестовые учетные записи
-1. **Роль `guest` (Анонимный гость):** Заголовок `X-Guest-Session: evaluation_guest_session_1`.
-2. **Роль `user` (Авторизованный пользователь MAX):** Заголовок `X-Max-Init-Data: user=%7B%22id%22%3A1001%2C%22first_name%22%3A%22EvaluationUser%22%7D`.
-3. **Роль `admin` (Администратор системы):**
-   - URL входа: [https://xray-business-bot.online/admin/](https://xray-business-bot.online/admin/)
-   - Логин: `admin`
-   - Пароль: `admin`
+### 15.3. Тестовые учетные записи и роли
+1. **Роль `guest` (Анонимный гость):** Заголовок `X-Guest-Session: evaluation_guest_session_1` (используется для неавторизованных сессий веб-интерфейса).
+2. **Роль `user` (Авторизованный пользователь MAX):** Заголовок `X-Max-Init-Data: user=%7B%22id%22%3A1001%2C%22first_name%22%3A%22EvaluationUser%22%7D` (контекст сессии Mini App мессенджера MAX).
+
+*(Служебный веб-интерфейс Django Admin доступен разработчикам по адресу `/admin/`; суперпользователь при необходимости создается стандартной командой `python manage.py createsuperuser`).*
 
 ### 15.4. Тестовые данные
 Полный набор тестовых файлов в форматах CSV размещен в каталоге [`templates/`](templates/) и доступен через эндпоинт `GET /api/templates`.
