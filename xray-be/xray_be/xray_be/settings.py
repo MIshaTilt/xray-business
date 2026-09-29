@@ -34,16 +34,49 @@ ALLOWED_HOSTS = [
     for host in os.environ.get('ALLOWED_HOSTS', '*').split(',')
     if host.strip()
 ]
-CSRF_TRUSTED_ORIGINS = [
+raw_origins = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
+trusted_origins = set(
     origin.strip()
-    for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',')
+    for origin in raw_origins.split(',')
     if origin.strip()
+)
+# Ensure sensible default origins are trusted
+default_trusted = [
+    'http://localhost',
+    'http://localhost:80',
+    'http://localhost:5173',
+    'http://localhost:8000',
+    'http://127.0.0.1',
+    'http://127.0.0.1:80',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:8000',
+    'https://xray-business-bot.online',
+    'http://87.120.165.142',
+    'http://144.31.157.209',
+    'http://144.31.157.209:80',
+    'http://144.31.157.209:5173',
+    'http://144.31.157.209:8000',
 ]
+for origin in default_trusted:
+    trusted_origins.add(origin)
+
+for host in ALLOWED_HOSTS:
+    if host and host != '*':
+        trusted_origins.add(f'http://{host}')
+        trusted_origins.add(f'https://{host}')
+        trusted_origins.add(f'http://{host}:8000')
+        trusted_origins.add(f'http://{host}:5173')
+
+CSRF_TRUSTED_ORIGINS = sorted(list(trusted_origins))
+
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     USE_X_FORWARDED_HOST = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+
+# Cookie security settings (default to False for HTTP deployments on VPS IPs; set to True when SSL/HTTPS is enabled)
+SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'false').lower() in ('1', 'true', 'yes')
+CSRF_COOKIE_SECURE = os.environ.get('CSRF_COOKIE_SECURE', 'false').lower() in ('1', 'true', 'yes')
+
 
 
 # Application definition
@@ -168,7 +201,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'static'
 
 # Default primary key field type

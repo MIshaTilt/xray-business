@@ -17,8 +17,9 @@ Including another URLconf
 from django.conf import settings
 from django.contrib import admin
 from django.http import HttpResponse
-from django.urls import path
+from django.urls import path, re_path
 from django.views.generic import RedirectView
+from django.views.static import serve
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
@@ -135,4 +136,7 @@ urlpatterns = [
     # Automated check specification files
     path('openapi.yaml', serve_spec_file('openapi.yaml'), name='spec_openapi'),
     path('DATA-API.yaml', serve_spec_file('DATA-API.yaml'), name='spec_data_api'),
+
+    # Django static files fallback for direct backend access
+    re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
 ]
