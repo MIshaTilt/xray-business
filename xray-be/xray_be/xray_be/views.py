@@ -352,11 +352,15 @@ def chat_stream(request):
             if snapshot_id:
                 snap_dict, snap_obj = get_snapshot_for_request(snapshot_id, request)
                 if not snap_obj and not snap_dict:
-                    return JsonResponse({'error': 'Снимок не найден или доступ ограничен'}, status=403)
+                    if not Snapshot.objects.filter(id=str(snapshot_id)).exists():
+                        return JsonResponse({'error': 'Снимок не найден'}, status=404)
+                    return JsonResponse({'error': 'Доступ к снимку ограничен'}, status=403)
             if target_snapshot_id:
                 t_dict, t_obj = get_snapshot_for_request(target_snapshot_id, request)
                 if not t_obj and not t_dict:
-                    return JsonResponse({'error': 'Целевой снимок не найден или доступ ограничен'}, status=403)
+                    if not Snapshot.objects.filter(id=str(target_snapshot_id)).exists():
+                        return JsonResponse({'error': 'Целевой снимок не найден'}, status=404)
+                    return JsonResponse({'error': 'Доступ к целевому снимку ограничен'}, status=403)
 
             if 'messages' in body and isinstance(body['messages'], list):
                 messages_list = body['messages']

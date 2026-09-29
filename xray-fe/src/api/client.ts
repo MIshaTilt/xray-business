@@ -6,7 +6,7 @@ import { fixtures } from './fixtures.ts'
 const TEMPLATE_NAME = 'xray-template.xlsx'
 
 export function usesFixtures(): boolean {
-  return import.meta.env.VITE_USE_FIXTURES !== 'false'
+  return import.meta.env.VITE_USE_FIXTURES === 'true'
 }
 
 function apiUrl(path: string): string {

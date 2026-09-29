@@ -142,15 +142,15 @@ def get_snapshot_for_request(snapshot_id, request) -> tuple[dict | None, Snapsho
     if not snap_obj:
         return None, None
 
-    owner_uid = snap_obj.user.max_user_id if snap_obj.user else None
-    is_guest = snap_obj.is_guest
-    guest_sess = snap_obj.guest_session or ""
+    # Staff / Superuser has full access to all snapshots
+    if request and hasattr(request, 'user') and getattr(request.user, 'is_authenticated', False) and getattr(request.user, 'is_staff', False):
+        return snapshot_model_to_dict(snap_obj), snap_obj
 
+    owner_uid = snap_obj.user.max_user_id if snap_obj.user else None
+
+    # Strict isolation for registered MAX users: only the owner can access
     if owner_uid is not None:
         if not ident.user or ident.user.max_user_id != owner_uid:
-            return None, None
-    elif is_guest:
-        if not ident.is_guest or (guest_sess and ident.guest_session != guest_sess):
             return None, None
 
     snap_dict = snapshot_model_to_dict(snap_obj)
