@@ -74,13 +74,14 @@ def generate_llm_narrative(
     - Fallback to templates on timeout, parse error or network error.
     Also returns a short card_title for the scan list.
     """
-    api_key = os.environ.get('OPENAI_API_KEY')
-    base_url = os.environ.get('OPENAI_BASE_URL', 'http://144.31.157.209:8317/v1').rstrip('/')
+    api_key = os.environ.get('OPENAI_API_KEY') or ''
+    base_url = (os.environ.get('OPENAI_BASE_URL') or '').rstrip('/')
+    model_name = os.environ.get('OPENAI_MODEL') or ''
 
     table_name = filename_to_title(filename)
 
-    if not api_key:
-        safe_print("[LLM NARRATOR] OPENAI_API_KEY не задан, пропускаем генерацию.")
+    if not api_key or not base_url or not model_name:
+        safe_print("[LLM NARRATOR] OPENAI_API_KEY, OPENAI_BASE_URL или OPENAI_MODEL не заданы, пропускаем генерацию.")
         return default_headline, findings, table_name
 
     if not findings:
@@ -125,8 +126,6 @@ def generate_llm_narrative(
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
-        model_name = os.environ.get("OPENAI_MODEL", "gemini-3.8-flash-high")
-
         from engine.anonymizer import PIIAnonymizer
         anonymizer = PIIAnonymizer()
 
@@ -193,9 +192,10 @@ def generate_llm_narrative(
 def invent_card_title(findings: List[Dict[str, Any]], headline: str, filename: str = '') -> str:
     """Short list-card name from the scanned table. Separate from headline/action rewrite."""
     fallback = filename_to_title(filename)
-    api_key = os.environ.get('OPENAI_API_KEY')
-    base_url = os.environ.get('OPENAI_BASE_URL', 'http://144.31.157.209:8317/v1').rstrip('/')
-    if not api_key:
+    api_key = os.environ.get('OPENAI_API_KEY') or ''
+    base_url = (os.environ.get('OPENAI_BASE_URL') or '').rstrip('/')
+    model_name = os.environ.get('OPENAI_MODEL') or ''
+    if not api_key or not base_url or not model_name:
         return fallback
     items = [
         {
@@ -211,7 +211,7 @@ def invent_card_title(findings: List[Dict[str, Any]], headline: str, filename: s
     from engine.anonymizer import PIIAnonymizer
     anonymizer = PIIAnonymizer()
     payload = {
-        'model': 'gemini-3.8-flash-high',
+        'model': model_name,
         'messages': [
             {
                 'role': 'system',

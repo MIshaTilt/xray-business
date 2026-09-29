@@ -3,7 +3,7 @@ PII Anonymization & 152-ФЗ Compliance Engine for X-Ray.
 
 Guarantees that no Personally Identifiable Information (PII) — customer names (ФИО),
 phone numbers, or email addresses — is ever transmitted to external LLM providers
-(Google Gemini, OpenAI, etc.).
+(OpenAI-API compatible LLMs, external AI services).
 
 Examples:
 - +7 999 123-45-67 -> +7 999 ***-**-67
@@ -418,7 +418,7 @@ class PIIAnonymizer:
 
     def anonymize_messages(self, messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Anonymizes a full list of OpenAI/Gemini chat messages before upstream API calls.
+        Anonymizes a full list of OpenAI-compatible chat messages before upstream API calls.
         Sanitizes text content, and deserializes/sanitizes tool results (e.g. SQL data).
         """
         if not messages or not isinstance(messages, list):

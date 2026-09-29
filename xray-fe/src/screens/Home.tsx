@@ -261,7 +261,7 @@ export function Home({
             variant="primary"
             onClick={() => fileInputRef.current?.click()}
           >
-            Загрузить файл CSV
+            Загрузить таблицу (CSV / Excel)
           </Button>
         )}
         <FileDrop

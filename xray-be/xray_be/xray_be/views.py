@@ -17,9 +17,14 @@ def stream_openai_response(messages_list: list, snapshot_id: str = None, target_
     Supports Tool Calling (Function Calling) with SQLite deals querying before streaming final answer.
     Supports dual-snapshot comparative tool calling when target_snapshot_id is provided.
     """
-    base_url = os.environ.get('OPENAI_BASE_URL', 'http://144.31.157.209:8317/v1').rstrip('/')
-    api_key = os.environ.get('OPENAI_API_KEY', '')
-    model_name = os.environ.get('OPENAI_MODEL', 'gemini-3.8-flash-high')
+    base_url = (os.environ.get('OPENAI_BASE_URL') or '').rstrip('/')
+    api_key = os.environ.get('OPENAI_API_KEY') or ''
+    model_name = os.environ.get('OPENAI_MODEL') or ''
+
+    if not api_key or not base_url or not model_name:
+        yield f"data: {json.dumps({'error': 'AI сервис не сконфигурирован. Укажите OPENAI_API_KEY, OPENAI_BASE_URL и OPENAI_MODEL.'})}\n\n"
+        yield "data: [DONE]\n\n"
+        return
 
     target_url = f"{base_url}/chat/completions"
     headers = {

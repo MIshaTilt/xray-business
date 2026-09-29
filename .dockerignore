@@ -2,7 +2,6 @@
 .gitignore
 .idea
 .vscode
-.gemini
 logs
 backup
 *.log

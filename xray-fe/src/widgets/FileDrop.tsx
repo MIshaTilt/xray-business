@@ -4,10 +4,11 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefO
 function kindOf(name: string): string {
   const ext = name.split('.').pop()?.toLowerCase()
   if (ext === 'csv') return 'CSV'
-  return 'Файл'
+  if (ext === 'xlsx' || ext === 'xls') return 'Excel'
+  return 'Таблица'
 }
 
-const ALLOWED = /\.csv$/i
+const ALLOWED = /\.(csv|xlsx|xls)$/i
 
 function sizeOf(bytes: number): string {
   if (bytes < 1024) return `${bytes} Б`
@@ -92,7 +93,7 @@ export function FileDrop({
         ref={input}
         className="file-input"
         type="file"
-        accept=".csv,text/csv"
+        accept=".csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,.xlsx,.xls"
         onChange={(event) => {
           const next = event.target.files?.[0]
           event.target.value = ''

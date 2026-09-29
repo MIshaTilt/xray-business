@@ -303,8 +303,9 @@ def _generate_comparison_narrative(
     }
 
     api_key = os.environ.get('OPENAI_API_KEY')
-    base_url = os.environ.get('OPENAI_BASE_URL', 'http://144.31.157.209:8317/v1').rstrip('/')
-    if not api_key:
+    base_url = (os.environ.get('OPENAI_BASE_URL') or '').rstrip('/')
+    model_name = os.environ.get('OPENAI_MODEL') or ''
+    if not api_key or not base_url or not model_name:
         return default_result
 
     prompt_data = {
@@ -334,7 +335,7 @@ def _generate_comparison_narrative(
         url = f"{base_url}/chat/completions"
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         payload = {
-            "model": os.environ.get("OPENAI_MODEL", "gemini-3.8-flash-high"),
+            "model": model_name,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}

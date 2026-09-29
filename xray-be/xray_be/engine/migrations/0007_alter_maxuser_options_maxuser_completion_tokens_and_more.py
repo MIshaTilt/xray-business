@@ -35,7 +35,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('operation', models.CharField(db_index=True, default='chat', max_length=64)),
-                ('model', models.CharField(default='gemini-3.8-flash-high', max_length=64)),
+                ('model', models.CharField(default='openai-compatible-model', max_length=64)),
                 ('prompt_tokens', models.IntegerField(default=0)),
                 ('completion_tokens', models.IntegerField(default=0)),
                 ('total_tokens', models.IntegerField(default=0)),

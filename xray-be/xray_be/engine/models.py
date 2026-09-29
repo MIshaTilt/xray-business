@@ -176,7 +176,7 @@ class LLMUsageLog(models.Model):
     user = models.ForeignKey(MaxUser, on_delete=models.SET_NULL, null=True, blank=True, related_name="llm_usages")
     snapshot = models.ForeignKey(Snapshot, on_delete=models.SET_NULL, null=True, blank=True, related_name="llm_usages")
     operation = models.CharField(max_length=64, default="chat", db_index=True)
-    model = models.CharField(max_length=64, default="gemini-3.8-flash-high")
+    model = models.CharField(max_length=64, default="", blank=True)
     prompt_tokens = models.IntegerField(default=0)
     completion_tokens = models.IntegerField(default=0)
     total_tokens = models.IntegerField(default=0)
@@ -192,10 +192,12 @@ class LLMUsageLog(models.Model):
         return f"[{self.operation}] {self.total_tokens} токенов"
 
 
-def record_llm_usage(user=None, snapshot=None, operation="chat", model="gemini-3.8-flash-high", prompt_tokens=0, completion_tokens=0, duration_ms=0):
+def record_llm_usage(user=None, snapshot=None, operation="chat", model=None, prompt_tokens=0, completion_tokens=0, duration_ms=0):
     """
     Records an LLM interaction with prompt/completion tokens and updates user totals atomically.
     """
+    import os
+    model = model or os.environ.get("OPENAI_MODEL") or ""
     from django.db.models import F
     total_tokens = int(prompt_tokens or 0) + int(completion_tokens or 0)
     if total_tokens <= 0 and (prompt_tokens or 0) <= 0 and (completion_tokens or 0) <= 0:

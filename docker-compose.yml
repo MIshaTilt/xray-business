@@ -41,10 +41,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-xray_secret_password}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-http://144.31.157.209:8317/v1}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-sk-TnEv9ZcsfpQN3n40amQjP377qkMOOndbkIyrOveacIUX6}
-      OPENAI_MODEL: ${OPENAI_MODEL:-gemini-3.8-flash-high}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
       MAX_BOT_TOKEN: ${MAX_BOT_TOKEN:-f9LHodD0cOJBhxITwPCdJEVxZ7O2jzj6oDVpd_ODgTheRYaSUX8ErQbLWGisLOw5-U9xswXPu-vQfO0yAcCT}
       MAX_BOT_USERNAME: ${MAX_BOT_USERNAME:-se14421867_bot}
       MAX_APP_URL: ${MAX_APP_URL:-https://xray-business-bot.online}

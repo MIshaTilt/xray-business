@@ -219,11 +219,11 @@ class UploadView(APIView):
 
         filename = file_obj.name
         ext = os.path.splitext(filename)[1].lower()
-        if ext != '.csv':
+        if ext not in ('.csv', '.xlsx', '.xls'):
             return Response(
                 {
                     'code': 'bad_format',
-                    'message': 'Нужен CSV — выгрузка из 1С, Битрикс24, МойСклад, amoCRM и похожих систем.',
+                    'message': 'Нужен файл таблицы CSV, XLSX или XLS — выгрузка из 1С, Битрикс24, МойСклад, amoCRM и похожих систем.',
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )

@@ -12,7 +12,7 @@ def ai_smart_column_mapping(
     current_mapping: Dict[str, str]
 ) -> Dict[str, str]:
     """
-    Uses LLM (gemini-3.8-flash-high) to identify unmapped columns by analyzing
+    Uses LLM (OpenAI-compatible API) to identify unmapped columns by analyzing
     header names and sample values.
     Fills in missing canonical fields like 'amount', 'status', 'created_at', 'client', etc.
     """
@@ -80,9 +80,12 @@ def ai_smart_column_mapping(
     if env_file.exists():
         load_dotenv(env_file)
 
-    base_url = os.environ.get("OPENAI_BASE_URL", "http://144.31.157.209:8317/v1").rstrip("/")
-    api_key = os.environ.get("OPENAI_API_KEY", "")
-    model_name = os.environ.get("OPENAI_MODEL", "gemini-3.8-flash-high")
+    base_url = (os.environ.get("OPENAI_BASE_URL") or "").rstrip("/")
+    api_key = os.environ.get("OPENAI_API_KEY") or ""
+    model_name = os.environ.get("OPENAI_MODEL") or ""
+
+    if not api_key or not base_url or not model_name:
+        return current_mapping
 
     target_url = f"{base_url}/chat/completions"
     headers = {
@@ -154,7 +157,7 @@ def ai_smart_status_mapping(
 ) -> Dict[str, str]:
     """
     Uses rule-based heuristics first. If any statuses are ambiguous or mapped to 'other',
-    uses LLM (gemini-3.8-flash-high) to classify them into canonical CRM stages:
+    uses LLM (OpenAI-compatible API) to classify them into canonical CRM stages:
     'new', 'in_progress', 'proposal', 'negotiation', 'won', 'lost', 'other'.
     """
     from engine.mapping import map_status
@@ -182,9 +185,12 @@ def ai_smart_status_mapping(
     if env_file.exists():
         load_dotenv(env_file)
 
-    base_url = os.environ.get("OPENAI_BASE_URL", "http://144.31.157.209:8317/v1").rstrip("/")
-    api_key = os.environ.get("OPENAI_API_KEY", "")
-    model_name = os.environ.get("OPENAI_MODEL", "gemini-3.8-flash-high")
+    base_url = (os.environ.get("OPENAI_BASE_URL") or "").rstrip("/")
+    api_key = os.environ.get("OPENAI_API_KEY") or ""
+    model_name = os.environ.get("OPENAI_MODEL") or ""
+
+    if not api_key or not base_url or not model_name:
+        return status_map
 
     system_prompt = (
         "Ты — специализированная нейросеть-эксперт по воронкам продаж и статусам заказов/сделок в CRM и e-commerce.\n"
