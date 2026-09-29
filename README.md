@@ -242,8 +242,54 @@ cp .env.example .env
 * **Интерактивный Swagger UI:** [https://xray-business-bot.online/api/docs/](https://xray-business-bot.online/api/docs/)
 * **Спецификация OpenAPI 3.1:** [https://xray-business-bot.online/openapi.yaml](https://xray-business-bot.online/openapi.yaml)
 * **План автоматической проверки:** [https://xray-business-bot.online/DATA-API.yaml](https://xray-business-bot.online/DATA-API.yaml)
-* **Чат-бот и мини-приложение в MAX:** `@xray_business_bot`
+* **Чат-бот и мини-приложение в MAX:** `@se14421867_bot` (ссылка: [https://max.ru/se14421867_bot?startapp](https://max.ru/se14421867_bot?startapp))
 * **Тестовая учетная запись администратора:**
   - Логин: `admin`
   - Пароль: `xray2026admin`
   - URL входа: [https://xray-business-bot.online/admin/](https://xray-business-bot.online/admin/)
+
+---
+
+## 16. Модуль чат-бота для платформы MAX
+
+Для взаимодействия пользователей с сервисом через мессенджер **MAX** реализован модуль чат-бота:
+* **Токен бота:** `f9LHodD0cOJBhxITwPCdJEVxZ7O2jzj6oDVpd_ODgTheRYaSUX8ErQbLWGisLOw5-U9xswXPu-vQfO0yAcCT`
+* **Username бота:** `@se14421867_bot`
+* **Прямая ссылка (Deep Link) на Mini App:** [https://max.ru/se14421867_bot?startapp](https://max.ru/se14421867_bot?startapp)
+* **Документация платформы:** [MAX Bot API (JS)](https://dev.max.ru/docs/chatbots/bots-coding/js) и [MAX Docs API](https://dev.max.ru/docs-api)
+
+### Логика работы
+1. **Событие «Старт» (`bot_started`)**: срабатывает, когда пользователь открывает карточку бота и нажимает кнопку «Старт».
+2. **Команда `/start`**: срабатывает при текстовом вводе команды или выборе её из меню.
+3. Бот мгновенно отправляет приветственное сообщение с описанием преимуществ X-Ray Business и инлайн-клавиатурой:
+   - Кнопка **`open_app`** («🚀 Открыть мини-приложение») — открывает встроенный WebView с Mini App прямо внутри мессенджера MAX;
+   - Кнопка **`link`** («📱 Запустить в MAX») — универсальный Deep Link `https://max.ru/se14421867_bot?startapp`;
+   - Кнопка **`link`** («🌐 Веб-версия») — открывает веб-версию сервиса.
+4. При отправке любого другого текстового сообщения бот вежливо подсказывает пользователю открыть мини-приложение для проведения экспресс-аудита.
+
+### Варианты запуска
+
+#### Вариант А: Официальный модуль на Node.js (@maxhub/max-bot-api)
+```bash
+# Из корня проекта
+npm run bot
+
+# Или из директории max-bot:
+cd max-bot
+npm start
+```
+
+#### Вариант Б: Python-скрипт (Long Polling)
+```bash
+python scripts/max_bot.py
+```
+
+#### Вариант В: Команда Django Management
+```bash
+python xray-be/xray_be/manage.py run_max_bot
+```
+
+#### Вариант Г: Django Webhook (для Production)
+Бэкенд предоставляет готовый эндпоинт для приема вебхуков от MAX:
+* `POST https://xray-business-bot.online/api/max/webhook`
+* Проверка статуса: `GET https://xray-business-bot.online/api/max/webhook`

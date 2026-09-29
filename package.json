@@ -1,0 +1,14 @@
+{
+  "name": "xray-business-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "bot": "node scripts/max_bot.js",
+    "bot:dev": "node scripts/max_bot.js"
+  },
+  "dependencies": {
+    "@maxhub/max-bot-api": "^0.3.1",
+    "dotenv": "^16.6.1"
+  }
+}

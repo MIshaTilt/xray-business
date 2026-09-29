@@ -227,4 +227,9 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 ]
 APPEND_SLASH = False
 
+# MAX Messenger Bot Configuration
+MAX_BOT_TOKEN = os.environ.get('MAX_BOT_TOKEN', 'f9LHodD0cOJBhxITwPCdJEVxZ7O2jzj6oDVpd_ODgTheRYaSUX8ErQbLWGisLOw5-U9xswXPu-vQfO0yAcCT')
+MAX_BOT_USERNAME = os.environ.get('MAX_BOT_USERNAME', 'se14421867_bot')
+MAX_APP_URL = os.environ.get('MAX_APP_URL', 'https://xray-business-bot.online')
+
 

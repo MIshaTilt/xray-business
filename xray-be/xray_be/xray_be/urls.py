@@ -29,6 +29,7 @@ from .views import chat_stream
 from engine.amo_views import AmoConnectView, AmoDeleteView, AmoStatusView, AmoSyncView
 from engine.bitrix_views import BitrixConnectView, BitrixDeleteView, BitrixStatusView, BitrixSyncView
 from engine.moysklad_views import MoySkladConnectView, MoySkladDeleteView, MoySkladStatusView, MoySkladSyncView
+from engine.views_max_bot import MaxWebhookView
 from engine.views_api import (
     UploadView,
     SaveMappingView,
@@ -123,6 +124,9 @@ urlpatterns = [
     path('api/moysklad/connect', MoySkladConnectView.as_view(), name='api_moysklad_connect'),
     path('api/moysklad/sync', MoySkladSyncView.as_view(), name='api_moysklad_sync'),
     path('api/moysklad/<int:connection_id>', MoySkladDeleteView.as_view(), name='api_moysklad_delete'),
+
+    # MAX Messenger Bot Webhook endpoint
+    path('api/max/webhook', MaxWebhookView.as_view(), name='api_max_webhook'),
 
     # Swagger / OpenAPI documentation endpoints for Jury & Platform verification
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
