@@ -27,7 +27,7 @@ WORKDIR /app/xray-be/xray_be
 
 # Copy entrypoint script
 COPY xray-be/entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 EXPOSE 8000
 
