@@ -44,6 +44,7 @@ from engine.views_api import (
     ChatListView,
     SnapshotExportExcelView,
     SnapshotExportPdfView,
+    SnapshotExportBotView,
     SnapshotCompareView,
 )
 
@@ -102,6 +103,7 @@ urlpatterns = [
     # Export endpoints
     path('api/snapshots/<uuid:snapshot_id>/export-excel', SnapshotExportExcelView.as_view(), name='api_snapshot_export_excel'),
     path('api/snapshots/<uuid:snapshot_id>/export-pdf', SnapshotExportPdfView.as_view(), name='api_snapshot_export_pdf'),
+    path('api/snapshots/<uuid:snapshot_id>/export-bot', SnapshotExportBotView.as_view(), name='api_snapshot_export_bot'),
 
     # Templates endpoints
     path('api/templates', TemplatesListView.as_view(), name='api_templates_list'),

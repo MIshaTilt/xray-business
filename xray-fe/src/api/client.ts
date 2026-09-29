@@ -320,6 +320,32 @@ export const api = {
       false,
     )
   },
+
+  exportToBot(snapshotId: string, format: 'pdf' | 'excel'): Promise<{ status: string; message: string; filename: string }> {
+    return request<{ status: string; message: string; filename: string }>(
+      `/api/snapshots/${snapshotId}/export-bot`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ format }),
+      },
+      true,
+    )
+  },
+
+  async downloadReport(snapshotId: string, format: 'pdf' | 'excel'): Promise<void> {
+    const ext = format === 'pdf' ? 'pdf' : 'xlsx'
+    const fileName = `xray_audit_${snapshotId.slice(0, 8)}.${ext}`
+    const url = apiUrl(`/api/snapshots/${snapshotId}/export-${format}`)
+    if (await downloadByBridge(url, fileName)) return
+    let response: Response
+    try {
+      response = await fetch(url, { headers: authHeaders(false) })
+    } catch {
+      throw new ApiError(0, 'Нет связи с сервером')
+    }
+    if (!response.ok) throw new ApiError(response.status, await detailOf(response))
+    downloadBlob(await response.blob(), fileName)
+  },
 }
 
 export async function downloadTemplate(): Promise<void> {

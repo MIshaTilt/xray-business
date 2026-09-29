@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom'
 import { api, rememberRemovedScan } from '../api/client.ts'
 import { ApiError, errorText } from '../api/errors.ts'
 import type { Diagnosis as DiagnosisData, MetricId } from '../api/types.ts'
-import { hapticSuccess } from '../bridge/index.ts'
+import { hapticSuccess, isInsideMax } from '../bridge/index.ts'
 import { buildConclusion } from '../domain/conclusion.ts'
 import { formatRub, formatWhen } from '../domain/metrics.ts'
 import { FindingCard } from '../widgets/FindingCard.tsx'
@@ -34,6 +34,37 @@ export function Diagnosis({
   const moreTimer = useRef(0)
   const moreWrapRef = useRef<HTMLDivElement>(null)
   const [sheetFont, setSheetFont] = useState<{ fontFamily: string; fontSize: string } | null>(null)
+  const [exporting, setExporting] = useState<'pdf' | 'excel' | null>(null)
+  const [exportSuccess, setExportSuccess] = useState('')
+  const [exportError, setExportError] = useState('')
+  const insideMax = isInsideMax()
+
+  async function handleExport(format: 'pdf' | 'excel') {
+    if (exporting) return
+    setExportError('')
+    setExportSuccess('')
+    setExporting(format)
+
+    try {
+      if (insideMax) {
+        const res = await api.exportToBot(snapshotId, format)
+        hapticSuccess()
+        setExportSuccess(res.message || 'Отчёт отправлен в диалог с ботом!')
+        window.setTimeout(() => {
+          closeMore()
+          setExportSuccess('')
+          setExporting(null)
+        }, 1800)
+      } else {
+        await api.downloadReport(snapshotId, format)
+        closeMore()
+        setExporting(null)
+      }
+    } catch (err: unknown) {
+      setExportError(errorText(err))
+      setExporting(null)
+    }
+  }
   useEffect(() => {
     let alive = true
     void api
@@ -119,7 +150,6 @@ export function Diagnosis({
   const findings = diagnosis.findings
   const visible = showAll ? findings : findings.slice(0, 3)
   const hidden = Math.max(0, findings.length - 3)
-  const exportBase = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
 
   return (
     <div className="stack diagnosis">
@@ -183,7 +213,20 @@ export function Diagnosis({
                 aria-label="Сохранить снимок"
                 style={sheetFont ?? undefined}
               >
-                <p className="download-sheet-title">Сохранить снимок</p>
+                <p className="download-sheet-title">{insideMax ? 'Экспорт отчёта' : 'Сохранить снимок'}</p>
+
+                {exportSuccess ? (
+                  <div style={{ color: '#10b981', fontSize: '14px', fontWeight: 600, textAlign: 'center', margin: '4px 0 10px' }}>
+                    ✅ {exportSuccess}
+                  </div>
+                ) : null}
+
+                {exportError ? (
+                  <div style={{ color: '#ef4444', fontSize: '13px', textAlign: 'center', margin: '4px 0 10px' }}>
+                    ⚠️ {exportError}
+                  </div>
+                ) : null}
+
                 <button
                   type="button"
                   className={`template-item-btn copy-action${copied ? ' is-copied' : ''}`}
@@ -206,22 +249,26 @@ export function Diagnosis({
                 <button
                   type="button"
                   className="template-item-btn"
-                  onClick={() => {
-                    closeMore()
-                    window.open(`${exportBase}/api/snapshots/${snapshotId}/export-pdf`, '_blank')
-                  }}
+                  disabled={Boolean(exporting)}
+                  onClick={() => void handleExport('pdf')}
                 >
-                  Скачать PDF
+                  {exporting === 'pdf'
+                    ? 'Отправка PDF в чат...'
+                    : insideMax
+                    ? '✉️ Отправить PDF в диалог бота'
+                    : 'Скачать PDF'}
                 </button>
                 <button
                   type="button"
                   className="template-item-btn"
-                  onClick={() => {
-                    closeMore()
-                    window.open(`${exportBase}/api/snapshots/${snapshotId}/export-excel`, '_blank')
-                  }}
+                  disabled={Boolean(exporting)}
+                  onClick={() => void handleExport('excel')}
                 >
-                  Скачать Excel
+                  {exporting === 'excel'
+                    ? 'Отправка Excel в чат...'
+                    : insideMax
+                    ? '✉️ Отправить Excel в диалог бота'
+                    : 'Скачать Excel'}
                 </button>
               </div>
             </div>,

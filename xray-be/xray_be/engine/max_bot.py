@@ -128,6 +128,86 @@ class MaxBotService:
         }
         return self.call_api('messages', method='POST', payload=payload, query={'chat_id': chat_id})
 
+    def upload_file(self, file_bytes: bytes, filename: str, content_type: str = 'application/octet-stream') -> str:
+        """
+        Загружает файл в хранилище платформы MAX и возвращает token для отправки.
+        """
+        import requests
+        res = self.call_api('uploads', method='POST', query={'type': 'file'})
+        upload_url = res.get('url')
+        if not upload_url:
+            raise RuntimeError(f"MAX uploads did not return upload URL: {res}")
+
+        files = {'data': (filename, file_bytes, content_type)}
+        resp = requests.post(upload_url, files=files, verify=False, timeout=60)
+        if not resp.ok:
+            raise RuntimeError(f"Failed to upload file to MAX ({resp.status_code}): {resp.text}")
+
+        data = resp.json()
+        token = data.get('token')
+        if not token:
+            raise RuntimeError(f"MAX upload did not return token: {data}")
+        return token
+
+    def send_file_message(
+        self,
+        user_id: int | None = None,
+        chat_id: int | None = None,
+        file_bytes: bytes | None = None,
+        filename: str = 'report.pdf',
+        content_type: str = 'application/pdf',
+        caption: str = '',
+        file_token: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Отправляет файл (PDF/Excel) в диалог с пользователем или чат в MAX.
+        Если передан file_bytes, автоматически выполняет загрузку в MAX.
+        """
+        import time
+        if not file_token:
+            if not file_bytes:
+                raise ValueError("Either file_token or file_bytes must be provided")
+            file_token = self.upload_file(file_bytes, filename, content_type)
+
+        text = caption or f"📊 Ваш отчет X-Ray Business готов ({filename})"
+        payload = {
+            'text': text,
+            'attachments': [
+                {
+                    'type': 'file',
+                    'payload': {
+                        'token': file_token,
+                    },
+                }
+            ],
+        }
+
+        query = {}
+        if user_id:
+            query['user_id'] = user_id
+        elif chat_id:
+            query['chat_id'] = chat_id
+        else:
+            raise ValueError("user_id or chat_id required")
+
+        last_resp = None
+        for attempt in range(6):
+            if attempt > 0:
+                time.sleep(1.0)
+            try:
+                res = self.call_api('messages', method='POST', payload=payload, query=query)
+                return res
+            except Exception as e:
+                last_resp = e
+                err_str = str(e)
+                if 'attachment.not.ready' in err_str or '400' in err_str:
+                    continue
+                raise
+
+        if last_resp:
+            raise last_resp
+        return {'status': 'error'}
+
     def handle_update(self, update: dict[str, Any]) -> bool:
         """
         Обработка входящего события от MAX (через Webhook или Polling).

@@ -20,11 +20,15 @@ from engine.narrator import filename_to_title, generate_llm_narrative
 from engine.models import Upload, Snapshot, ChatMessage, Deal
 from engine.ai_mapper import ai_smart_column_mapping, ai_smart_status_mapping
 from engine.reports import generate_excel_report, generate_pdf_report
+import logging
+from engine.max_bot import MaxBotService
 from engine.auth import (
     get_request_identity,
     cleanup_expired_guest_data,
     start_background_cleanup_thread,
 )
+
+logger = logging.getLogger(__name__)
 
 # Start 5-minute guest cleaner in background
 start_background_cleanup_thread()
@@ -833,50 +837,107 @@ class ChatListView(APIView):
         return Response({"items": items})
 
 
+def export_snapshot(request, snapshot_id, format_type='excel'):
+    snap_dict, snap = get_snapshot_for_request(snapshot_id, request)
+    if not snap and snap_dict:
+        snap = snapshot_from_store_dict(snap_dict)
+    if not snap:
+        snap = Snapshot.objects.filter(id=str(snapshot_id)).first()
+    if not snap:
+        return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
+
+    s_id = str(snapshot_id)
+    deals_qs = Deal.objects.filter(snapshot=snap) if isinstance(snap, Snapshot) and snap.pk else Deal.objects.none()
+
+    if format_type in ('excel', 'xlsx'):
+        buf = generate_excel_report(snap, deals_qs)
+        filename = f"xray_audit_{s_id[:8]}.xlsx"
+        content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        caption = f"📊 Ваш Excel-отчет по аудиту готов: {filename}"
+    else:
+        buf = generate_pdf_report(snap, deals_qs)
+        filename = f"xray_audit_{s_id[:8]}.pdf"
+        content_type = 'application/pdf'
+        caption = f"📄 Ваш PDF-отчет по аудиту готов: {filename}"
+
+    ident = get_request_identity(request)
+    to_bot_param = request.query_params.get('to_bot') or (request.data.get('to_bot') if isinstance(request.data, dict) else None)
+    to_bot = str(to_bot_param).lower() in ('1', 'true', 'yes')
+
+    # If send to bot is requested or if authenticated MAX user sends POST
+    if to_bot or (ident.user and ident.user.max_user_id and request.method == 'POST'):
+        if not ident.user or not ident.user.max_user_id:
+            return Response({
+                'code': 'max_auth_required',
+                'message': 'Для отправки отчета в диалог необходимо открыть приложение через мессенджер MAX.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        bot_service = MaxBotService()
+        try:
+            bot_service.send_file_message(
+                user_id=ident.user.max_user_id,
+                file_bytes=buf.getvalue(),
+                filename=filename,
+                content_type=content_type,
+                caption=caption,
+            )
+            return Response({
+                'status': 'ok',
+                'delivered_to': 'bot',
+                'user_id': ident.user.max_user_id,
+                'filename': filename,
+                'message': f'Файл {filename} успешно отправлен в ваш диалог с ботом!'
+            })
+        except Exception as e:
+            logger.error("[EXPORT TO BOT FAILED]: %s", e)
+            return Response({
+                'code': 'delivery_failed',
+                'message': f'Не удалось отправить файл в диалог MAX: {e}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    response = HttpResponse(buf.getvalue(), content_type=content_type)
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
 class SnapshotExportExcelView(APIView):
     """
-    GET /api/snapshots/<id>/export-excel
-    Generates beautiful multi-sheet Excel spreadsheet with audit summary and stagnant deals registry.
+    GET / POST /api/snapshots/<id>/export-excel
+    Generates multi-sheet Excel spreadsheet with audit summary and stagnant deals registry.
+    If to_bot=1, sends the file directly to the user's chat in MAX.
     """
     def get(self, request, snapshot_id):
-        _, snap = get_snapshot_for_request(snapshot_id, request)
-        if not snap:
-            return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
+        return export_snapshot(request, snapshot_id, format_type='excel')
 
-        s_id = str(snapshot_id)
-        deals_qs = Deal.objects.filter(snapshot=snap)
-        excel_buffer = generate_excel_report(snap, deals_qs)
-
-        filename = f"xray_audit_{s_id[:8]}.xlsx"
-        response = HttpResponse(
-            excel_buffer.getvalue(),
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
-        return response
+    def post(self, request, snapshot_id):
+        return export_snapshot(request, snapshot_id, format_type='excel')
 
 
 class SnapshotExportPdfView(APIView):
     """
-    GET /api/snapshots/<id>/export-pdf
+    GET / POST /api/snapshots/<id>/export-pdf
     Generates branded PDF audit report with health score, threats and action plan.
+    If to_bot=1, sends the file directly to the user's chat in MAX.
     """
     def get(self, request, snapshot_id):
-        _, snap = get_snapshot_for_request(snapshot_id, request)
-        if not snap:
-            return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
+        return export_snapshot(request, snapshot_id, format_type='pdf')
 
-        s_id = str(snapshot_id)
-        deals_qs = Deal.objects.filter(snapshot=snap)
-        pdf_buffer = generate_pdf_report(snap, deals_qs)
+    def post(self, request, snapshot_id):
+        return export_snapshot(request, snapshot_id, format_type='pdf')
 
-        filename = f"xray_audit_{s_id[:8]}.pdf"
-        response = HttpResponse(
-            pdf_buffer.getvalue(),
-            content_type='application/pdf'
-        )
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
-        return response
+
+class SnapshotExportBotView(APIView):
+    """
+    POST /api/snapshots/<id>/export-bot
+    Accepts: {"format": "pdf" | "excel"}
+    Generates and delivers the audit report directly into the authenticated MAX user's dialog.
+    """
+    def post(self, request, snapshot_id):
+        fmt = 'pdf'
+        if isinstance(request.data, dict):
+            fmt = (request.data.get('format') or 'pdf').lower()
+            request.data['to_bot'] = True
+        return export_snapshot(request, snapshot_id, format_type=fmt)
 
 
 def snapshot_from_store_dict(snap: dict) -> Snapshot:
