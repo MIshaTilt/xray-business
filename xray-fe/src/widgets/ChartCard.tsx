@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { DataTable } from './DataTable.tsx'
-import { SmoothResize } from './SmoothResize.tsx'
 
 export interface ChartItem {
   label: string
@@ -121,12 +120,11 @@ export function ChartCard({
         </div>
       </div>
 
-      <SmoothResize>
-        {showRaw ? (
-          <pre className="chart-raw-json">{JSON.stringify(parsed, null, 2)}</pre>
-        ) : null}
+      {showRaw ? (
+        <pre className="chart-raw-json">{JSON.stringify(parsed, null, 2)}</pre>
+      ) : null}
 
-        <div className="chart-card-body">
+      <div className="chart-card-body">
         {viewMode === 'table' ? (
           <DataTable tone="chat">
             <table className="chart-mini-table">
@@ -181,8 +179,7 @@ export function ChartCard({
             setHoveredIdx={setHoveredIdx}
           />
         )}
-        </div>
-      </SmoothResize>
+      </div>
     </div>
   )
 }

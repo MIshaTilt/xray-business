@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react'
 import type { ToolCallData } from './ChatScreen.tsx'
 import { DataTable } from '../widgets/DataTable.tsx'
-import { SmoothResize } from '../widgets/SmoothResize.tsx'
 
 export function ToolCallBadge({ toolCall }: { toolCall: ToolCallData }) {
   const [open, setOpen] = useState(false)
@@ -76,13 +75,13 @@ export function ToolCallBadge({ toolCall }: { toolCall: ToolCallData }) {
       >
         <span className="tool-call-icon">{icon}</span>
         <span className="tool-call-title">
-          {isSqlQuery ? 'Выполнение запроса в базе' : `Запрос к базе: ${label}`}
+          {isSqlQuery ? `SQL: ${sqlQueryText ? (sqlQueryText.length > 45 ? sqlQueryText.slice(0, 45) + '…' : sqlQueryText) : label}` : `Запрос к базе: ${label}`}
         </span>
         <span className={`tool-call-chevron ${open && !closing ? 'rotated' : ''}`}>▼</span>
       </button>
 
       {open && (
-        <SmoothResize className={`tool-call-body${closing ? ' is-closing' : ''}`} appear collapse={closing}>
+        <div className={`tool-call-body${closing ? ' is-closing' : ''}`}>
           {isSqlQuery ? (
             <>
               {sqlQueryText && (
@@ -160,7 +159,7 @@ export function ToolCallBadge({ toolCall }: { toolCall: ToolCallData }) {
               </div>
             </>
           )}
-        </SmoothResize>
+        </div>
       )}
     </div>
   )
