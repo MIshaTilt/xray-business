@@ -32,7 +32,7 @@ BASE_URL = 'https://platform-api2.max.ru'
 class MaxBotService:
     def __init__(self, token: str | None = None, username: str | None = None, app_url: str | None = None):
         self.token = token or getattr(settings, 'MAX_BOT_TOKEN', 'f9LHodD0cOJBhxITwPCdJEVxZ7O2jzj6oDVpd_ODgTheRYaSUX8ErQbLWGisLOw5-U9xswXPu-vQfO0yAcCT')
-        self.username = username or getattr(settings, 'MAX_BOT_USERNAME', 'se14421867_bot')
+        self.username = username or getattr(settings, 'MAX_BOT_USERNAME', 't720_hakaton_max_bot')
         self.app_url = (app_url or getattr(settings, 'MAX_APP_URL', 'https://xray-business-bot.online')).rstrip('/')
 
     def call_api(

@@ -4,7 +4,7 @@
 
 **Интеллектуальная система экспресс-диагностики, финансового аудита и поиска точек роста малого и микробизнеса для платформы MAX**
 
-[![MAX Platform](https://img.shields.io/badge/MAX-MiniApp%20%26%20Bot-blue?style=for-the-badge&logo=telegram&logoColor=white)](https://max.ru/se14421867_bot?startapp)
+[![MAX Platform](https://img.shields.io/badge/MAX-MiniApp%20%26%20Bot-blue?style=for-the-badge&logo=telegram&logoColor=white)](https://max.ru/t720_hakaton_max_bot?startapp)
 [![React](https://img.shields.io/badge/React%2019-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
 [![Django](https://img.shields.io/badge/Django%205.2-092E20?style=for-the-badge&logo=django&logoColor=white)](https://www.djangoproject.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL%2016-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
@@ -14,7 +14,7 @@
 
 **Хакатон:** Трек «Эффективный бизнес» (Минобрнауки России & Мессенджер MAX) · **Команда:** quota exceeded
 
-[🌐 Веб-сервис (Live Demo)](https://xray-business-bot.online) · [📱 Чат-бот в MAX (@se14421867_bot)](https://max.ru/se14421867_bot?startapp) · [📑 Swagger UI (OpenAPI 3.1)](https://xray-business-bot.online/api/docs/) · [🧪 План проверки (DATA-API.yaml)](https://xray-business-bot.online/DATA-API.yaml)
+[🌐 Веб-сервис (Live Demo)](https://xray-business-bot.online) · [📱 Чат-бот в MAX (@t720_hakaton_max_bot)](https://max.ru/t720_hakaton_max_bot?startapp) · [📑 Swagger UI (OpenAPI 3.1)](https://xray-business-bot.online/api/docs/) · [🧪 План проверки (DATA-API.yaml)](https://xray-business-bot.online/DATA-API.yaml)
 
 ---
 
@@ -91,7 +91,7 @@
 
 - **Must Have (Обязательно в текущем релизе):**
   - Кроссплатформенное мини-приложение в MAX (веб и мобильная адаптация) на базе `@maxhub/max-ui` и `MAX Bridge`.
-  - Чат-бот MAX (`@se14421867_bot`) со сценарием бесшовного перехода в Mini App.
+  - Чат-бот MAX (`@t720_hakaton_max_bot`) со сценарием бесшовного перехода в Mini App.
   - Детерминированное ядро расчета 8 ключевых бизнес-метрик с финансовой оценкой в рублях.
   - AI-нормализатор структуры колонок для обработки произвольных таблиц (CSV, XLSX, XLS).
   - Встроенный интерактивный AI-консультант с поддержкой **Tool Calling** (выборка сделок из БД).
@@ -118,7 +118,7 @@
 
 ```mermaid
 flowchart LR
-    A["💬 Чат-бот MAX\n(@se14421867_bot)"] --> B["🚀 Нативное Mini App\n(open_app WebView)"]
+    A["💬 Чат-бот MAX\n(@t720_hakaton_max_bot)"] --> B["🚀 Нативное Mini App\n(open_app WebView)"]
     B --> C["📁 Выбор источника\n(Шаблон / Файл / CRM)"]
     C --> D["🧠 AI-нормализатор\n(Маппинг колонок)"]
     D --> E["⚡ Экспресс-рентген\n(8 метрик + Ущерб ₽)"]
@@ -170,7 +170,7 @@ flowchart LR
 ┌────────────────────────────────────────────────────────────────────────┐
 │                      Внешние сервисы и API                             │
 │  - OpenAI-API совместимая LLM (Нарратив, Tool Calling, Normalizer)     │
-│  - MAX Bot API (Чат-бот @se14421867_bot, вебхуки, инлайн-кнопки)       │
+│  - MAX Bot API (Чат-бот @t720_hakaton_max_bot, вебхуки, инлайн-кнопки)       │
 │  - amoCRM REST API v4 (Синхронизация сделок по OAuth 2.0)              │
 └────────────────────────────────────────────────────────────────────────┘
 ```
@@ -232,7 +232,7 @@ cp .env.example .env
 | `OPENAI_BASE_URL` | Да* | Базовый URL OpenAI-совместимого провайдера | - |
 | `OPENAI_MODEL` | Да* | Имя языковой модели в OpenAI-совместимом API | - |
 | `MAX_BOT_TOKEN` | Да* | Токен чат-бота платформы MAX | Выдан организаторами хакатона |
-| `MAX_BOT_USERNAME` | Нет | Имя чат-бота в мессенджере MAX | `se14421867_bot` |
+| `MAX_BOT_USERNAME` | Нет | Имя чат-бота в мессенджере MAX | `t720_hakaton_max_bot` |
 | `MAX_APP_URL` | Нет | URL мини-приложения для кнопок бота | `https://xray-business-bot.online` |
 
 *\*Примечание: При отсутствии параметров конфигурации LLM (`OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL`) сервис сохраняет 100% работоспособность математического ядра аудита и формирует детерминированные выводы по встроенным шаблонам.*
@@ -276,7 +276,7 @@ cp .env.example .env
 
 ### 8.1. Перечень интеграций
 1. **Платформа MAX (Мессенджер):**
-   - Чат-бот `@se14421867_bot` на базе `@maxhub/max-bot-api` (обработка команд, событий старта, генерация инлайн-кнопок `open_app`).
+   - Чат-бот `@t720_hakaton_max_bot` на базе `@maxhub/max-bot-api` (обработка команд, событий старта, генерация инлайн-кнопок `open_app`).
    - Мини-приложение на базе `@maxhub/max-ui` и SDK `MAX Bridge` (кроссплатформенная адаптация под iOS, Android, Desktop, Web).
    - Безопасная валидация контекста пользователя через заголовок `X-Max-Init-Data`.
 2. **OpenAI-API совместимый LLM провайдер:**
@@ -338,7 +338,7 @@ cp .env.example .env
 ## 11. Пошаговый сценарий проверки
 
 ### Сценарий 1: Проверка в среде мессенджера MAX (Основной сценарий)
-1. Откройте чат-бота в MAX: [`@se14421867_bot`](https://max.ru/se14421867_bot?startapp).
+1. Откройте чат-бота в MAX: [`@t720_hakaton_max_bot`](https://max.ru/t720_hakaton_max_bot?startapp).
 2. Нажмите кнопку **«Старт»** (или отправьте команду `/start`).
 3. Нажмите инлайн-кнопку **«🚀 Открыть мини-приложение»** — запустится нативное Mini App во встроенном WebView MAX.
 4. Нажмите кнопку **«Шаблон ▼»** и выберите **«Стандартный E-commerce»**.
@@ -384,7 +384,7 @@ cp .env.example .env
 1. **Размер входных файлов:** Ограничение на разовую загрузку через веб-интерфейс — до 50 МБ (достаточно для анализа более 500 000 сделок).
 2. **Поддерживаемые форматы:** Табличные форматы `.csv`, `.xlsx`, `.xls`.
 3. **Лимиты провайдера LLM:** При исчерпании квот внешнего AI-провайдера система автоматически и прозрачно переключается на встроенный детерминированный генератор заключений, сохраняя полную функциональность аудита.
-4. **Платформенное ограничение MAX:** В соответствии с регламентом платформы MAX, никнейм чат-бота (`@se14421867_bot`) фиксируется при регистрации и изменению не подлежит.
+4. **Платформенное ограничение MAX:** В соответствии с регламентом платформы MAX, никнейм чат-бота (`@t720_hakaton_max_bot`) фиксируется при регистрации и изменению не подлежит.
 
 ---
 
@@ -445,7 +445,7 @@ docker compose up -d --build
 Решение использует экосистему MAX существенно шире базовых требований задания, создавая законченную пользовательскую ценность:
 
 1. **Глубокая связка Чат-бота и Mini App:**
-   - Чат-бот [`@se14421867_bot`](https://max.ru/se14421867_bot?startapp) выступает не просто ссылкой, а нативным проводником: обрабатывает события `bot_started`, регистрирует команды в системном меню мессенджера MAX и открывает Mini App через бесшовный нативный WebView (`open_app`).
+   - Чат-бот [`@t720_hakaton_max_bot`](https://max.ru/t720_hakaton_max_bot?startapp) выступает не просто ссылкой, а нативным проводником: обрабатывает события `bot_started`, регистрирует команды в системном меню мессенджера MAX и открывает Mini App через бесшовный нативный WebView (`open_app`).
 2. **Дизайн-система `@maxhub/max-ui`:**
    - Интерфейс приложения построен на официальных компонентах `@maxhub/max-ui`, обеспечивая 100% визуальное соответствие стилистике и UX-стандартам платформы MAX.
 3. **Библиотека `MAX Bridge`:**

@@ -45,7 +45,7 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-}
       MAX_BOT_TOKEN: ${MAX_BOT_TOKEN:-f9LHodD0cOJBhxITwPCdJEVxZ7O2jzj6oDVpd_ODgTheRYaSUX8ErQbLWGisLOw5-U9xswXPu-vQfO0yAcCT}
-      MAX_BOT_USERNAME: ${MAX_BOT_USERNAME:-se14421867_bot}
+      MAX_BOT_USERNAME: ${MAX_BOT_USERNAME:-t720_hakaton_max_bot}
       MAX_APP_URL: ${MAX_APP_URL:-https://xray-business-bot.online}
       CORS_ALLOW_ALL_ORIGINS: "true"
     volumes:

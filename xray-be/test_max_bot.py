@@ -16,7 +16,7 @@ def test_webhook_endpoints():
     print("GET response:", resp_get.json())
     assert resp_get.status_code == 200
     assert resp_get.json().get("status") == "ok"
-    assert resp_get.json().get("bot", {}).get("username") == "se14421867_bot"
+    assert resp_get.json().get("bot", {}).get("username") == "t720_hakaton_max_bot"
 
     # 2. Test POST /api/max/webhook with dummy update
     dummy_payload = {

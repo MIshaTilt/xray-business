@@ -28,7 +28,7 @@ if (!process.env.NODE_EXTRA_CA_CERTS) {
 
 export const config = {
   MAX_BOT_TOKEN: process.env.MAX_BOT_TOKEN || 'f9LHodD0cOJBhxITwPCdJEVxZ7O2jzj6oDVpd_ODgTheRYaSUX8ErQbLWGisLOw5-U9xswXPu-vQfO0yAcCT',
-  MAX_BOT_USERNAME: process.env.MAX_BOT_USERNAME || 'se14421867_bot',
+  MAX_BOT_USERNAME: process.env.MAX_BOT_USERNAME || 't720_hakaton_max_bot',
   MAX_APP_URL: (process.env.MAX_APP_URL || 'https://xray-business-bot.online').replace(/\/+$/, ''),
   MAX_API_BASE_URL: process.env.MAX_API_BASE_URL || 'https://platform-api2.max.ru',
   PORT: parseInt(process.env.PORT || '3000', 10),

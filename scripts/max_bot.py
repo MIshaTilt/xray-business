@@ -203,7 +203,7 @@ def poll_updates(token: str, bot_username: str, app_url: str) -> None:
 def main() -> None:
     load_env()
     token = os.environ.get('MAX_BOT_TOKEN', 'f9LHodD0cOJBhxITwPCdJEVxZ7O2jzj6oDVpd_ODgTheRYaSUX8ErQbLWGisLOw5-U9xswXPu-vQfO0yAcCT').strip()
-    bot_username = os.environ.get('MAX_BOT_USERNAME', 'se14421867_bot').strip()
+    bot_username = os.environ.get('MAX_BOT_USERNAME', 't720_hakaton_max_bot').strip()
     app_url = os.environ.get('MAX_APP_URL', 'https://xray-business-bot.online').strip().rstrip('/')
 
     if not token:
