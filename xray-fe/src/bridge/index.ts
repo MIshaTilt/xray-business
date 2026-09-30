@@ -1,9 +1,15 @@
-import type { Platform } from './types.ts'
+import type { MaxUser, MaxWebApp, Platform } from './types.ts'
 
 const KNOWN_PLATFORMS = new Set<Platform>(['ios', 'android', 'desktop', 'web'])
 
+function hostApp(): MaxWebApp | undefined {
+  return window.WebApp ?? window.Telegram?.WebApp
+}
+
 export function initBridge(): void {
-  const app = window.WebApp
+  const telegram = window.Telegram?.WebApp
+  if (!window.WebApp && telegram) window.WebApp = telegram
+  const app = hostApp()
   if (!app) return
   try {
     app.ready?.()
@@ -18,22 +24,50 @@ export function initBridge(): void {
 }
 
 export function getInitData(): string {
-  return window.WebApp?.initData ?? ''
+  return hostApp()?.initData ?? ''
+}
+
+export function getGuestSessionId(): string {
+  let id = localStorage.getItem('xray_guest_session_id')
+  if (!id) {
+    id = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36)
+    localStorage.setItem('xray_guest_session_id', id)
+  }
+  return id
+}
+
+export function getMaxUser(): MaxUser | null {
+  const unsafe = hostApp()?.initDataUnsafe?.user
+  if (unsafe && typeof unsafe.id === 'number') return unsafe
+  const raw = window.WebApp?.initData
+  if (!raw) return null
+  try {
+    const encoded = new URLSearchParams(raw).get('user')
+    if (!encoded) return null
+    const parsed = JSON.parse(encoded) as MaxUser
+    if (parsed && typeof parsed.id === 'number') return parsed
+  } catch {
+    return null
+  }
+  return null
 }
 
 export function isInsideMax(): boolean {
-  return Boolean(window.WebApp?.initData)
+  return Boolean(hostApp()?.initData)
 }
 
 export function getPlatform(): Platform {
-  const value = window.WebApp?.platform
+  const raw = hostApp()?.platform
+  const mapped =
+    raw === 'tdesktop' || raw === 'macos' ? 'desktop' : raw === 'weba' || raw === 'webk' ? 'web' : raw
+  const value = mapped
   if (value && KNOWN_PLATFORMS.has(value as Platform)) return value as Platform
   if (typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 900px)').matches) return 'web'
   return 'ios'
 }
 
 export function setClosingConfirmation(enabled: boolean): void {
-  const app = window.WebApp
+  const app = hostApp()
   if (!app) return
   try {
     if (enabled) app.enableClosingConfirmation?.()
@@ -44,7 +78,7 @@ export function setClosingConfirmation(enabled: boolean): void {
 }
 
 export function showBack(visible: boolean): void {
-  const button = window.WebApp?.BackButton
+  const button = hostApp()?.BackButton
   if (!button) return
   try {
     if (visible) button.show()
@@ -55,7 +89,7 @@ export function showBack(visible: boolean): void {
 }
 
 export function bindBack(handler: () => void): () => void {
-  const button = window.WebApp?.BackButton
+  const button = hostApp()?.BackButton
   if (!button) return () => undefined
   button.onClick(handler)
   return () => button.offClick(handler)
@@ -65,14 +99,24 @@ export function hapticSuccess(): void {
   const platform = getPlatform()
   if (platform === 'desktop' || platform === 'web') return
   try {
-    window.WebApp?.HapticFeedback?.notificationOccurred?.('success')
+    hostApp()?.HapticFeedback?.notificationOccurred?.('success')
   } catch {
     // Хаптика не должна ронять экран диагноза.
   }
 }
 
+export function hapticImpact(style: 'light' | 'medium' | 'heavy' = 'medium'): void {
+  const platform = getPlatform()
+  if (platform === 'desktop' || platform === 'web') return
+  try {
+    hostApp()?.HapticFeedback?.impactOccurred?.(style)
+  } catch {
+    // Ignore
+  }
+}
+
 export async function downloadByBridge(url: string, fileName: string): Promise<boolean> {
-  const download = window.WebApp?.downloadFile
+  const download = hostApp()?.downloadFile
   if (!isInsideMax() || !download) return false
   await download(url, fileName)
   return true

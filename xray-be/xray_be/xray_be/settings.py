@@ -24,13 +24,65 @@ load_dotenv(BASE_DIR.parent / '.env')
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-st3s#15gb)ekm&^%a3-4^=x@f^9xv=hvf1s2re$wau9qj7*h6k'
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-st3s#15gb)ekm&^%a3-4^=x@f^9xv=hvf1s2re$wau9qj7*h6k',
+)
+DEBUG = os.environ.get('DEBUG', 'true').lower() in ('1', 'true', 'yes')
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get('ALLOWED_HOSTS', '*').split(',')
+    if host.strip()
+]
+raw_origins = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
+trusted_origins = set(
+    origin.strip()
+    for origin in raw_origins.split(',')
+    if origin.strip()
+)
+# Ensure sensible default origins are trusted
+default_trusted = [
+    'http://localhost',
+    'http://localhost:80',
+    'http://localhost:5173',
+    'http://localhost:8000',
+    'http://127.0.0.1',
+    'http://127.0.0.1:80',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:8000',
+    'https://xray-business-bot.online',
+    'http://87.120.165.142',
+    'http://144.31.157.209',
+    'http://144.31.157.209:80',
+    'http://144.31.157.209:5173',
+    'http://144.31.157.209:8000',
+    'http://13.143.163.133',
+    'http://13.143.163.133:80',
+    'http://13.143.163.133:5173',
+    'http://13.143.163.133:8000',
+    'https://13.143.163.133',
+    'https://13.143.163.133:443',
+]
+for origin in default_trusted:
+    trusted_origins.add(origin)
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+for host in ALLOWED_HOSTS:
+    if host and host != '*':
+        trusted_origins.add(f'http://{host}')
+        trusted_origins.add(f'https://{host}')
+        trusted_origins.add(f'http://{host}:8000')
+        trusted_origins.add(f'http://{host}:5173')
 
-ALLOWED_HOSTS = ['*']
+CSRF_TRUSTED_ORIGINS = sorted(list(trusted_origins))
+
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_X_FORWARDED_HOST = True
+
+# Cookie security settings (default to False for HTTP deployments on VPS IPs; set to True when SSL/HTTPS is enabled)
+SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'false').lower() in ('1', 'true', 'yes')
+CSRF_COOKIE_SECURE = os.environ.get('CSRF_COOKIE_SECURE', 'false').lower() in ('1', 'true', 'yes')
+
 
 
 # Application definition
@@ -44,8 +96,28 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
+    'drf_spectacular',
     'engine',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'engine.auth.CsrfExemptSessionAuthentication',
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'X-Ray Business API',
+    'DESCRIPTION': 'Интеллектуальная система экспресс-диагностики и аудита B2B-продаж для платформы MAX',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+        'persistAuthorization': True,
+        'displayOperationId': True,
+    },
+}
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -55,7 +127,6 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
 ROOT_URLCONF = 'xray_be.urls'
@@ -81,12 +152,28 @@ WSGI_APPLICATION = 'xray_be.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+DB_ENGINE = os.environ.get('DB_ENGINE', '').lower()
+POSTGRES_DB = os.environ.get('POSTGRES_DB', '')
+
+if DB_ENGINE == 'postgres' or POSTGRES_DB:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('POSTGRES_DB', 'xray_db'),
+            'USER': os.environ.get('POSTGRES_USER', 'xray_user'),
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'xray_password'),
+            'HOST': os.environ.get('POSTGRES_HOST', 'postgres'),
+            'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+            'CONN_MAX_AGE': 60,
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -123,14 +210,29 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'static'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+from corsheaders.defaults import default_headers
+
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'x-max-init-data',
+    'x-debug-token',
+    'x-debug-user',
+    'x-debug-mode',
+    'x-guest-session',
+]
 APPEND_SLASH = False
+
+# MAX Messenger Bot Configuration
+MAX_BOT_TOKEN = os.environ.get('MAX_BOT_TOKEN', 'f9LHodD0cOJBhxITwPCdJEVxZ7O2jzj6oDVpd_ODgTheRYaSUX8ErQbLWGisLOw5-U9xswXPu-vQfO0yAcCT')
+MAX_BOT_USERNAME = os.environ.get('MAX_BOT_USERNAME', 't720_hakaton_max_bot')
+MAX_APP_URL = os.environ.get('MAX_APP_URL', 'https://xray-business-bot.online')
 
 

@@ -14,7 +14,8 @@
     "@maxhub/max-ui": "^0.5.0",
     "marked": "^18.0.14",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-router": "^8.4.0"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",

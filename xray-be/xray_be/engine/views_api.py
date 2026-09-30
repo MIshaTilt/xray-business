@@ -5,55 +5,198 @@ import uuid
 import datetime
 from decimal import Decimal
 from django.conf import settings
+from django.db.models import Count, F, OuterRef, Q, Subquery
 from django.http import JsonResponse, HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
 from engine.parsers import read_table_file
-from engine.mapping import guess_column_mapping, CANONICAL_FIELDS
+from engine.mapping import guess_column_mapping, derive_computed_columns, CANONICAL_FIELDS
 from pathlib import Path
 from engine.normalizer import normalize_records
 from engine.analyzer import calculate_metrics_and_findings
-from engine.narrator import generate_llm_narrative
+from engine.narrator import filename_to_title, generate_llm_narrative
 from engine.models import Upload, Snapshot, ChatMessage, Deal
-from engine.ai_mapper import ai_smart_column_mapping
+from engine.ai_mapper import ai_smart_column_mapping, ai_smart_status_mapping
 from engine.reports import generate_excel_report, generate_pdf_report
-from django.http import HttpResponse
+import logging
+from engine.max_bot import MaxBotService
+from engine.auth import (
+    get_request_identity,
+    cleanup_expired_guest_data,
+    start_background_cleanup_thread,
+)
 
-# Persistent storage for MVP snapshots on disk
-DATA_DIR = Path(__file__).resolve().parent.parent.parent / 'data'
-DATA_DIR.mkdir(parents=True, exist_ok=True)
-STORE_FILE = DATA_DIR / 'snapshots_store.json'
+logger = logging.getLogger(__name__)
+
+# Start 5-minute guest cleaner in background
+start_background_cleanup_thread()
 
 UPLOADS_STORE = {}
 SNAPSHOTS_STORE = {}
 
+
 def load_disk_store():
-    global SNAPSHOTS_STORE
-    if STORE_FILE.exists():
-        try:
-            with open(STORE_FILE, 'r', encoding='utf-8') as f:
-                SNAPSHOTS_STORE = json.load(f)
-        except Exception:
-            SNAPSHOTS_STORE = {}
+    pass
+
 
 def save_disk_store():
+    pass
+
+
+def get_upload(upload_id, request=None) -> dict | None:
+    cleanup_expired_guest_data()
+    key = str(upload_id)
+    cached = UPLOADS_STORE.get(key)
+    row = Upload.objects.filter(pk=key).first()
+    if not cached and not row:
+        return None
+
+    if request:
+        ident = get_request_identity(request)
+        owner_uid = row.user.max_user_id if (row and row.user) else (cached.get('user_id') if cached else None)
+        is_guest = (row.user is None) if row else (cached.get('is_guest', True) if cached else True)
+        guest_sess = row.guest_session if row else (cached.get('guest_session', '') if cached else '')
+
+        if owner_uid is not None:
+            if not ident.user or ident.user.max_user_id != owner_uid:
+                return None
+        elif is_guest:
+            if not ident.is_guest or ident.guest_session != guest_sess:
+                return None
+
+    if cached:
+        return cached
+
+    entry = {
+        'upload_id': key,
+        'user_id': row.user.max_user_id if (row and row.user) else None,
+        'guest_session': row.guest_session if row else '',
+        'is_guest': (row.user is None) if row else True,
+        'filename': row.filename if row else '',
+        'columns': (row.columns if row else []) or [],
+        'sample_rows': (row.sample_rows if row else []) or [],
+        'all_rows': (row.all_rows if row else []) or [],
+        'mapping': (row.mapping or row.suggested_mapping if row else {}) or {},
+        'status_map': (row.status_map if row else {}) or {},
+    }
+    UPLOADS_STORE[key] = entry
+    return entry
+
+
+def snapshot_model_to_dict(snap_obj: Snapshot) -> dict:
+    s_key = str(snap_obj.id)
+    owner_uid = snap_obj.user.max_user_id if snap_obj.user else None
+    is_guest = snap_obj.is_guest
+    guest_sess = snap_obj.guest_session or ""
+    is_cmp = (snap_obj.archetype == 'comparison') or (isinstance(snap_obj.quality, dict) and snap_obj.quality.get('item_type') == 'comparison')
+    q = snap_obj.quality or {}
+    diag = {
+        'snapshot_id': s_key,
+        'headline': snap_obj.headline,
+        'body': snap_obj.body,
+        'findings': snap_obj.findings,
+        'coverage': snap_obj.coverage,
+        'period': {
+            'from': snap_obj.period_from.isoformat() if snap_obj.period_from else None,
+            'to': snap_obj.period_to.isoformat() if snap_obj.period_to else None,
+        },
+        'totals': snap_obj.totals,
+        'ok': snap_obj.ok_list,
+        'low_sample': snap_obj.low_sample,
+        'card_title': q.get('card_title', ''),
+    }
+    return {
+        'snapshot_id': s_key,
+        'item_type': 'comparison' if is_cmp else 'snapshot',
+        'compare_base_id': q.get('compare_base_id'),
+        'compare_target_id': q.get('compare_target_id'),
+        'diff_result': q.get('diff_result'),
+        'user_id': owner_uid,
+        'guest_session': guest_sess,
+        'is_guest': is_guest,
+        'scan_no': snap_obj.scan_no,
+        'status': snap_obj.status,
+        'progress': snap_obj.progress,
+        'error': snap_obj.error,
+        'created_at': snap_obj.created_at.isoformat() if snap_obj.created_at else "",
+        'filename': snap_obj.filename,
+        'source': 'comparison' if is_cmp else snap_obj.archetype,
+        'card_title': q.get('card_title', snap_obj.filename),
+        'headline': snap_obj.headline,
+        'body': snap_obj.body,
+        'verdict': 'ok' if q.get('trend') == 'improved' else 'watch',
+        'total_saved_money': q.get('total_saved_money', 0),
+        'diagnosis': diag,
+        'all_metrics': snap_obj.all_metrics,
+    }
+
+
+def get_snapshot_for_request(snapshot_id, request) -> tuple[dict | None, Snapshot | None]:
+    cleanup_expired_guest_data()
+    ident = get_request_identity(request)
+    s_key = str(snapshot_id)
+
     try:
-        with open(STORE_FILE, 'w', encoding='utf-8') as f:
-            json.dump(SNAPSHOTS_STORE, f, ensure_ascii=False, indent=2)
+        snap_obj = Snapshot.objects.filter(id=s_key).first()
+    except Exception:
+        snap_obj = None
+
+    if not snap_obj:
+        return None, None
+
+    # Staff / Superuser has full access to all snapshots
+    if request and hasattr(request, 'user') and getattr(request.user, 'is_authenticated', False) and getattr(request.user, 'is_staff', False):
+        return snapshot_model_to_dict(snap_obj), snap_obj
+
+    owner_uid = snap_obj.user.max_user_id if snap_obj.user else None
+
+    # Strict isolation for registered MAX users: only the owner can access
+    if owner_uid is not None:
+        if not ident.user or ident.user.max_user_id != owner_uid:
+            return None, None
+
+    snap_dict = snapshot_model_to_dict(snap_obj)
+    return snap_dict, snap_obj
+
+
+def persist_upload_mapping(upload_id, mapping: dict, status_map: dict) -> None:
+    try:
+        Upload.objects.filter(pk=str(upload_id)).update(mapping=mapping, status_map=status_map)
     except Exception as e:
-        print(f"[STORE ERROR] Не удалось сохранить на диск: {e}")
-
-load_disk_store()
+        print(f"[DB ERROR] Не удалось обновить mapping: {e}")
 
 
-def get_coverage(mapping: dict) -> dict:
+def forget_snapshot(snapshot_id) -> None:
+    """Удаляет снимок и связанные с ним сравнения из базы данных."""
+    s_id = str(snapshot_id)
+    Snapshot.objects.filter(quality__compare_base_id=s_id).delete()
+    Snapshot.objects.filter(quality__compare_target_id=s_id).delete()
+    Snapshot.objects.filter(id=s_id).delete()
+
+
+def next_scan_no() -> int:
+    from django.db.models import Max
+    max_no = Snapshot.objects.aggregate(Max('scan_no'))['scan_no__max'] or 0
+    return max_no + 1
+
+
+def get_coverage(mapping: dict, columns: list = None) -> dict:
     has_f = lambda f: bool(mapping.get(f))
+    has_col_disc = False
+    if columns:
+        from engine.mapping import normalize_string
+        for c in columns:
+            nc = normalize_string(c)
+            if any(w in nc for w in ['скидк', 'скинули', 'discount', 'цена без скидки', 'розничная цена']):
+                has_col_disc = True
+                break
+
     checks = {
         'speed_to_lead': has_f('created_at') and has_f('first_contact_at'),
         'stagnation': has_f('status') and (has_f('status_changed_at') or has_f('created_at')),
-        'discount_leakage': has_f('amount') and (has_f('discount_pct') or has_f('list_price')),
+        'discount_leakage': has_f('amount') and (has_f('discount_pct') or has_f('list_price') or has_col_disc),
         'sales_cycle': has_f('created_at') and has_f('closed_at'),
         'key_account_risk': has_f('client') and has_f('status'),
         'dormant': has_f('client') and (has_f('last_activity_at') or has_f('created_at')),
@@ -75,6 +218,15 @@ class UploadView(APIView):
             return Response({'code': 'no_file', 'message': 'Файл не прикреплен'}, status=status.HTTP_400_BAD_REQUEST)
 
         filename = file_obj.name
+        ext = os.path.splitext(filename)[1].lower()
+        if ext not in ('.csv', '.xlsx', '.xls'):
+            return Response(
+                {
+                    'code': 'bad_format',
+                    'message': 'Нужен файл таблицы CSV, XLSX или XLS — выгрузка из 1С, Битрикс24, МойСклад, amoCRM и похожих систем.',
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         try:
             cols, sample_rows, all_rows = read_table_file(file_obj, filename)
         except ValueError as e:
@@ -94,28 +246,53 @@ class UploadView(APIView):
         if not suggested_mapping.get('amount') or not suggested_mapping.get('status') or not suggested_mapping.get('manager') or not suggested_mapping.get('deal_id'):
             suggested_mapping = ai_smart_column_mapping(cols, sample_rows, suggested_mapping)
 
-        coverage = get_coverage(suggested_mapping)
+        # AI / Heuristic Status Normalization
+        status_map = {}
+        status_col = suggested_mapping.get('status')
+        if status_col:
+            unique_statuses = list(dict.fromkeys(
+                str(r.get(status_col, '')).strip()
+                for r in all_rows
+                if str(r.get(status_col, '')).strip()
+            ))
+            if unique_statuses:
+                status_map = ai_smart_status_mapping(unique_statuses, sample_rows)
+
+        # Automatically derive missing computed columns (e.g. 'Скидка, % (авто)', 'Прайс до скидки (авто)')
+        cols, sample_rows, all_rows, suggested_mapping, auto_computed_columns = derive_computed_columns(
+            cols, sample_rows, all_rows, suggested_mapping
+        )
+
+        coverage = get_coverage(suggested_mapping, cols)
         upload_id = str(uuid.uuid4())
+        ident = get_request_identity(request)
 
         UPLOADS_STORE[upload_id] = {
             'upload_id': upload_id,
+            'user_id': ident.user.max_user_id if ident.user else None,
+            'guest_session': ident.guest_session if ident.is_guest else "",
+            'is_guest': ident.is_guest,
             'filename': filename,
             'columns': cols,
             'sample_rows': sample_rows,
             'all_rows': all_rows,
             'mapping': suggested_mapping,
-            'status_map': {},
+            'status_map': status_map,
+            'auto_computed_columns': auto_computed_columns,
         }
 
         try:
             Upload.objects.create(
                 id=upload_id,
+                user=ident.user,
+                guest_session=ident.guest_session if ident.is_guest else "",
                 filename=filename,
                 columns=cols,
                 sample_rows=sample_rows,
                 all_rows=all_rows,
                 suggested_mapping=suggested_mapping,
                 mapping=suggested_mapping,
+                status_map=status_map,
             )
         except Exception as e:
             print(f"[DB ERROR] Не удалось сохранить Upload: {e}")
@@ -126,70 +303,165 @@ class UploadView(APIView):
             'columns': cols,
             'sample_rows': sample_rows,
             'suggested_mapping': suggested_mapping,
-            'coverage': coverage
+            'coverage': coverage,
+            'auto_computed_columns': auto_computed_columns,
         }, status=status.HTTP_201_CREATED)
 
 
 class SaveMappingView(APIView):
     def put(self, request, upload_id):
-        upload = UPLOADS_STORE.get(str(upload_id))
+        upload = get_upload(upload_id, request=request)
         if not upload:
-            return Response({'code': 'not_found', 'message': 'Сессия загрузки не найдена'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'code': 'not_found', 'message': 'Сессия загрузки не найдена или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
 
         mapping = request.data.get('mapping', {})
-        status_map = request.data.get('status_map', {})
+        status_map = request.data.get('status_map') or {}
 
         # Validation
         if not mapping.get('amount') or (not mapping.get('status') and not mapping.get('created_at')):
             return Response({'code': 'mapping_incomplete', 'message': 'Необходимо выбрать колонку суммы и статуса или даты'}, status=status.HTTP_400_BAD_REQUEST)
 
+        status_col = mapping.get('status')
+        if status_col and not status_map:
+            all_rows = upload.get('all_rows') or []
+            unique_statuses = list(dict.fromkeys(
+                str(r.get(status_col, '')).strip()
+                for r in all_rows
+                if str(r.get(status_col, '')).strip()
+            ))
+            if unique_statuses:
+                status_map = ai_smart_status_mapping(unique_statuses, upload.get('sample_rows'))
+
         upload['mapping'] = mapping
         upload['status_map'] = status_map
-        coverage = get_coverage(mapping)
+        persist_upload_mapping(upload_id, mapping, status_map)
+        coverage = get_coverage(mapping, upload.get('columns'))
 
         return Response({
             'coverage': coverage,
-            'warnings': []
+            'warnings': [],
+            'auto_computed_columns': upload.get('auto_computed_columns', []),
         }, status=status.HTTP_200_OK)
+
+
+def snapshot_card(snap: dict) -> dict:
+    if snap.get('item_type') == 'comparison' or snap.get('source') == 'comparison':
+        diag = snap.get('diagnosis') or {}
+        return {
+            'snapshot_id': snap['snapshot_id'],
+            'item_type': 'comparison',
+            'compare_base_id': snap.get('compare_base_id'),
+            'compare_target_id': snap.get('compare_target_id'),
+            'scan_no': snap.get('scan_no'),
+            'status': snap.get('status', 'ready'),
+            'created_at': snap['created_at'],
+            'filename': snap.get('filename'),
+            'source': 'comparison',
+            'period': diag.get('period') if isinstance(diag, dict) else None,
+            'headline': snap.get('headline') or (diag.get('headline') if isinstance(diag, dict) else ''),
+            'card_title': snap.get('card_title') or (diag.get('card_title') if isinstance(diag, dict) else '') or snap.get('filename'),
+            'topics': snap.get('topics', []),
+            'verdict': snap.get('verdict', 'ok'),
+            'total_saved_money': snap.get('total_saved_money', 0),
+            'coverage_ready': 7,
+            'coverage_total': 7,
+        }
+
+    diag = snap.get('diagnosis')
+    crit = 'ok'
+    topics = []
+    if diag and diag.get('findings'):
+        v_set = {f['verdict'] for f in diag['findings']}
+        if 'critical' in v_set:
+            crit = 'critical'
+        elif 'watch' in v_set:
+            crit = 'watch'
+        ranked = [f for f in diag['findings'] if f.get('verdict') in ('critical', 'watch')]
+        ranked.sort(key=lambda item: 0 if item.get('verdict') == 'critical' else 1)
+        for finding in ranked:
+            metric_id = finding.get('metric_id')
+            if metric_id and metric_id not in topics:
+                topics.append(metric_id)
+            if len(topics) == 2:
+                break
+    coverage = diag.get('coverage') if isinstance(diag, dict) else None
+    available = coverage.get('available') if isinstance(coverage, dict) else None
+    coverage_ready = len(available) if isinstance(available, list) else 0
+    return {
+        'snapshot_id': snap['snapshot_id'],
+        'item_type': 'snapshot',
+        'scan_no': snap.get('scan_no'),
+        'status': snap['status'],
+        'created_at': snap['created_at'],
+        'filename': snap['filename'],
+        'source': snap['source'],
+        'period': diag.get('period') if diag else None,
+        'headline': diag.get('headline') if diag else None,
+        'card_title': ((diag.get('card_title') if diag else None) or '').strip()
+        or filename_to_title(snap.get('filename') or ''),
+        'topics': topics,
+        'verdict': crit,
+        'coverage_ready': coverage_ready,
+        'coverage_total': 7,
+    }
 
 
 class SnapshotCreateView(APIView):
     def get(self, request):
+        cleanup_expired_guest_data()
+        ident = get_request_identity(request)
         items = []
-        for snap in reversed(list(SNAPSHOTS_STORE.values())):
-            diag = snap.get('diagnosis')
-            crit = 'ok'
-            if diag and diag.get('findings'):
-                v_set = {f['verdict'] for f in diag['findings']}
-                if 'critical' in v_set:
-                    crit = 'critical'
-                elif 'watch' in v_set:
-                    crit = 'watch'
 
-            items.append({
-                'snapshot_id': snap['snapshot_id'],
-                'status': snap['status'],
-                'created_at': snap['created_at'],
-                'filename': snap['filename'],
-                'source': snap['source'],
-                'period': diag.get('period') if diag else None,
-                'headline': diag.get('headline') if diag else None,
-                'verdict': crit,
-                'coverage_ready': len(diag['coverage']['available']) if diag else 0,
-                'coverage_total': 7,
-            })
-        return Response({'items': items, 'next_cursor': None})
+        qs = Snapshot.objects.all()
+        if ident.user:
+            qs = qs.filter(user=ident.user)
+        elif ident.is_guest and ident.guest_session:
+            qs = qs.filter(is_guest=True, guest_session=ident.guest_session)
+        else:
+            qs = Snapshot.objects.none()
+
+        db_snaps = list(qs.order_by('-created_at'))
+        known_ids = {str(s.id) for s in db_snaps}
+
+        for db_snap in db_snaps:
+            snap_dict = snapshot_model_to_dict(db_snap)
+            if snap_dict.get('item_type') == 'comparison' or snap_dict.get('source') == 'comparison':
+                base_id = str(snap_dict.get('compare_base_id') or '')
+                target_id = str(snap_dict.get('compare_target_id') or '')
+                if base_id not in known_ids or target_id not in known_ids:
+                    continue
+            items.append(snapshot_card(snap_dict))
+
+        response = Response({'items': items, 'next_cursor': None})
+        response['Cache-Control'] = 'no-store'
+        return response
 
     def post(self, request):
+        cleanup_expired_guest_data()
+        ident = get_request_identity(request)
         upload_id = request.data.get('upload_id')
-        upload = UPLOADS_STORE.get(str(upload_id))
+        upload = get_upload(upload_id, request=request)
         if not upload:
-            return Response({'code': 'not_found', 'message': 'Файл загрузки не найден'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'code': 'not_found', 'message': 'Файл загрузки не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
 
         mapping = upload.get('mapping', {})
-        status_map = upload.get('status_map', {})
+        status_map = upload.get('status_map') or {}
+
+        status_col = mapping.get('status')
+        if status_col and not status_map:
+            all_rows = upload.get('all_rows') or []
+            unique_statuses = list(dict.fromkeys(
+                str(r.get(status_col, '')).strip()
+                for r in all_rows
+                if str(r.get(status_col, '')).strip()
+            ))
+            if unique_statuses:
+                status_map = ai_smart_status_mapping(unique_statuses, upload.get('sample_rows'))
+                upload['status_map'] = status_map
+                persist_upload_mapping(upload_id, mapping, status_map)
 
         snapshot_id = str(uuid.uuid4())
+        scan_no = next_scan_no()
 
         # Normalize and compute immediately
         deals, rejected = normalize_records(upload['all_rows'], mapping, status_map)
@@ -200,51 +472,30 @@ class SnapshotCreateView(APIView):
 
         # Dates
         dates = [d.created_at for d in deals if d.created_at]
-        p_from = min(dates).strftime('%Y-%m-%d') if dates else None
-        p_to = max(dates).strftime('%Y-%m-%d') if dates else None
+        p_from = min(dates).date() if dates else None
+        p_to = max(dates).date() if dates else None
 
         headline = findings[0]['action'] if findings else 'По этому файлу критичных утечек не видно.'
         # LLM Enhancement strictly according to TZ §6.5
-        headline, findings = generate_llm_narrative(findings, headline)
+        headline, findings, card_title = generate_llm_narrative(findings, headline, upload['filename'])
         body = ' '.join([f['action'] for f in findings])
-
-        SNAPSHOTS_STORE[snapshot_id] = {
-            'snapshot_id': snapshot_id,
-            'status': 'ready',
-            'progress': 100,
-            'error': '',
-            'created_at': datetime.datetime.now().isoformat(),
-            'filename': upload['filename'],
-            'source': 'miniapp',
-            'diagnosis': {
-                'snapshot_id': snapshot_id,
-                'headline': headline,
-                'body': body,
-                'findings': findings,
-                'coverage': coverage,
-                'period': {'from': p_from, 'to': p_to},
-                'totals': {
-                    'deals': len(deals) + len(rejected),
-                    'amount': f"{total_amount:.2f}",
-                    'accepted': len(deals),
-                    'rejected': len(rejected),
-                },
-                'ok': ok_list,
-                'low_sample': low_sample,
-            },
-            'all_metrics': all_metrics,
-        }
-
-        save_disk_store()
 
         try:
             snap_instance = Snapshot.objects.create(
                 id=snapshot_id,
+                user=ident.user,
+                upload=Upload.objects.filter(id=upload_id).first(),
+                scan_no=scan_no,
+                guest_session=ident.guest_session if ident.is_guest else "",
+                is_guest=ident.is_guest,
                 filename=upload['filename'],
                 headline=headline,
+                quality={'card_title': card_title} if card_title else {},
                 body=body,
                 findings=findings,
                 coverage=coverage,
+                period_from=p_from,
+                period_to=p_to,
                 totals={
                     'deals': len(deals) + len(rejected),
                     'amount': f"{total_amount:.2f}",
@@ -274,6 +525,7 @@ class SnapshotCreateView(APIView):
                     last_activity_at=d.last_activity_at,
                     closed_at=d.closed_at,
                     source=d.source,
+                    raw_data=d.raw_data or {},
                 )
                 for d in deals
             ]
@@ -290,9 +542,9 @@ class SnapshotCreateView(APIView):
 
 class SnapshotPollView(APIView):
     def get(self, request, snapshot_id):
-        snap = SNAPSHOTS_STORE.get(str(snapshot_id))
+        snap, _ = get_snapshot_for_request(snapshot_id, request)
         if not snap:
-            return Response({'code': 'not_found', 'message': 'Снимок не найден'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
         return Response({
             'snapshot_id': snap['snapshot_id'],
             'status': snap['status'],
@@ -301,29 +553,57 @@ class SnapshotPollView(APIView):
         })
 
     def delete(self, request, snapshot_id):
-        s_id = str(snapshot_id)
-        if s_id in SNAPSHOTS_STORE:
-            del SNAPSHOTS_STORE[s_id]
-            save_disk_store()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response({'code': 'not_found', 'message': 'Снимок не найден'}, status=status.HTTP_404_NOT_FOUND)
+        snap, snap_obj = get_snapshot_for_request(snapshot_id, request)
+        if not snap:
+            return Response({'code': 'not_found', 'message': 'Снимок не найден'}, status=status.HTTP_404_NOT_FOUND)
+        forget_snapshot(snapshot_id)
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        response['Cache-Control'] = 'no-store'
+        return response
 
 
 class SnapshotDiagnosisView(APIView):
     def get(self, request, snapshot_id):
-        snap = SNAPSHOTS_STORE.get(str(snapshot_id))
+        snap, snap_obj = get_snapshot_for_request(snapshot_id, request)
         if not snap:
-            return Response({'code': 'not_found', 'message': 'Снимок не найден'}, status=status.HTTP_404_NOT_FOUND)
-        return Response(snap['diagnosis'])
+            return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
+        payload = dict(snap.get('diagnosis') or {})
+        payload['scan_no'] = snap.get('scan_no')
+        payload['snapshot_id'] = snap.get('snapshot_id', snapshot_id)
+        payload['item_type'] = snap.get('item_type', 'snapshot')
+        payload['compare_base_id'] = snap.get('compare_base_id')
+        payload['compare_target_id'] = snap.get('compare_target_id')
+
+        # Include available columns from upload for AI SQL analytics
+        cols = []
+        if snap_obj and snap_obj.upload and snap_obj.upload.columns:
+            cols = list(snap_obj.upload.columns)
+        elif snap.get('upload_id') and snap.get('upload_id') in UPLOADS_STORE:
+            cols = list(UPLOADS_STORE[snap['upload_id']].get('columns', []))
+        elif snap_obj:
+            sample_deal = Deal.objects.filter(snapshot=snap_obj).exclude(raw_data={}).first()
+            if sample_deal and sample_deal.raw_data:
+                cols = list(sample_deal.raw_data.keys())
+
+        if not cols and snap.get('filename'):
+            matching_upload = Upload.objects.filter(filename=snap['filename']).order_by('-created_at').first()
+            if matching_upload and matching_upload.columns:
+                cols = list(matching_upload.columns)
+
+        payload['available_columns'] = cols
+
+        response = Response(payload)
+        response['Cache-Control'] = 'no-store'
+        return response
 
 
 class SnapshotMetricDetailView(APIView):
     def get(self, request, snapshot_id, metric_id):
-        snap = SNAPSHOTS_STORE.get(str(snapshot_id))
+        snap, _ = get_snapshot_for_request(snapshot_id, request)
         if not snap:
-            return Response({'code': 'not_found', 'message': 'Снимок не найден'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
 
-        metric_data = snap['all_metrics'].get(metric_id)
+        metric_data = snap.get('all_metrics', {}).get(metric_id)
         if not metric_data:
             return Response({'code': 'not_found', 'message': 'Метрика не найдена'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -335,30 +615,7 @@ class SnapshotMetricDetailView(APIView):
 
 class SnapshotsListView(APIView):
     def get(self, request):
-        items = []
-        for snap in reversed(list(SNAPSHOTS_STORE.values())):
-            diag = snap.get('diagnosis')
-            crit = 'ok'
-            if diag and diag.get('findings'):
-                v_set = {f['verdict'] for f in diag['findings']}
-                if 'critical' in v_set:
-                    crit = 'critical'
-                elif 'watch' in v_set:
-                    crit = 'watch'
-
-            items.append({
-                'snapshot_id': snap['snapshot_id'],
-                'status': snap['status'],
-                'created_at': snap['created_at'],
-                'filename': snap['filename'],
-                'source': snap['source'],
-                'period': diag.get('period') if diag else None,
-                'headline': diag.get('headline') if diag else None,
-                'verdict': crit,
-                'coverage_ready': len(diag['coverage']['available']) if diag else 0,
-                'coverage_total': 7,
-            })
-        return Response({'items': items, 'next_cursor': None})
+        return SnapshotCreateView().get(request)
 
 
 class TemplatesListView(APIView):
@@ -372,12 +629,27 @@ class TemplatesListView(APIView):
 
         files = []
         labels = {
+            'b2b_sales_before.csv': '🏢 [1/2 Срез ДО] B2B Услуги: Зависшие сделки и скидки',
+            'b2b_sales_after.csv': '🚀 [2/2 Срез ПОСЛЕ] B2B Услуги: Наведение порядка и РОП',
+            'retail_q1_before.csv': '🛒 [1/2 Срез ДО] Ритейл: Долгий ответ и брошенные заказы',
+            'retail_q2_after.csv': '⚡ [2/2 Срез ПОСЛЕ] Ритейл: Быстрое подтверждение и рост',
             'ecommerce_canonical.csv': 'Стандартный E-commerce (Канонический)',
             'ecommerce_moysklad_1c.csv': 'Выгрузка 1С / МойСклад (Товары и розница)',
             'ecommerce_marketplace.csv': 'Маркетплейсы (Wildberries / Ozon)',
             'ecommerce_messy_user_table.csv': 'Реальная таблица бизнеса (Смешанные форматы)',
-            'custom_messy_slang_crm.csv': '🔥 Стресс-тест для AI-нормализатора («Баблос», «Кто тащит»)'
+            'custom_messy_slang_crm.csv': '🔥 Стресс-тест для AI-нормализатора («Баблос», «Кто тащит»)',
         }
+        order = [
+            'b2b_sales_before.csv',
+            'b2b_sales_after.csv',
+            'retail_q1_before.csv',
+            'retail_q2_after.csv',
+            'ecommerce_canonical.csv',
+            'ecommerce_moysklad_1c.csv',
+            'ecommerce_marketplace.csv',
+            'ecommerce_messy_user_table.csv',
+            'custom_messy_slang_crm.csv',
+        ]
         for p in tmpl_dir.glob('*.csv'):
             files.append({
                 'id': p.name,
@@ -385,6 +657,7 @@ class TemplatesListView(APIView):
                 'label': labels.get(p.name, p.name),
                 'size_bytes': p.stat().st_size
             })
+        files.sort(key=lambda x: order.index(x['id']) if x['id'] in order else 99)
         return Response({'items': files})
 
 
@@ -395,6 +668,8 @@ class LoadTemplateView(APIView):
     def post(self, request, template_id):
         tmpl_dir = Path(__file__).resolve().parent.parent.parent.parent / 'templates'
         target_file = tmpl_dir / template_id
+        if not target_file.exists() and (tmpl_dir / f"{template_id}.csv").exists():
+            target_file = tmpl_dir / f"{template_id}.csv"
 
         # Security check: ensure path stays inside templates
         if not target_file.exists() or not target_file.is_file():
@@ -412,28 +687,53 @@ class LoadTemplateView(APIView):
         if not suggested_mapping.get('amount') or not suggested_mapping.get('status') or not suggested_mapping.get('manager') or not suggested_mapping.get('deal_id'):
             suggested_mapping = ai_smart_column_mapping(cols, sample_rows, suggested_mapping)
 
-        coverage = get_coverage(suggested_mapping)
+        # AI / Heuristic Status Normalization
+        status_map = {}
+        status_col = suggested_mapping.get('status')
+        if status_col:
+            unique_statuses = list(dict.fromkeys(
+                str(r.get(status_col, '')).strip()
+                for r in all_rows
+                if str(r.get(status_col, '')).strip()
+            ))
+            if unique_statuses:
+                status_map = ai_smart_status_mapping(unique_statuses, sample_rows)
+
+        # Automatically derive missing computed columns (e.g. 'Скидка, % (авто)', 'Прайс до скидки (авто)')
+        cols, sample_rows, all_rows, suggested_mapping, auto_computed_columns = derive_computed_columns(
+            cols, sample_rows, all_rows, suggested_mapping
+        )
+
+        coverage = get_coverage(suggested_mapping, cols)
         upload_id = str(uuid.uuid4())
+        ident = get_request_identity(request)
 
         UPLOADS_STORE[upload_id] = {
             'upload_id': upload_id,
+            'user_id': ident.user.max_user_id if ident.user else None,
+            'guest_session': ident.guest_session if ident.is_guest else "",
+            'is_guest': ident.is_guest,
             'filename': target_file.name,
             'columns': cols,
             'sample_rows': sample_rows,
             'all_rows': all_rows,
             'mapping': suggested_mapping,
-            'status_map': {},
+            'status_map': status_map,
+            'auto_computed_columns': auto_computed_columns,
         }
 
         try:
             Upload.objects.create(
                 id=upload_id,
+                user=ident.user,
+                guest_session=ident.guest_session if ident.is_guest else "",
                 filename=target_file.name,
                 columns=cols,
                 sample_rows=sample_rows,
                 all_rows=all_rows,
                 suggested_mapping=suggested_mapping,
                 mapping=suggested_mapping,
+                status_map=status_map,
                 source=Upload.Source.DEMO,
             )
         except Exception as e:
@@ -445,7 +745,8 @@ class LoadTemplateView(APIView):
             'columns': cols,
             'sample_rows': sample_rows,
             'suggested_mapping': suggested_mapping,
-            'coverage': coverage
+            'coverage': coverage,
+            'auto_computed_columns': auto_computed_columns,
         }, status=status.HTTP_201_CREATED)
 
 
@@ -455,8 +756,13 @@ class SnapshotChatHistoryView(APIView):
     DELETE: Clears chat history for a snapshot.
     """
     def get(self, request, snapshot_id):
-        s_id = str(snapshot_id)
-        messages_qs = ChatMessage.objects.filter(snapshot_id=s_id).order_by('created_at')
+        _, snap_obj = get_snapshot_for_request(snapshot_id, request)
+        if not snap_obj:
+            snap_obj = Snapshot.objects.filter(id=str(snapshot_id)).first()
+            if not snap_obj:
+                return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
+
+        messages_qs = ChatMessage.objects.filter(snapshot=snap_obj).order_by('created_at')
         items = []
         for m in messages_qs:
             items.append({
@@ -469,55 +775,335 @@ class SnapshotChatHistoryView(APIView):
         return Response({'messages': items})
 
     def delete(self, request, snapshot_id):
-        s_id = str(snapshot_id)
-        ChatMessage.objects.filter(snapshot_id=s_id).delete()
+        _, snap_obj = get_snapshot_for_request(snapshot_id, request)
+        if not snap_obj:
+            snap_obj = Snapshot.objects.filter(id=str(snapshot_id)).first()
+            if not snap_obj:
+                return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
+
+        ChatMessage.objects.filter(snapshot=snap_obj).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ChatListView(APIView):
+    """Список чатов по снимкам текущего пользователя, чтобы переключаться между диалогами."""
+
+    def get(self, request):
+        cleanup_expired_guest_data()
+        ident = get_request_identity(request)
+        qs = Snapshot.objects.filter(status=Snapshot.Status.READY)
+        if ident.user:
+            qs = qs.filter(user=ident.user)
+        elif ident.guest_session:
+            qs = qs.filter(is_guest=True, guest_session=ident.guest_session)
+        else:
+            qs = Snapshot.objects.none()
+
+        last_content = (
+            ChatMessage.objects.filter(snapshot_id=OuterRef("pk"))
+            .exclude(role=ChatMessage.Role.SYSTEM)
+            .order_by("-created_at")
+            .values("content")[:1]
+        )
+        last_at = (
+            ChatMessage.objects.filter(snapshot_id=OuterRef("pk"))
+            .exclude(role=ChatMessage.Role.SYSTEM)
+            .order_by("-created_at")
+            .values("created_at")[:1]
+        )
+        qs = qs.annotate(
+            message_count=Count("messages", filter=~Q(messages__role=ChatMessage.Role.SYSTEM)),
+            last_message=Subquery(last_content),
+            last_at=Subquery(last_at),
+        ).order_by(F("last_at").desc(nulls_last=True), "-created_at")
+
+        items = []
+        for snap in qs[:50]:
+            preview = str(snap.last_message or "").replace("\n", " ").strip()
+            if len(preview) > 140:
+                preview = preview[:137] + "…"
+            title = (snap.headline or "").strip() or filename_to_title(snap.filename or "") or "Снимок"
+            items.append(
+                {
+                    "snapshot_id": str(snap.id),
+                    "title": title,
+                    "filename": snap.filename or "",
+                    "created_at": snap.created_at.isoformat(),
+                    "message_count": int(snap.message_count or 0),
+                    "last_message": preview,
+                    "last_at": snap.last_at.isoformat() if snap.last_at else None,
+                }
+            )
+        return Response({"items": items})
+
+
+def export_snapshot(request, snapshot_id, format_type='excel'):
+    snap_dict, snap = get_snapshot_for_request(snapshot_id, request)
+    if not snap and snap_dict:
+        snap = snapshot_from_store_dict(snap_dict)
+    if not snap:
+        snap = Snapshot.objects.filter(id=str(snapshot_id)).first()
+    if not snap:
+        return Response({'code': 'not_found', 'message': 'Снимок не найден или срок действия истек'}, status=status.HTTP_404_NOT_FOUND)
+
+    s_id = str(snapshot_id)
+    deals_qs = Deal.objects.filter(snapshot=snap) if isinstance(snap, Snapshot) and snap.pk else Deal.objects.none()
+
+    if format_type in ('excel', 'xlsx'):
+        buf = generate_excel_report(snap, deals_qs)
+        filename = f"xray_audit_{s_id[:8]}.xlsx"
+        content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        caption = f"📊 Ваш Excel-отчет по аудиту готов: {filename}"
+    else:
+        buf = generate_pdf_report(snap, deals_qs)
+        filename = f"xray_audit_{s_id[:8]}.pdf"
+        content_type = 'application/pdf'
+        caption = f"📄 Ваш PDF-отчет по аудиту готов: {filename}"
+
+    ident = get_request_identity(request)
+    to_bot_param = request.query_params.get('to_bot') or (request.data.get('to_bot') if isinstance(request.data, dict) else None)
+    to_bot = str(to_bot_param).lower() in ('1', 'true', 'yes')
+
+    # If send to bot is requested or if authenticated MAX user sends POST
+    if to_bot or (ident.user and ident.user.max_user_id and request.method == 'POST'):
+        if not ident.user or not ident.user.max_user_id:
+            return Response({
+                'code': 'max_auth_required',
+                'message': 'Для отправки отчета в диалог необходимо открыть приложение через мессенджер MAX.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        bot_service = MaxBotService()
+        try:
+            bot_service.send_file_message(
+                user_id=ident.user.max_user_id,
+                file_bytes=buf.getvalue(),
+                filename=filename,
+                content_type=content_type,
+                caption=caption,
+            )
+            return Response({
+                'status': 'ok',
+                'delivered_to': 'bot',
+                'user_id': ident.user.max_user_id,
+                'filename': filename,
+                'message': f'Файл {filename} успешно отправлен в ваш диалог с ботом!'
+            })
+        except Exception as e:
+            logger.error("[EXPORT TO BOT FAILED]: %s", e)
+            return Response({
+                'code': 'delivery_failed',
+                'message': f'Не удалось отправить файл в диалог MAX: {e}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    response = HttpResponse(buf.getvalue(), content_type=content_type)
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 
 
 class SnapshotExportExcelView(APIView):
     """
-    GET /api/snapshots/<id>/export-excel
-    Generates beautiful multi-sheet Excel spreadsheet with audit summary and stagnant deals registry.
+    GET / POST /api/snapshots/<id>/export-excel
+    Generates multi-sheet Excel spreadsheet with audit summary and stagnant deals registry.
+    If to_bot=1, sends the file directly to the user's chat in MAX.
     """
     def get(self, request, snapshot_id):
-        s_id = str(snapshot_id)
-        snap = Snapshot.objects.filter(id=s_id).first()
-        if not snap:
-            return Response({'code': 'not_found', 'message': 'Снимок не найден'}, status=status.HTTP_404_NOT_FOUND)
+        return export_snapshot(request, snapshot_id, format_type='excel')
 
-        deals_qs = Deal.objects.filter(snapshot=snap)
-        excel_buffer = generate_excel_report(snap, deals_qs)
-
-        filename = f"xray_audit_{s_id[:8]}.xlsx"
-        response = HttpResponse(
-            excel_buffer.getvalue(),
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
-        return response
+    def post(self, request, snapshot_id):
+        return export_snapshot(request, snapshot_id, format_type='excel')
 
 
 class SnapshotExportPdfView(APIView):
     """
-    GET /api/snapshots/<id>/export-pdf
+    GET / POST /api/snapshots/<id>/export-pdf
     Generates branded PDF audit report with health score, threats and action plan.
+    If to_bot=1, sends the file directly to the user's chat in MAX.
     """
     def get(self, request, snapshot_id):
-        s_id = str(snapshot_id)
-        snap = Snapshot.objects.filter(id=s_id).first()
-        if not snap:
-            return Response({'code': 'not_found', 'message': 'Снимок не найден'}, status=status.HTTP_404_NOT_FOUND)
+        return export_snapshot(request, snapshot_id, format_type='pdf')
 
-        deals_qs = Deal.objects.filter(snapshot=snap)
-        pdf_buffer = generate_pdf_report(snap, deals_qs)
+    def post(self, request, snapshot_id):
+        return export_snapshot(request, snapshot_id, format_type='pdf')
 
-        filename = f"xray_audit_{s_id[:8]}.pdf"
-        response = HttpResponse(
-            pdf_buffer.getvalue(),
-            content_type='application/pdf'
-        )
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
-        return response
+
+class SnapshotExportBotView(APIView):
+    """
+    POST /api/snapshots/<id>/export-bot
+    Accepts: {"format": "pdf" | "excel"}
+    Generates and delivers the audit report directly into the authenticated MAX user's dialog.
+    """
+    def post(self, request, snapshot_id):
+        fmt = 'pdf'
+        if isinstance(request.data, dict):
+            fmt = (request.data.get('format') or 'pdf').lower()
+            request.data['to_bot'] = True
+        return export_snapshot(request, snapshot_id, format_type=fmt)
+
+
+def snapshot_from_store_dict(snap: dict) -> Snapshot:
+    diag = snap.get('diagnosis') if isinstance(snap.get('diagnosis'), dict) else {}
+    created = snap.get('created_at')
+    when = None
+    if isinstance(created, str) and created:
+        try:
+            when = datetime.datetime.fromisoformat(created)
+        except ValueError:
+            when = None
+    if when is not None and when.tzinfo is None:
+        when = when.replace(tzinfo=datetime.timezone.utc)
+    obj = Snapshot(
+        id=snap.get('snapshot_id'),
+        filename=snap.get('filename') or '',
+        headline=diag.get('headline') or snap.get('headline') or '',
+        body=diag.get('body') or snap.get('body') or '',
+        findings=diag.get('findings') or [],
+        coverage=diag.get('coverage') or {},
+        totals=diag.get('totals') or snap.get('totals') or {},
+        all_metrics=snap.get('all_metrics') or {},
+        status=snap.get('status') or Snapshot.Status.READY,
+        is_guest=bool(snap.get('is_guest')),
+        guest_session=snap.get('guest_session') or '',
+    )
+    if when is not None:
+        obj.created_at = when
+    return obj
+
+
+def cached_comparison(id_a: str, id_b: str) -> dict | None:
+    for left, right in ((str(id_a), str(id_b)), (str(id_b), str(id_a))):
+        try:
+            cmp_id = uuid.uuid5(uuid.NAMESPACE_DNS, f"comparison:{left}:{right}")
+        except ValueError:
+            continue
+        s_cmp_id = str(cmp_id)
+        existing = Snapshot.objects.filter(id=cmp_id).first()
+        if existing and isinstance(existing.quality, dict) and isinstance(existing.quality.get('diff_result'), dict):
+            cached = dict(existing.quality['diff_result'])
+            cached['comparison_id'] = s_cmp_id
+            return cached
+    return None
+
+
+class SnapshotCompareView(APIView):
+    """
+    GET /api/snapshots/compare?base_id=<uuid>&target_id=<uuid>
+    POST /api/snapshots/compare {"base_snapshot_id": "<uuid>", "target_snapshot_id": "<uuid>"}
+    Compares two snapshots (Before vs After) for the authenticated user / guest session.
+    """
+    def get(self, request):
+        cleanup_expired_guest_data()
+        base_id = request.query_params.get('base_id') or request.query_params.get('base_snapshot_id')
+        target_id = request.query_params.get('target_id') or request.query_params.get('target_snapshot_id')
+        return self._compare(request, base_id, target_id)
+
+    def post(self, request):
+        cleanup_expired_guest_data()
+        data = request.data if isinstance(request.data, dict) else {}
+        base_id = data.get('base_snapshot_id') or data.get('base_id') or request.query_params.get('base_id')
+        target_id = data.get('target_snapshot_id') or data.get('target_id') or request.query_params.get('target_id')
+        return self._compare(request, base_id, target_id)
+
+    def _compare(self, request, base_id, target_id):
+        if not base_id or not target_id:
+            return Response(
+                {'code': 'bad_request', 'message': 'Требуются параметры base_id и target_id'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        base_dict, snap1 = get_snapshot_for_request(base_id, request)
+        target_dict, snap2 = get_snapshot_for_request(target_id, request)
+
+        if not base_dict or not target_dict:
+            return Response(
+                {'code': 'not_found', 'message': 'Снимок не найден'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        id_a = str(base_dict.get('snapshot_id') or base_id)
+        id_b = str(target_dict.get('snapshot_id') or target_id)
+        cached = cached_comparison(id_a, id_b)
+        if cached:
+            response = Response(cached, status=status.HTTP_200_OK)
+            response['Cache-Control'] = 'no-store'
+            return response
+
+        if snap1 is None:
+            snap1 = snapshot_from_store_dict(base_dict)
+        if snap2 is None:
+            snap2 = snapshot_from_store_dict(target_dict)
+
+        # Determine chronological base and target
+        if snap1.created_at <= snap2.created_at:
+            base_snap, target_snap = snap1, snap2
+        else:
+            base_snap, target_snap = snap2, snap1
+
+        cmp_uuid = uuid.uuid5(uuid.NAMESPACE_DNS, f"comparison:{base_snap.id}:{target_snap.id}")
+        s_cmp_id = str(cmp_uuid)
+
+        # 1. Fast Cache Check: return instantly if already calculated!
+        existing_snap = Snapshot.objects.filter(id=cmp_uuid).first()
+        if existing_snap and existing_snap.quality and isinstance(existing_snap.quality, dict):
+            cached_diff = existing_snap.quality.get('diff_result')
+            if cached_diff and isinstance(cached_diff, dict):
+                cached_diff['comparison_id'] = s_cmp_id
+                return Response(cached_diff, status=status.HTTP_200_OK)
+
+        from engine.comparator import compare_snapshots
+        try:
+            diff_result = compare_snapshots(snap1, snap2)
+
+            # Save comparison snapshot in store and DB so it persists in scan history
+            ident = get_request_identity(request)
+
+            base_title = (base_snap.filename or 'Срез 1').replace('.csv', '')
+            target_title = (target_snap.filename or 'Срез 2').replace('.csv', '')
+            cmp_title = f"{base_title} ➔ {target_title}"
+
+            scan_no = existing_snap.scan_no if (existing_snap and existing_snap.scan_no) else next_scan_no()
+
+            trend = diff_result.get('summary', {}).get('trend', 'improved')
+            verdict = 'ok' if trend == 'improved' else 'watch'
+            saved_money = diff_result.get('total_saved_money', 0)
+
+            cmp_obj, _ = Snapshot.objects.update_or_create(
+                id=cmp_uuid,
+                defaults={
+                    'user': ident.user,
+                    'upload': target_snap.upload,
+                    'scan_no': scan_no,
+                    'guest_session': ident.guest_session if ident.is_guest else "",
+                    'is_guest': ident.is_guest,
+                    'filename': cmp_title,
+                    'archetype': 'comparison',
+                    'headline': diff_result.get('summary', {}).get('headline', ''),
+                    'body': diff_result.get('summary', {}).get('body', ''),
+                    'findings': [],
+                    'coverage': {'available': [m['metric_id'] for m in diff_result.get('metrics_diff', [])], 'skipped': []},
+                    'totals': diff_result.get('totals_diff', {}),
+                    'all_metrics': {m['metric_id']: m for m in diff_result.get('metrics_diff', [])},
+                    'quality': {
+                        'item_type': 'comparison',
+                        'compare_base_id': str(base_snap.id),
+                        'compare_target_id': str(target_snap.id),
+                        'base_filename': base_snap.filename,
+                        'target_filename': target_snap.filename,
+                        'card_title': f"⚡ {cmp_title}",
+                        'total_saved_money': saved_money,
+                        'trend': trend,
+                        'diff_result': diff_result,
+                    }
+                }
+            )
+
+            diff_result['comparison_id'] = s_cmp_id
+            return Response(diff_result, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {'code': 'comparison_error', 'message': f'Ошибка сравнения снимков: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 
 
 

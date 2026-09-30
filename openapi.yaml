@@ -1,0 +1,698 @@
+openapi: 3.1.0
+info:
+  title: "X-Ray: Анализ бизнес-метрик и рентген продаж API"
+  version: "1.0.0"
+  description: |
+    RESTful API аналитической платформы X-Ray для диагностики продаж малого и среднего бизнеса.
+    Поддерживает парсинг таблиц (CSV, XLSX), автоматический AI-маппинг колонок, расчет 7 ключевых бизнес-метрик,
+    сравнение периодов (A/B срезы), потоковый чат с бизнес-ассистентом (SSE) и двустороннюю интеграцию с amoCRM.
+servers:
+  - url: https://xray-business-bot.online
+    description: Production VPS Server (HTTPS)
+  - url: http://127.0.0.1:8000
+    description: Local Development Server
+
+paths:
+  /api/templates:
+    get:
+      summary: Получение списка готовых шаблонов данных
+      description: Возвращает перечень предзагруженных отраслевых датасетов (канонический e-commerce, маркетплейсы, 1С, пары срезов ДО/ПОСЛЕ).
+      tags:
+        - Templates
+      responses:
+        '200':
+          description: Успешный возврат списка шаблонов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplatesListResponse'
+
+  /api/templates/{template_id}/load:
+    post:
+      summary: Загрузка выбранного шаблона в аналитический пайплайн
+      description: Считывает файл шаблона на сервере, определяет разделители/кодировку и возвращает структуру таблицы с предложенным маппингом.
+      tags:
+        - Templates
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "b2b_sales_before.csv"
+      responses:
+        '200':
+          description: Шаблон успешно загружен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+        '404':
+          description: Шаблон не найден
+
+  /api/uploads:
+    post:
+      summary: Загрузка файла выгрузки (CSV / Excel)
+      description: Принимает файл multipart/form-data, извлекает сырые строки, анализирует типы данных и формирует AI-рекомендацию маппинга.
+      tags:
+        - Uploads
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Файл таблицы продаж (.csv, .xlsx, .xls)
+      responses:
+        '200':
+          description: Файл успешно разобран
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+        '400':
+          description: Некорректный формат или пустой файл
+
+  /api/uploads/{upload_id}/mapping:
+    put:
+      summary: Сохранение подтвержденного маппинга колонок
+      description: Фиксирует сопоставление пользовательских столбцов каноническим полям аналитического ядра.
+      tags:
+        - Uploads
+      parameters:
+        - name: upload_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mapping
+              properties:
+                mapping:
+                  type: object
+                  additionalProperties:
+                    type: string
+      responses:
+        '200':
+          description: Маппинг обновлен
+        '404':
+          description: Загрузка не найдена
+
+  /api/snapshots:
+    post:
+      summary: Запуск расчета аналитического снимка (Snapshot)
+      description: Выполняет нормализацию строк, расчет 7 метрик с поиском утечек выручки и генерацию выводов нейросетью.
+      tags:
+        - Snapshots
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - upload_id
+                - mapping
+              properties:
+                upload_id:
+                  type: string
+                  format: uuid
+                mapping:
+                  type: object
+                  additionalProperties:
+                    type: string
+      responses:
+        '200':
+          description: Снимок успешно рассчитан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SnapshotCreateResponse'
+    get:
+      summary: Получение истории снимков и срезов пользователя
+      description: Возвращает список ранее выполненных анализов и сравнений с пагинацией.
+      tags:
+        - Snapshots
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Список снимков получен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SnapshotsListResponse'
+
+  /api/snapshots/{snapshot_id}/diagnosis:
+    get:
+      summary: Полное заключение и диагностика по снимку
+      description: Возвращает итоговые финансовые показатели, удержанные/потерянные суммы, вердикты по метрикам и рекомендации LLM.
+      tags:
+        - Snapshots
+      parameters:
+        - name: snapshot_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Диагностика готова
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiagnosisResponse'
+        '404':
+          description: Снимок не найден
+
+  /api/snapshots/{snapshot_id}/metrics/{metric_id}:
+    get:
+      summary: Детальная расшифровка конкретной метрики
+      description: Возвращает список проблемных сделок, распределение по менеджерам и рекомендации по исправлению узкого места.
+      tags:
+        - Snapshots
+      parameters:
+        - name: snapshot_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: metric_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "stagnation"
+      responses:
+        '200':
+          description: Детализация метрики получена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricDetailResponse'
+
+  /api/snapshots/compare:
+    get:
+      summary: Сравнение двух снимков (анализ трендов ДО и ПОСЛЕ)
+      description: Сопоставляет два среза продаж, рассчитывает дельту метрик, динамику выручки и сохраненные от утечек деньги.
+      tags:
+        - Comparisons
+      parameters:
+        - name: base_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID базового снимка (срез ДО)
+        - name: target_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID целевого снимка (срез ПОСЛЕ)
+      responses:
+        '200':
+          description: Результат сравнения рассчитан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComparisonResponse'
+
+  /api/chat/stream/:
+    post:
+      summary: Потоковый диалог с AI бизнес-ассистентом (SSE)
+      description: Отправляет вопрос пользователя по анализу и возвращает поток Server-Sent Events с вызовом тулов (Tool Calling) и ответами нейросети.
+      tags:
+        - Chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+                  example: "Где мы теряем больше всего денег?"
+                snapshot_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Потоковый SSE-ответ
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: "data: {\"choices\": [{\"delta\": {\"content\": \"Главная проблема...\"}}]}\n\ndata: [DONE]\n\n"
+
+  /api/snapshots/{snapshot_id}/chat:
+    get:
+      summary: Получение истории сообщений чата по снимку
+      description: Возвращает список сообщений пользователя и ассистента из базы данных.
+      tags:
+        - Chat
+      parameters:
+        - name: snapshot_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: История переписки получена
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - messages
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        role:
+                          type: string
+                          enum: [user, assistant]
+                        content:
+                          type: string
+                        created_at:
+                          type: string
+    delete:
+      summary: Очистка истории переписки по снимку
+      tags:
+        - Chat
+      parameters:
+        - name: snapshot_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: История удалена
+
+  /api/snapshots/{snapshot_id}/export-excel:
+    get:
+      summary: Выгрузка подробного Excel-аудита
+      description: Генерирует и скачивает многостраничный файл .xlsx с исходными данными, нормализацией и расчетом метрик.
+      tags:
+        - Exports
+      parameters:
+        - name: snapshot_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Файл Excel сформирован
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+
+  /api/snapshots/{snapshot_id}/export-pdf:
+    get:
+      summary: Выгрузка брендированного PDF-отчета
+      description: Генерирует графический отчет в формате PDF для собственника бизнеса.
+      tags:
+        - Exports
+      parameters:
+        - name: snapshot_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Файл PDF сформирован
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  /api/amo:
+    get:
+      summary: Статус подключения к amoCRM
+      description: Проверяет наличие действующей привязки аккаунта amoCRM для текущего пользователя.
+      tags:
+        - amoCRM
+      responses:
+        '200':
+          description: Статус подключения
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - connected
+                properties:
+                  connected:
+                    type: boolean
+                  subdomain:
+                    type: string
+                  pipelines:
+                    type: array
+                    items:
+                      type: object
+
+  /api/amo/connect:
+    post:
+      summary: Подключение интеграции с amoCRM
+      description: Сохраняет субдомен и долгоживущий токен доступа к amoCRM.
+      tags:
+        - amoCRM
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - subdomain
+                - access_token
+              properties:
+                subdomain:
+                  type: string
+                  example: "mycompany.amocrm.ru"
+                access_token:
+                  type: string
+      responses:
+        '200':
+          description: Успешное подключение к amoCRM
+        '400':
+          description: Ошибка авторизации в amoCRM
+
+  /api/amo/sync:
+    post:
+      summary: Синхронизация сделок из amoCRM и запуск рентгена
+      description: Выгружает сделки через amoCRM REST API, сохраняет их и рассчитывает аналитический снимок.
+      tags:
+        - amoCRM
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pipeline_id:
+                  type: integer
+      responses:
+        '200':
+          description: Синхронизация завершена, снимок сформирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SnapshotCreateResponse'
+
+components:
+  schemas:
+    TemplatesListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - name
+              - label
+              - size_bytes
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              label:
+                type: string
+              size_bytes:
+                type: integer
+
+    UploadResponse:
+      type: object
+      required:
+        - upload_id
+        - filename
+        - columns
+        - sample_rows
+        - suggested_mapping
+        - coverage
+      properties:
+        upload_id:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        columns:
+          type: array
+          items:
+            type: string
+        sample_rows:
+          type: array
+          items:
+            type: object
+        suggested_mapping:
+          type: object
+          additionalProperties:
+            type: string
+        coverage:
+          type: object
+          properties:
+            available:
+              type: array
+              items:
+                type: string
+            skipped:
+              type: array
+              items:
+                type: string
+        auto_computed_columns:
+          type: array
+          items:
+            type: string
+
+    SnapshotCreateResponse:
+      type: object
+      required:
+        - snapshot_id
+        - status
+      properties:
+        snapshot_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [ready, processing, error]
+        created_at:
+          type: string
+          format: date-time
+
+    SnapshotsListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - status
+              - filename
+              - card_title
+            properties:
+              id:
+                type: string
+                format: uuid
+              status:
+                type: string
+              created_at:
+                type: string
+              filename:
+                type: string
+              card_title:
+                type: string
+              headline:
+                type: string
+              verdict:
+                type: string
+              item_type:
+                type: string
+                enum: [snapshot, comparison]
+        next_cursor:
+          type: string
+          nullable: true
+
+    DiagnosisResponse:
+      type: object
+      required:
+        - snapshot_id
+        - card_title
+        - headline
+        - totals
+        - coverage
+      properties:
+        snapshot_id:
+          type: string
+          format: uuid
+        card_title:
+          type: string
+        headline:
+          type: string
+        body:
+          type: string
+        total_saved_money:
+          type: number
+        totals:
+          type: object
+          properties:
+            total_amount:
+              type: number
+            deal_count:
+              type: integer
+            avg_check:
+              type: number
+        findings:
+          type: array
+          items:
+            type: object
+            properties:
+              metric_id:
+                type: string
+              verdict:
+                type: string
+              money_impact:
+                type: number
+              action:
+                type: string
+        coverage:
+          type: object
+          properties:
+            available:
+              type: array
+              items:
+                type: string
+            skipped:
+              type: array
+              items:
+                type: string
+
+    MetricDetailResponse:
+      type: object
+      required:
+        - metric_id
+        - name
+        - verdict
+        - value
+        - unit
+      properties:
+        metric_id:
+          type: string
+        name:
+          type: string
+        verdict:
+          type: string
+          enum: [critical, watch, ok]
+        value:
+          type: number
+        unit:
+          type: string
+        money_impact:
+          type: number
+        action:
+          type: string
+        affected_deals:
+          type: array
+          items:
+            type: object
+        by_manager:
+          type: array
+          items:
+            type: object
+
+    ComparisonResponse:
+      type: object
+      required:
+        - comparison_id
+        - summary
+        - metrics_diff
+        - totals_diff
+      properties:
+        comparison_id:
+          type: string
+          format: uuid
+        total_saved_money:
+          type: number
+        summary:
+          type: object
+          properties:
+            headline:
+              type: string
+            body:
+              type: string
+            trend:
+              type: string
+              enum: [improved, degraded, neutral]
+        metrics_diff:
+          type: array
+          items:
+            type: object
+            properties:
+              metric_id:
+                type: string
+              name:
+                type: string
+              delta_value:
+                type: number
+              delta_pct:
+                type: number
+              status:
+                type: string
+                enum: [positive, negative, neutral]
+        totals_diff:
+          type: object

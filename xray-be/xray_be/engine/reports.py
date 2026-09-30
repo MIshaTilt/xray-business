@@ -9,16 +9,21 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib import colors
 import os
 
-# Register Cyrillic TTF font for PDF
+# Helvetica не содержит кириллицу: без TTF русские буквы рисуются квадратами.
 FONT_NAME = 'Helvetica'
-font_paths = [
+REGULAR_FONTS = [
     'C:/Windows/Fonts/arial.ttf',
-    'C:/Windows/Fonts/arialbd.ttf',
+    '/System/Library/Fonts/Supplemental/Arial.ttf',
+    '/Library/Fonts/Arial Unicode.ttf',
     '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-    '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
+]
+BOLD_FONTS = [
+    'C:/Windows/Fonts/arialbd.ttf',
+    '/System/Library/Fonts/Supplemental/Arial Bold.ttf',
+    '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
 ]
 
-for fp in ['C:/Windows/Fonts/arial.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf']:
+for fp in REGULAR_FONTS:
     if os.path.exists(fp):
         try:
             pdfmetrics.registerFont(TTFont('CyrillicFont', fp))
@@ -27,13 +32,75 @@ for fp in ['C:/Windows/Fonts/arial.ttf', '/usr/share/fonts/truetype/dejavu/DejaV
         except Exception:
             pass
 
-for fp in ['C:/Windows/Fonts/arialbd.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf']:
+bold_registered = False
+for fp in BOLD_FONTS:
     if os.path.exists(fp):
         try:
             pdfmetrics.registerFont(TTFont('CyrillicFontBold', fp))
+            bold_registered = True
             break
         except Exception:
             pass
+
+if FONT_NAME == 'CyrillicFont':
+    bold_face = 'CyrillicFontBold' if bold_registered else 'CyrillicFont'
+    pdfmetrics.registerFontFamily(
+        'CyrillicFont',
+        normal='CyrillicFont',
+        bold=bold_face,
+        italic='CyrillicFont',
+        boldItalic=bold_face,
+    )
+
+METRIC_TITLES = {
+    'speed_to_lead': 'Скорость первого ответа',
+    'stagnation': 'Зависшие сделки',
+    'discount_leakage': 'Утечка скидок',
+    'sales_cycle': 'Цикл сделки',
+    'key_account_risk': 'Зависимость от крупных клиентов',
+    'dormant': 'Забытые клиенты',
+    'funnel_dropoff': 'Провал воронки',
+}
+
+VERDICT_RU = {
+    'critical': 'Критично',
+    'watch': 'Следить',
+    'ok': 'Норма',
+    'skipped': 'Не посчитано',
+}
+
+STATUS_RU = {
+    'new': 'Новая',
+    'in_progress': 'В работе',
+    'proposal': 'КП отправлено',
+    'negotiation': 'Переговоры',
+    'won': 'Выиграна',
+    'lost': 'Проиграна',
+    'other': 'Другое',
+}
+
+
+def money_ru(value) -> str:
+    try:
+        amount = float(value or 0)
+    except (TypeError, ValueError):
+        return '0 руб.'
+    text = f'{amount:,.2f}'.replace(',', ' ')
+    return f'{text} руб.'
+
+
+def metric_ru(metric_id: str) -> str:
+    return METRIC_TITLES.get(metric_id, metric_id)
+
+
+def verdict_ru(verdict: str) -> str:
+    key = (verdict or 'ok').lower()
+    return VERDICT_RU.get(key, verdict or 'Норма')
+
+
+def status_ru(status: str) -> str:
+    key = (status or '').lower()
+    return STATUS_RU.get(key, status or '—')
 
 
 def generate_excel_report(snapshot, deals_qs) -> io.BytesIO:
@@ -90,8 +157,8 @@ def generate_excel_report(snapshot, deals_qs) -> io.BytesIO:
         ("Файл выгрузки", snapshot.filename or "ecommerce.csv"),
         ("Балл здоровья воронки", f"{score} / 100"),
         ("Всего сделок в базе", f"{total_deals} шт."),
-        ("Совокупный объем сделок", f"{float(total_amount):,.2f} ₽".replace(",", " ")),
-        ("ДЕНЕГ ПОД УГРОЗОЙ", f"{money_at_risk:,.2f} ₽".replace(",", " ")),
+        ("Совокупный объем сделок", money_ru(total_amount)),
+        ("Денег под угрозой", money_ru(money_at_risk)),
     ]
 
     ws_summary.cell(row=3, column=1, value="КЛЮЧЕВЫЕ ПОКАЗАТЕЛИ").font = Font(bold=True, size=12, color=BLUE)
@@ -101,7 +168,7 @@ def generate_excel_report(snapshot, deals_qs) -> io.BytesIO:
         c1 = ws_summary.cell(row=r, column=1, value=label)
         c2 = ws_summary.cell(row=r, column=2, value=val)
         c1.font = Font(bold=True, color="334155")
-        c2.font = Font(bold=(label == "ДЕНЕГ ПОД УГРОЗОЙ"), color=(RED if label == "ДЕНЕГ ПОД УГРОЗОЙ" else "000000"))
+        c2.font = Font(bold=(label == "Денег под угрозой"), color=(RED if label == "Денег под угрозой" else "000000"))
         ws_summary.row_dimensions[r].height = 22
         r += 1
 
@@ -110,7 +177,8 @@ def generate_excel_report(snapshot, deals_qs) -> io.BytesIO:
     ws_summary.cell(row=r, column=1, value="ГЛАВНЫЙ ВЫВОД АНАЛИТИКА:").font = Font(bold=True, size=12, color=BLUE)
     r += 1
     ws_summary.merge_cells(start_row=r, start_column=1, end_row=r+1, end_column=6)
-    hl_cell = ws_summary.cell(row=r, column=1, value=snapshot.headline or "По воронке нет критических замечаний.")
+    headline = str(snapshot.headline or "По воронке нет критических замечаний.").replace(" ₽", " руб.").replace("₽", " руб.")
+    hl_cell = ws_summary.cell(row=r, column=1, value=headline)
     hl_cell.font = Font(size=12, italic=True, bold=True)
     hl_cell.fill = PatternFill(start_color="EFF6FF", end_color="EFF6FF", fill_type="solid")
     hl_cell.alignment = Alignment(vertical="center", wrap_text=True)
@@ -132,14 +200,15 @@ def generate_excel_report(snapshot, deals_qs) -> io.BytesIO:
 
     for f in findings:
         r += 1
-        v = (f.get("verdict") or "ok").upper()
-        impact = f"{float(f.get('money_impact') or 0):,.2f} ₽".replace(",", " ")
-        ws_summary.cell(row=r, column=1, value=f.get("metric_id", ""))
+        v = verdict_ru(f.get("verdict") or "ok")
+        impact = money_ru(f.get("money_impact") or 0)
+        action = str(f.get("action") or "").replace(" ₽", " руб.").replace("₽", " руб.")
+        ws_summary.cell(row=r, column=1, value=metric_ru(f.get("metric_id", "")))
         c_risk = ws_summary.cell(row=r, column=2, value=v)
-        c_risk.font = Font(bold=True, color=(RED if v == "CRITICAL" else "D97706"))
+        c_risk.font = Font(bold=True, color=(RED if v == "Критично" else "D97706"))
         ws_summary.cell(row=r, column=3, value=impact)
         ws_summary.cell(row=r, column=4, value=f.get("threshold_label", ""))
-        action_c = ws_summary.cell(row=r, column=5, value=f.get("action", ""))
+        action_c = ws_summary.cell(row=r, column=5, value=action)
         action_c.alignment = Alignment(wrap_text=True)
         ws_summary.row_dimensions[r].height = 36
 
@@ -154,7 +223,7 @@ def generate_excel_report(snapshot, deals_qs) -> io.BytesIO:
     ws_deals = wb.create_sheet(title="Зависшие сделки")
     ws_deals.views.sheetView[0].showGridLines = True
 
-    deal_headers = ["ID сделки", "Клиент / Контрагент", "Сумма сделки (₽)", "Статус", "Менеджер", "Телефон / Контакт", "Дата создания"]
+    deal_headers = ["ID сделки", "Клиент / Контрагент", "Сумма сделки (руб.)", "Статус", "Менеджер", "Телефон / Контакт", "Дата создания"]
     for col_idx, h in enumerate(deal_headers, 1):
         c = ws_deals.cell(row=1, column=col_idx, value=h)
         c.font = Font(bold=True, color=WHITE)
@@ -169,10 +238,10 @@ def generate_excel_report(snapshot, deals_qs) -> io.BytesIO:
         ws_deals.cell(row=row_idx, column=2, value=d.client or "—")
         c_amt = ws_deals.cell(row=row_idx, column=3, value=float(d.amount))
         c_amt.number_format = "#,##0.00"
-        ws_deals.cell(row=row_idx, column=4, value=d.status)
+        ws_deals.cell(row=row_idx, column=4, value=status_ru(d.status))
         ws_deals.cell(row=row_idx, column=5, value=d.manager or "Не назначен")
         ws_deals.cell(row=row_idx, column=6, value=d.contact or "—")
-        ws_deals.cell(row=row_idx, column=7, value=d.created_at.strftime("%Y-%m-%d") if d.created_at else "—")
+        ws_deals.cell(row=row_idx, column=7, value=d.created_at.strftime("%d.%m.%Y") if d.created_at else "—")
         ws_deals.row_dimensions[row_idx].height = 20
 
     ws_deals.column_dimensions["A"].width = 18
@@ -281,8 +350,8 @@ def generate_pdf_report(snapshot, deals_qs) -> io.BytesIO:
             Paragraph(f"<b>Сделок в отчете:</b> {total_deals} шт.", bold_body),
         ],
         [
-            Paragraph(f"<b>Выручка в воронке:</b> {total_amount:,.2f} ₽".replace(",", " "), bold_body),
-            Paragraph(f"<b>ДЕНЕГ ПОД УГРОЗОЙ:</b> <font color='#DC2626'>{money_at_risk:,.2f} ₽</font>".replace(",", " "), bold_body)
+            Paragraph(f"<b>Выручка в воронке:</b> {money_ru(total_amount)}", bold_body),
+            Paragraph(f"<b>Денег под угрозой:</b> <font color='#DC2626'>{money_ru(money_at_risk)}</font>", bold_body)
         ]
     ]
 
@@ -298,7 +367,7 @@ def generate_pdf_report(snapshot, deals_qs) -> io.BytesIO:
 
     # Headline
     story.append(Paragraph("<b>Главный диагноз:</b>", h2_style))
-    hl_text = snapshot.headline or "Критических утечек в воронке не зафиксировано."
+    hl_text = str(snapshot.headline or "Критических утечек в воронке не зафиксировано.").replace(" ₽", " руб.").replace("₽", " руб.")
     t_hl = Table([[Paragraph(hl_text, callout_style)]], colWidths=[520])
     t_hl.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#EFF6FF')),
@@ -321,14 +390,15 @@ def generate_pdf_report(snapshot, deals_qs) -> io.BytesIO:
     ]
 
     for f in findings:
-        v = (f.get("verdict") or "ok").upper()
-        v_color = "#DC2626" if v == "CRITICAL" else "#D97706"
-        impact = f"{float(f.get('money_impact') or 0):,.2f} ₽".replace(",", " ")
+        v = verdict_ru(f.get("verdict") or "ok")
+        v_color = "#DC2626" if v == "Критично" else "#D97706"
+        impact = money_ru(f.get("money_impact") or 0)
+        action = str(f.get("action") or "").replace(" ₽", " руб.").replace("₽", " руб.")
         findings_table_data.append([
-            Paragraph(f.get("metric_id", ""), body_style),
+            Paragraph(metric_ru(f.get("metric_id", "")), body_style),
             Paragraph(f"<font color='{v_color}'><b>{v}</b></font>", body_style),
             Paragraph(impact, bold_body),
-            Paragraph(f.get("action", ""), body_style),
+            Paragraph(action, body_style),
         ])
 
     t_findings = Table(findings_table_data, colWidths=[100, 75, 95, 250])
@@ -357,7 +427,7 @@ def generate_pdf_report(snapshot, deals_qs) -> io.BytesIO:
     for d in stagnant_sample:
         deals_table_data.append([
             Paragraph(d.client or "—", body_style),
-            Paragraph(f"{float(d.amount):,.2f} ₽".replace(",", " "), bold_body),
+            Paragraph(money_ru(d.amount), bold_body),
             Paragraph(d.manager or "—", body_style),
             Paragraph(d.contact or "—", body_style),
         ])

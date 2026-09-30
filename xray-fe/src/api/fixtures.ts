@@ -1,9 +1,11 @@
 import type {
+  ComparisonResult,
   Coverage,
   Diagnosis,
   DiagnosisResponse,
   EvidenceDeal,
   Mapping,
+  MappingResponse,
   MetricDetail,
   MetricId,
   SnapshotListItem,
@@ -59,11 +61,11 @@ function diagnosisFor(coverage: Coverage, deals: EvidenceDeal[]): Diagnosis {
 
 function columnsFor(filename: string): { columns: string[]; mapping: Mapping; rows: Record<string, string>[] } {
   const base = [
-    { Клиент: 'Северная верфь', Бюджет: '1 200 000 ₽', Статус: 'КП отправлено', Дата: '14.01.2026', Менеджер: 'Аня' },
-    { Клиент: 'Маяк', Бюджет: '860 000 ₽', Статус: 'Пинать в пятницу', Дата: '02.02.2026', Менеджер: 'Илья' },
-    { Клиент: 'Контур света', Бюджет: '640 000 ₽', Статус: 'В работе', Дата: '18.02.2026', Менеджер: 'Аня' },
-    { Клиент: 'Бюро поле', Бюджет: '510 000 ₽', Статус: 'Оплачено', Дата: '03.03.2026', Менеджер: 'Илья' },
-    { Клиент: 'Тихая гавань', Бюджет: '990 000 ₽', Статус: 'Думает', Дата: '11.03.2026', Менеджер: 'Аня' },
+    { Клиент: 'Северная верфь', Бюджет: '1 200 000 руб.', Статус: 'КП отправлено', Дата: '14.01.2026', Менеджер: 'Аня' },
+    { Клиент: 'Маяк', Бюджет: '860 000 руб.', Статус: 'Пинать в пятницу', Дата: '02.02.2026', Менеджер: 'Илья' },
+    { Клиент: 'Контур света', Бюджет: '640 000 руб.', Статус: 'В работе', Дата: '18.02.2026', Менеджер: 'Аня' },
+    { Клиент: 'Бюро поле', Бюджет: '510 000 руб.', Статус: 'Оплачено', Дата: '03.03.2026', Менеджер: 'Илья' },
+    { Клиент: 'Тихая гавань', Бюджет: '990 000 руб.', Статус: 'Думает', Дата: '11.03.2026', Менеджер: 'Аня' },
   ]
   const dropManager = /nomanager|no-manager|без-менеджера/i.test(filename)
   const rows = base.map((row) => {
@@ -113,8 +115,8 @@ function pollOf(snapshot: StoredSnapshot): SnapshotPoll {
 export const fixtures = {
   async upload(file: File): Promise<UploadResponse> {
     const ext = file.name.split('.').pop()?.toLowerCase()
-    if (!ext || !['csv', 'xlsx', 'xls'].includes(ext)) {
-      throw new ApiError(400, 'Это не таблица. Нужен CSV или Excel.')
+    if (ext !== 'csv') {
+      throw new ApiError(400, 'Нужен CSV — выгрузка из 1С, Битрикс24, МойСклад, amoCRM.')
     }
     if (file.size === 0 || /empty/i.test(file.name)) {
       throw new ApiError(400, 'В файле 0 строк с данными.')
@@ -138,7 +140,7 @@ export const fixtures = {
     }
   },
 
-  async saveMapping(mapping: Mapping): Promise<{ coverage: Coverage; warnings: string[] }> {
+  async saveMapping(mapping: Mapping): Promise<MappingResponse> {
     const coverage = coverageFromMapping(mapping)
     const warnings: string[] = []
     if (!mapping.created_at) warnings.push('Колонка даты не выбрана. Часть метрик останется закрытой.')
@@ -235,9 +237,16 @@ export const fixtures = {
         const first = snapshot.diagnosis.findings[0]
         return {
           snapshot_id: snapshot.id,
+          scan_no: [...snapshots.keys()].indexOf(snapshot.id) + 1,
           status: poll.status,
           created_at: snapshot.createdAt,
           headline: poll.status === 'ready' ? first?.action ?? snapshot.diagnosis.headline : undefined,
+          card_title: poll.status === 'ready' ? snapshot.source : undefined,
+          filename: snapshot.source,
+          topics: snapshot.diagnosis.findings
+            .filter((finding) => finding.verdict === 'critical' || finding.verdict === 'watch')
+            .slice(0, 2)
+            .map((finding) => finding.metric_id),
           source: snapshot.source,
           verdict: first && (first.verdict === 'critical' || first.verdict === 'watch' || first.verdict === 'ok') ? first.verdict : undefined,
           coverage_label: `${snapshot.diagnosis.coverage.available.length} из 7`,
@@ -253,5 +262,165 @@ export const fixtures = {
     const response = await fetch('/xray-template.xlsx')
     if (!response.ok) throw new ApiError(response.status, 'Шаблон не найден')
     return response.blob()
+  },
+
+  async compare(baseId: string, targetId: string): Promise<ComparisonResult> {
+    const snap1 = snapshots.get(baseId)
+    const snap2 = snapshots.get(targetId)
+
+    const baseName = snap1?.source || 'Срез 1'
+    const targetName = snap2?.source || 'Срез 2'
+    const baseDate = snap1?.createdAt || '2026-07-15'
+    const targetDate = snap2?.createdAt || '2026-09-22'
+
+    return {
+      base: {
+        snapshot_id: baseId,
+        filename: baseName,
+        created_at: baseDate,
+        headline: snap1?.diagnosis.headline || 'Исходный аудит воронки',
+        totals: snap1?.diagnosis.totals || { deals: 15, amount: 1890000 },
+      },
+      target: {
+        snapshot_id: targetId,
+        filename: targetName,
+        created_at: targetDate,
+        headline: snap2?.diagnosis.headline || 'Повторный срез после оптимизации',
+        totals: snap2?.diagnosis.totals || { deals: 24, amount: 2645000 },
+      },
+      summary: {
+        headline: 'Вы вернули в оборот 581 775 ₽ благодаря разбору зависших сделок и контролю скидок',
+        body: `Сравнение среза от ${baseDate} со срезом от ${targetDate}. Выручка выросла на 755 000 ₽ (+40.0%), средний чек скорректировался до 110 208 ₽. Ключевые точки роста: устранение утечки скидок на 56.4% и сокращение зависших сделок на 62.5%.`,
+        saved_money: 581775,
+        trend: 'improved',
+      },
+      totals_diff: {
+        amount: {
+          base: 1890000,
+          target: 2645000,
+          delta_abs: 755000,
+          delta_pct: 39.9,
+          status: 'positive',
+          unit: 'rub',
+        },
+        deals: {
+          base: 15,
+          target: 24,
+          delta_abs: 9,
+          delta_pct: 60.0,
+          status: 'positive',
+          unit: 'count',
+        },
+        avg_check: {
+          base: 126000,
+          target: 110208,
+          delta_abs: -15792,
+          delta_pct: -12.5,
+          status: 'negative',
+          unit: 'rub',
+        },
+      },
+      metrics_diff: [
+        {
+          metric_id: 'stagnation',
+          name: 'Зависшие сделки',
+          base_value: 24,
+          target_value: 9,
+          base_impact: 840000,
+          target_impact: 315000,
+          delta_value: -15,
+          delta_pct: -62.5,
+          delta_impact: -525000,
+          unit: 'days',
+          status: 'positive',
+          base_verdict: 'critical',
+          target_verdict: 'ok',
+        },
+        {
+          metric_id: 'discount_leakage',
+          name: 'Утечка скидок',
+          base_value: 18.5,
+          target_value: 8.1,
+          base_impact: 142000,
+          target_impact: 85225,
+          delta_value: -10.4,
+          delta_pct: -56.2,
+          delta_impact: -56775,
+          unit: 'pct',
+          status: 'positive',
+          base_verdict: 'watch',
+          target_verdict: 'ok',
+        },
+        {
+          metric_id: 'speed_to_lead',
+          name: 'Скорость первого ответа',
+          base_value: 3.2,
+          target_value: 1.1,
+          base_impact: 0,
+          target_impact: 0,
+          delta_value: -2.1,
+          delta_pct: -65.6,
+          delta_impact: 0,
+          unit: 'hours',
+          status: 'positive',
+          base_verdict: 'watch',
+          target_verdict: 'ok',
+        },
+        {
+          metric_id: 'sales_cycle',
+          name: 'Цикл сделки',
+          base_value: 38,
+          target_value: 26,
+          base_impact: 0,
+          target_impact: 0,
+          delta_value: -12,
+          delta_pct: -31.6,
+          delta_impact: 0,
+          unit: 'days',
+          status: 'positive',
+          base_verdict: 'ok',
+          target_verdict: 'ok',
+        },
+      ],
+      managers_diff: [
+        {
+          manager: 'Алексей Смирнов',
+          base_amount: 850000,
+          target_amount: 1420000,
+          delta_amount: 570000,
+          delta_pct: 67.1,
+          base_deals: 6,
+          target_deals: 11,
+          base_won: 520000,
+          target_won: 980000,
+          status: 'positive',
+        },
+        {
+          manager: 'Елена Кузнецова',
+          base_amount: 640000,
+          target_amount: 825000,
+          delta_amount: 185000,
+          delta_pct: 28.9,
+          base_deals: 5,
+          target_deals: 8,
+          base_won: 410000,
+          target_won: 590000,
+          status: 'positive',
+        },
+        {
+          manager: 'Михаил Орлов',
+          base_amount: 400000,
+          target_amount: 400000,
+          delta_amount: 0,
+          delta_pct: 0.0,
+          base_deals: 4,
+          target_deals: 5,
+          base_won: 210000,
+          target_won: 240000,
+          status: 'positive',
+        },
+      ],
+      total_saved_money: 581775,
+    }
   },
 }

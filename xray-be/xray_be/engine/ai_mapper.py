@@ -3,6 +3,7 @@ import os
 import requests
 from typing import List, Dict, Any, Optional
 from engine.llm_logger import log_llm_interaction
+from engine.models import record_llm_usage
 
 
 def ai_smart_column_mapping(
@@ -11,7 +12,7 @@ def ai_smart_column_mapping(
     current_mapping: Dict[str, str]
 ) -> Dict[str, str]:
     """
-    Uses LLM (gemini-3.8-flash-high) to identify unmapped columns by analyzing
+    Uses LLM (OpenAI-compatible API) to identify unmapped columns by analyzing
     header names and sample values.
     Fills in missing canonical fields like 'amount', 'status', 'created_at', 'client', etc.
     """
@@ -43,10 +44,14 @@ def ai_smart_column_mapping(
     if not unmapped_columns:
         return current_mapping
 
+    from engine.anonymizer import PIIAnonymizer
+    anonymizer = PIIAnonymizer()
+    clean_sample_rows = anonymizer.anonymize_records(sample_rows[:15])
+
     column_samples = {}
     for col in unmapped_columns:
         samples = []
-        for r in sample_rows[:15]:
+        for r in clean_sample_rows:
             v = r.get(col)
             if v is not None and str(v).strip() != "":
                 samples.append(str(v).strip())
@@ -75,15 +80,20 @@ def ai_smart_column_mapping(
     if env_file.exists():
         load_dotenv(env_file)
 
-    base_url = os.environ.get("OPENAI_BASE_URL", "http://144.31.157.209:8317/v1").rstrip("/")
-    api_key = os.environ.get("OPENAI_API_KEY", "")
+    base_url = (os.environ.get("OPENAI_BASE_URL") or "").rstrip("/")
+    api_key = os.environ.get("OPENAI_API_KEY") or ""
+    model_name = os.environ.get("OPENAI_MODEL") or ""
+
+    if not api_key or not base_url or not model_name:
+        return current_mapping
+
     target_url = f"{base_url}/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
     payload = {
-        "model": "gemini-3.8-flash-high",
+        "model": model_name,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": json.dumps(user_prompt, ensure_ascii=False, indent=2)}
@@ -105,6 +115,13 @@ def ai_smart_column_mapping(
                 cleaned = cleaned[4:].strip()
 
             ai_mapping = json.loads(cleaned)
+            usage = resp.json().get("usage") or {}
+            record_llm_usage(
+                operation="ai_column_mapping",
+                model=model_name,
+                prompt_tokens=usage.get("prompt_tokens", 0),
+                completion_tokens=usage.get("completion_tokens", 0)
+            )
             log_llm_interaction(
                 title="AI-НОРМАЛИЗАТОР КОЛОНОК: УСПЕХ",
                 payload_data=payload,
@@ -131,3 +148,122 @@ def ai_smart_column_mapping(
         print(f"[AI MAPPING FALLBACK ERROR]: {e}")
 
     return current_mapping
+
+
+def ai_smart_status_mapping(
+    raw_statuses: List[str],
+    sample_rows: Optional[List[Dict[str, Any]]] = None,
+    current_status_map: Optional[Dict[str, str]] = None
+) -> Dict[str, str]:
+    """
+    Uses rule-based heuristics first. If any statuses are ambiguous or mapped to 'other',
+    uses LLM (OpenAI-compatible API) to classify them into canonical CRM stages:
+    'new', 'in_progress', 'proposal', 'negotiation', 'won', 'lost', 'other'.
+    """
+    from engine.mapping import map_status
+
+    status_map = dict(current_status_map or {})
+    unresolved = []
+
+    for st in raw_statuses:
+        st_clean = str(st).strip()
+        if not st_clean:
+            continue
+        if st_clean not in status_map:
+            canon = map_status(st_clean)
+            status_map[st_clean] = canon
+            if canon == 'other':
+                unresolved.append(st_clean)
+
+    if not unresolved:
+        return status_map
+
+    # Query LLM to resolve ambiguous / custom statuses
+    from pathlib import Path
+    from dotenv import load_dotenv
+    env_file = Path(__file__).resolve().parent.parent.parent / '.env'
+    if env_file.exists():
+        load_dotenv(env_file)
+
+    base_url = (os.environ.get("OPENAI_BASE_URL") or "").rstrip("/")
+    api_key = os.environ.get("OPENAI_API_KEY") or ""
+    model_name = os.environ.get("OPENAI_MODEL") or ""
+
+    if not api_key or not base_url or not model_name:
+        return status_map
+
+    system_prompt = (
+        "Ты — специализированная нейросеть-эксперт по воронкам продаж и статусам заказов/сделок в CRM и e-commerce.\n"
+        "Твоя задача: сопоставить текстовые статусы заказов или этапы сделок с каноническими стадиями воронки продаж.\n"
+        "Канонические стадии:\n"
+        "- 'new': новый лид, входящая заявка, первичный контакт, оформлен заказ, не разобрана\n"
+        "- 'in_progress': сделка в работе, квалификация, обработка, сборка, комплектация, передано в доставку, в пути, отгружен, думает\n"
+        "- 'proposal': выставлен счет, отправлено КП, ожидает оплаты, согласование коммерческих условий\n"
+        "- 'negotiation': активные переговоры, торг, согласование договора\n"
+        "- 'won': успешное завершение сделки, оплачено, доставлен и оплачен, выполнен, закрыт с победой\n"
+        "- 'lost': отказ клиента, отменен, возврат, проиграна конкуренту, нецелевой лид, брак, спам\n"
+        "- 'other': только если статус вообще не имеет отношения к воронке продаж или состоянию заказа\n\n"
+        "Правила:\n"
+        "1. Верни результат СТРОГО в формате валидного JSON без разметки: {\"<raw_status>\": \"<canonical_stage>\"}.\n"
+        "2. Значение canonical_stage может быть ТОЛЬКО одним из: ['new', 'in_progress', 'proposal', 'negotiation', 'won', 'lost', 'other']."
+    )
+
+    user_prompt = {
+        "unresolved_statuses": unresolved,
+        "valid_canonical_stages": ["new", "in_progress", "proposal", "negotiation", "won", "lost", "other"]
+    }
+
+    target_url = f"{base_url}/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": model_name,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": json.dumps(user_prompt, ensure_ascii=False, indent=2)}
+        ],
+        "temperature": 0.0
+    }
+
+    try:
+        resp = requests.post(target_url, headers=headers, json=payload, timeout=12)
+        if resp.status_code == 200:
+            content = resp.json()["choices"][0]["message"]["content"].strip()
+            if content.startswith("```"):
+                content = content.split("\n", 1)[1]
+            if content.endswith("```"):
+                content = content.rsplit("\n", 1)[0]
+            if content.startswith("json"):
+                content = content[4:].strip()
+
+            ai_statuses = json.loads(content)
+            usage = resp.json().get("usage") or {}
+            record_llm_usage(
+                operation="ai_status_mapping",
+                model=model_name,
+                prompt_tokens=usage.get("prompt_tokens", 0),
+                completion_tokens=usage.get("completion_tokens", 0)
+            )
+            valid_stages = {"new", "in_progress", "proposal", "negotiation", "won", "lost", "other"}
+
+            for raw_st, canon_stage in ai_statuses.items():
+                if raw_st in status_map and canon_stage in valid_stages:
+                    status_map[raw_st] = canon_stage
+
+            log_llm_interaction(
+                title="AI-НОРМАЛИЗАТОР СТАТУСОВ: УСПЕХ",
+                payload_data=payload,
+                response_data=ai_statuses,
+                extra_info="STATUS: 200"
+            )
+    except Exception as e:
+        log_llm_interaction(
+            title="AI-НОРМАЛИЗАТОР СТАТУСОВ: ОШИБКА",
+            payload_data=payload if "payload" in locals() else {},
+            response_data=str(e)
+        )
+        print(f"[AI STATUS MAPPING ERROR]: {e}")
+
+    return status_map

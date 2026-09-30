@@ -1,195 +1,295 @@
 import { Button } from '@maxhub/max-ui'
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { createPortal } from 'react-dom'
 import { api, usesFixtures } from '../api/client.ts'
 import { errorText } from '../api/errors.ts'
-import type { SnapshotListItem, UploadResponse } from '../api/types.ts'
-import { formatWhen } from '../domain/metrics.ts'
+import type { UploadResponse } from '../api/types.ts'
 import { FileDrop } from '../widgets/FileDrop.tsx'
 import { Notice } from '../widgets/Notice.tsx'
+import { LogoAmo, LogoBitrix24, LogoMoySklad } from '../widgets/SourceLogos.tsx'
+import { XRayLogo } from '../widgets/XRayLogo.tsx'
 
-const STATUS: Record<SnapshotListItem['status'], string> = {
-  processing: 'Считаем',
-  ready: 'Готово',
-  failed: 'Не вышло',
-}
+type SourceKind = 'amo' | 'bitrix' | 'moysklad'
 
 export function Home({
   onUploaded,
-  onDiagnosis,
-  onProcessing,
+  onTemplates,
+  onCrmReady,
 }: {
   onUploaded: (upload: UploadResponse) => void
-  onDiagnosis: (snapshotId: string) => void
-  onProcessing: (snapshotId: string) => void
+  onTemplates: () => void
+  onCrmReady: (snapshotId: string) => void
 }) {
   const [file, setFile] = useState<File | null>(null)
-  const [busy, setBusy] = useState<'upload' | 'template' | null>(null)
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [notice] = useState('')
-  const [snapshots, setSnapshots] = useState<SnapshotListItem[]>([])
+  const [sheetError, setSheetError] = useState('')
+  const [soon, setSoon] = useState('')
+  const [amoOpen, setAmoOpen] = useState(false)
+  const [amoClosing, setAmoClosing] = useState(false)
+  const [source, setSource] = useState<SourceKind>('amo')
+  const [amoAccount, setAmoAccount] = useState('')
+  const [amoToken, setAmoToken] = useState('')
+  const [bitrixUrl, setBitrixUrl] = useState('')
+  const [msToken, setMsToken] = useState('')
+  const [sheetFont, setSheetFont] = useState<CSSProperties>()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const amoTimer = useRef(0)
+  const amoErrorText = useRef('')
 
-  // Template dropdown state
-  const [templates, setTemplates] = useState<{ id: string; name: string; label: string; size_bytes: number }[]>([])
-  const [showTemplatesDropdown, setShowTemplatesDropdown] = useState(false)
-
-  async function refresh() {
-    try {
-      setSnapshots(await api.list())
-    } catch (reason) {
-      setError(errorText(reason))
+  function closeAmo() {
+    if (!amoOpen || amoClosing) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setAmoOpen(false)
+      return
     }
-  }
-
-  async function loadTemplatesList() {
-    try {
-      const items = await api.listTemplates()
-      setTemplates(items)
-    } catch {
-      // fallback
-    }
+    setAmoClosing(true)
+    window.clearTimeout(amoTimer.current)
+    amoTimer.current = window.setTimeout(() => {
+      setAmoOpen(false)
+      setAmoClosing(false)
+    }, 420)
   }
 
   useEffect(() => {
-    void refresh()
-    void loadTemplatesList()
-  }, [])
+    if (!amoOpen || amoClosing) return
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') closeAmo()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [amoOpen, amoClosing])
+
+  useLayoutEffect(() => {
+    if (!amoOpen) return
+    const shell = document.querySelector('.app-shell')
+    if (!(shell instanceof HTMLElement)) return
+    const style = window.getComputedStyle(shell)
+    setSheetFont({ fontFamily: style.fontFamily, fontSize: style.fontSize })
+  }, [amoOpen])
+
+  function openSource(kind: SourceKind) {
+    if (amoClosing) return
+    if (amoOpen && source === kind) {
+      closeAmo()
+      return
+    }
+    setSource(kind)
+    setSheetError('')
+    setAmoOpen(true)
+    setAmoClosing(false)
+  }
+
+  async function connectSource() {
+    setBusy(true)
+    setSheetError('')
+    try {
+      const result =
+        source === 'bitrix'
+          ? await api.connectBitrix(bitrixUrl.trim())
+          : source === 'moysklad'
+            ? await api.connectMoySklad(msToken.trim())
+            : await api.connectAmo(amoAccount.trim(), amoToken.trim())
+      setAmoToken('')
+      setMsToken('')
+      setSheetError('')
+      setAmoOpen(false)
+      setAmoClosing(false)
+      if (result.snapshot_id) onCrmReady(result.snapshot_id)
+      else if (result.message) setSoon(result.message)
+    } catch (reason) {
+      const message = errorText(reason)
+      amoErrorText.current = message
+      setSheetError(message)
+    } finally {
+      setBusy(false)
+    }
+  }
 
   async function sendFile() {
     if (!file) return
-    setBusy('upload')
+    setBusy(true)
     setError('')
     try {
       onUploaded(await api.upload(file))
     } catch (reason) {
       setError(errorText(reason))
     } finally {
-      setBusy(null)
-    }
-  }
-
-  async function selectTemplate(templateId: string) {
-    setShowTemplatesDropdown(false)
-    setBusy('template')
-    setError('')
-    try {
-      const uploadResp = await api.loadTemplate(templateId)
-      onUploaded(uploadResp)
-    } catch (reason) {
-      setError(errorText(reason))
-    } finally {
-      setBusy(null)
-    }
-  }
-
-  async function openSnapshot(item: SnapshotListItem) {
-    setError('')
-    if (item.status === 'ready') {
-      onDiagnosis(item.snapshot_id)
-      return
-    }
-    if (item.status === 'processing') {
-      onProcessing(item.snapshot_id)
-      return
-    }
-    try {
-      const poll = await api.poll(item.snapshot_id)
-      setError(poll.error || 'Этот снимок не посчитался. Загрузите таблицу ещё раз.')
-    } catch (reason) {
-      setError(errorText(reason))
-    }
-  }
-
-  async function removeSnapshot(id: string) {
-    setError('')
-    try {
-      await api.remove(id)
-      setSnapshots((current) => current.filter((item) => item.snapshot_id !== id))
-    } catch (reason) {
-      setError(errorText(reason))
+      setBusy(false)
     }
   }
 
   return (
     <div className="stack home">
       <header className="home-head">
-        <h1>X-Ray</h1>
+        <div className="home-brand">
+          <XRayLogo />
+          <h1>X-Ray</h1>
+        </div>
         <p className="home-sub">Где теряются деньги</p>
         <p className="home-hint">Таблица сделок за 30–90 дней</p>
       </header>
       {usesFixtures() ? <p className="home-hint">Сейчас ответы локальные: сервер для проверки экранов не нужен.</p> : null}
       {error ? <Notice tone="error">{error}</Notice> : null}
-      {notice ? <Notice tone="ok">{notice}</Notice> : null}
       <div className="home-actions">
-        <FileDrop file={file} busy={busy === 'upload'} onPick={setFile} onSend={() => void sendFile()} />
-        <div className="template-dropdown-wrapper">
+        <p className="home-lead-in">Можно подключить базу данных</p>
+        <div className="source-grid">
+          <button
+            type="button"
+            className={`source-tile source-amo${amoOpen && source === 'amo' ? ' is-on' : ''}`}
+            aria-label="Подключить amoCRM"
+            aria-expanded={amoOpen && !amoClosing && source === 'amo'}
+            onClick={() => openSource('amo')}
+          >
+            <span className="source-tile-icon" aria-hidden="true">
+              <LogoAmo />
+            </span>
+            <span className="source-tile-name">amoCRM</span>
+          </button>
+          <button
+            type="button"
+            className={`source-tile source-bitrix${amoOpen && source === 'bitrix' ? ' is-on' : ''}`}
+            aria-label="Подключить Битрикс24"
+            aria-expanded={amoOpen && !amoClosing && source === 'bitrix'}
+            onClick={() => openSource('bitrix')}
+          >
+            <span className="source-tile-icon" aria-hidden="true">
+              <LogoBitrix24 />
+            </span>
+            <span className="source-tile-name">Битрикс24</span>
+          </button>
+          <button
+            type="button"
+            className={`source-tile source-moysklad${amoOpen && source === 'moysklad' ? ' is-on' : ''}`}
+            aria-label="Подключить МойСклад"
+            aria-expanded={amoOpen && !amoClosing && source === 'moysklad'}
+            onClick={() => openSource('moysklad')}
+          >
+            <span className="source-tile-icon" aria-hidden="true">
+              <LogoMoySklad />
+            </span>
+            <span className="source-tile-name">МойСклад</span>
+          </button>
+        </div>
+        {soon ? <Notice tone="ok">{soon}</Notice> : null}
+        {amoOpen
+          ? createPortal(
+              <div className={`download-sheet is-centered${amoClosing ? ' is-closing' : ''}`}>
+                <button type="button" className="download-sheet-backdrop" aria-label="Закрыть" onClick={closeAmo} />
+                <div className="amo-sheet-anchor" style={sheetFont}>
+                  <p className={`amo-sheet-error${sheetError ? ' is-on' : ''}`} role="status">
+                    {sheetError || amoErrorText.current}
+                  </p>
+                  <form
+                    className="download-sheet-panel"
+                    role="dialog"
+                    aria-label={sheetTitle(source)}
+                    onSubmit={(event) => {
+                      event.preventDefault()
+                      void connectSource()
+                    }}
+                  >
+                    <p className="download-sheet-title">{sheetTitle(source)}</p>
+                    {source === 'amo' ? (
+                      <>
+                        <input
+                          className="amo-input"
+                          placeholder="Поддомен, например demo"
+                          value={amoAccount}
+                          onChange={(event) => setAmoAccount(event.target.value)}
+                          autoComplete="off"
+                        />
+                        <input
+                          className="amo-input"
+                          placeholder="Долгосрочный токен"
+                          value={amoToken}
+                          onChange={(event) => setAmoToken(event.target.value)}
+                          autoComplete="off"
+                          type="password"
+                        />
+                      </>
+                    ) : null}
+                    {source === 'bitrix' ? (
+                      <input
+                        className="amo-input"
+                        placeholder="https://имя.bitrix24.ru/rest/1/код/"
+                        value={bitrixUrl}
+                        onChange={(event) => setBitrixUrl(event.target.value)}
+                        autoComplete="off"
+                      />
+                    ) : null}
+                    {source === 'moysklad' ? (
+                      <input
+                        className="amo-input"
+                        placeholder="Bearer-токен МоегоСклада"
+                        value={msToken}
+                        onChange={(event) => setMsToken(event.target.value)}
+                        autoComplete="off"
+                        type="password"
+                      />
+                    ) : null}
+                    <button
+                      type="submit"
+                      className="amo-connect"
+                      disabled={busy}
+                      onPointerDown={(event) => {
+                        const node = event.currentTarget
+                        node.classList.remove('is-drop')
+                        void node.offsetWidth
+                        node.classList.add('is-drop')
+                        window.setTimeout(() => node.classList.remove('is-drop'), 360)
+                      }}
+                    >
+                      <span className="amo-connect-label">
+                        <span className={busy ? 'is-out' : 'is-in'}>Подключиться</span>
+                        <span className={busy ? 'is-in' : 'is-out'}>Подключаемся…</span>
+                      </span>
+                    </button>
+                  </form>
+                </div>
+              </div>,
+              document.body,
+            )
+          : null}
+        {file ? null : <p className="home-or">или</p>}
+        {file ? null : (
           <Button
-            className="action action-secondary"
+            className="action action-primary"
             type="button"
             size="large"
             stretched
-            variant="secondary"
-            loading={busy === 'template'}
-            onClick={() => setShowTemplatesDropdown((val) => !val)}
+            variant="primary"
+            onClick={() => fileInputRef.current?.click()}
           >
-            Шаблон ▼
+            Загрузить таблицу (CSV / Excel)
           </Button>
-
-          {showTemplatesDropdown && (
-            <div className="template-dropdown-menu">
-              <div className="template-dropdown-header">Выберите готовый CSV:</div>
-              {templates.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  className="template-item-btn"
-                  onClick={() => void selectTemplate(t.id)}
-                >
-                  <span className="template-item-label">{t.label}</span>
-                  <span className="template-item-filename">{t.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        )}
+        <FileDrop
+          file={file}
+          busy={busy}
+          hideButton
+          inputRef={fileInputRef}
+          onPick={setFile}
+          onClear={() => setFile(null)}
+          onSend={() => void sendFile()}
+        />
+        <Button
+          className="action action-secondary"
+          type="button"
+          size="large"
+          stretched
+          variant="secondary"
+          onClick={onTemplates}
+        >
+          Шаблоны
+        </Button>
       </div>
-      {snapshots.length > 0 ? (
-        <section className="history">
-          <p className="eyebrow">История сканов</p>
-          <ul className="scans">
-            {snapshots.map((item) => (
-              <li key={item.snapshot_id}>
-                <button type="button" className="scan-card" onClick={() => void openSnapshot(item)}>
-                  <span className="scan-top">
-                    <span className="scan-meta">{shortWhen(item.created_at)} · {item.source || STATUS[item.status]}</span>
-                    {item.verdict ? (
-                      <span className={`pill ${item.verdict}`}>{verdictName(item.verdict)} · {item.coverage_label}</span>
-                    ) : (
-                      <span className={`pill ${item.status}`}>{STATUS[item.status]}</span>
-                    )}
-                  </span>
-                  <span className="scan-title">{item.headline || 'Снимок без заключения'}</span>
-                </button>
-                <button type="button" className="history-delete" onClick={() => void removeSnapshot(item.snapshot_id)}>
-                  Удалить
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
     </div>
   )
 }
 
-function shortWhen(iso: string): string {
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)
-  const date = match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : new Date(iso)
-  if (Number.isNaN(date.getTime())) return formatWhen(iso)
-  return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' }).format(date).replace('.', '')
-}
-
-function verdictName(verdict: 'critical' | 'watch' | 'ok'): string {
-  if (verdict === 'critical') return 'критично'
-  if (verdict === 'watch') return 'следить'
-  return 'норма'
+function sheetTitle(source: SourceKind): string {
+  if (source === 'bitrix') return 'Подключить Битрикс24'
+  if (source === 'moysklad') return 'Подключить МойСклад'
+  return 'Подключить amoCRM'
 }

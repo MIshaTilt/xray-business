@@ -39,11 +39,13 @@ export type UploadResponse = {
   sample_rows: Record<string, string>[]
   suggested_mapping: Mapping
   coverage: Coverage
+  auto_computed_columns?: string[]
 }
 
 export type MappingResponse = {
   coverage: Coverage
   warnings: string[]
+  auto_computed_columns?: string[]
 }
 
 export type SnapshotStatus = 'processing' | 'ready' | 'failed'
@@ -71,23 +73,46 @@ export type Finding = {
 }
 
 export type Diagnosis = {
+  scan_no?: number
   headline: string
   body: string
   findings: Finding[]
   coverage: Coverage
   period: { from: string | null; to: string | null }
   totals: { deals: number; amount: string; accepted: number; rejected: number }
+  available_columns?: string[]
+  item_type?: 'snapshot' | 'comparison'
+  compare_base_id?: string
+  compare_target_id?: string
 }
 
 export type DiagnosisResponse = Diagnosis & {
   snapshot_id: string
 }
 
+export type ChatListItem = {
+  snapshot_id: string
+  title: string
+  filename: string
+  created_at: string
+  message_count: number
+  last_message: string
+  last_at: string | null
+}
+
 export type SnapshotListItem = {
   snapshot_id: string
+  item_type?: 'snapshot' | 'comparison'
+  compare_base_id?: string
+  compare_target_id?: string
+  total_saved_money?: number
+  scan_no?: number
   status: SnapshotStatus
   created_at: string
   headline?: string
+  card_title?: string
+  filename?: string
+  topics?: MetricId[]
   source?: string
   verdict?: 'critical' | 'watch' | 'ok'
   coverage_label?: string
@@ -118,4 +143,74 @@ export type MetricResult = {
 export type MetricDetail = {
   result: MetricResult
   evidence: EvidenceDeal[]
+}
+
+export type ComparisonStatus = 'positive' | 'negative' | 'neutral'
+
+export type DiffNumberItem = {
+  base: number
+  target: number
+  delta_abs: number
+  delta_pct: number
+  status: ComparisonStatus
+  unit: string
+}
+
+export type MetricDiffItem = {
+  metric_id: MetricId
+  name: string
+  base_value: number
+  target_value: number
+  base_impact: number
+  target_impact: number
+  delta_value: number
+  delta_pct: number
+  delta_impact: number
+  unit: string
+  status: ComparisonStatus
+  base_verdict: Verdict
+  target_verdict: Verdict
+}
+
+export type ManagerDiffItem = {
+  manager: string
+  base_amount: number
+  target_amount: number
+  delta_amount: number
+  delta_pct: number
+  base_deals: number
+  target_deals: number
+  base_won: number
+  target_won: number
+  status: ComparisonStatus
+}
+
+export type ComparisonSummary = {
+  headline: string
+  body: string
+  saved_money: number
+  trend: 'improved' | 'attention' | 'neutral'
+}
+
+export type SnapshotMetaItem = {
+  snapshot_id: string
+  filename?: string
+  created_at: string
+  headline?: string
+  totals?: Record<string, any>
+}
+
+export type ComparisonResult = {
+  comparison_id?: string
+  base: SnapshotMetaItem
+  target: SnapshotMetaItem
+  summary: ComparisonSummary
+  totals_diff: {
+    amount: DiffNumberItem
+    deals: DiffNumberItem
+    avg_check: DiffNumberItem
+  }
+  metrics_diff: MetricDiffItem[]
+  managers_diff: ManagerDiffItem[]
+  total_saved_money: number
 }

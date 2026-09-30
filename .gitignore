@@ -1,0 +1,6 @@
+logs/llm_debug.log
+xray-be/data/snapshots_store.json
+node_modules/
+.env
+__pycache__/
+*.pyc

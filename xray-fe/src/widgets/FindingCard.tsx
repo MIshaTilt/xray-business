@@ -1,6 +1,5 @@
-import { useState } from 'react'
 import type { Finding, Verdict } from '../api/types.ts'
-import { formatImpact, METRICS, verdictLabel } from '../domain/metrics.ts'
+import { formatImpact, METRICS } from '../domain/metrics.ts'
 
 function verdictName(verdict: Verdict): string {
   if (verdict === 'critical') return 'критично'
@@ -18,7 +17,7 @@ function shortRub(value: string): string {
     return `${text} млн`
   }
   if (amount >= 1000) return `${Math.round(amount / 1000)} тыс.`
-  return `${Math.round(amount)} ₽`
+  return `${Math.round(amount)} руб.`
 }
 
 function factLine(finding: Finding): string {
@@ -28,7 +27,6 @@ function factLine(finding: Finding): string {
 }
 
 export function FindingCard({ finding, onOpen }: { finding: Finding; onOpen: () => void }) {
-  const [open, setOpen] = useState(false)
   const copy = METRICS[finding.metric_id]
 
   return (
@@ -36,26 +34,9 @@ export function FindingCard({ finding, onOpen }: { finding: Finding; onOpen: () 
       <div className="finding-open">
         <span className={`pill ${finding.verdict}`}>{verdictName(finding.verdict)}</span>
         <strong className="finding-fact">{factLine(finding)}</strong>
-        <p className={open ? 'finding-text' : 'finding-text clamp'}>{finding.action}</p>
+        <p className="finding-text clamp">{finding.action}</p>
         <span className="finding-title">{copy.title}</span>
       </div>
-      <div className={open ? 'finding-extra open' : 'finding-extra'}>
-        <div>
-          <p className="finding-note">{verdictLabel(finding.verdict)}. {finding.threshold_label}</p>
-          <p className="finding-note">{copy.what}</p>
-        </div>
-      </div>
-      <button
-        type="button"
-        className="finding-more"
-        aria-expanded={open}
-        onClick={(event) => {
-          event.stopPropagation()
-          setOpen((value) => !value)
-        }}
-      >
-        {open ? 'Свернуть' : 'Ещё'}
-      </button>
     </article>
   )
 }

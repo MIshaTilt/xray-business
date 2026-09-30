@@ -1,6 +1,7 @@
 import { Typography } from '@maxhub/max-ui'
 import type { EvidenceDeal } from '../api/types.ts'
 import { formatRub } from '../domain/metrics.ts'
+import { DataTable } from './DataTable.tsx'
 
 const STATUS: Record<string, string> = {
   new: 'Новая',
@@ -40,14 +41,16 @@ export function DealTable({ rows, wide }: { rows: EvidenceDeal[]; wide: boolean 
     )
   }
   return (
-    <div className="data-table">
+    <DataTable>
       <table>
         <thead>
           <tr>
             <th>Клиент</th>
             <th>Сумма</th>
             <th>Статус</th>
-            <th>Дней</th>
+            <th className="is-auto-calc-th">
+              Дней <span className="auto-calc-tag" title="Автоматический расчет">авто</span>
+            </th>
             <th>Менеджер</th>
           </tr>
         </thead>
@@ -57,12 +60,14 @@ export function DealTable({ rows, wide }: { rows: EvidenceDeal[]; wide: boolean 
               <td>{deal.client || 'Без имени'}</td>
               <td>{formatRub(deal.amount)}</td>
               <td>{statusLabel(deal.status)}</td>
-              <td>{deal.days_stale ?? '—'}</td>
+              <td className="is-auto-calc-td">
+                {deal.days_stale != null ? <span className="auto-calc-val">{deal.days_stale} дн.</span> : '—'}
+              </td>
               <td>{deal.manager || '—'}</td>
             </tr>
           ))}
         </tbody>
       </table>
-    </div>
+    </DataTable>
   )
 }
