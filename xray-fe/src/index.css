@@ -5996,7 +5996,12 @@ html[data-theme="dark"] .tool-sql-error {
 .chat-suggestions {
   position: relative;
   min-width: 0;
-  overflow: hidden;
+}
+
+.chat-suggestions .data-table-edge-blur,
+html[data-theme="dark"] .chat-suggestions .data-table-edge-blur {
+  backdrop-filter: blur(calc(12px * var(--edge, 0)));
+  -webkit-backdrop-filter: blur(calc(12px * var(--edge, 0)));
 }
 
 .chat-suggestions-bar {

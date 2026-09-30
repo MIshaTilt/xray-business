@@ -402,11 +402,34 @@ export function ChatScreen({
   const listRef = useRef<HTMLDivElement>(null)
   const areaRef = useRef<HTMLTextAreaElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
+  const [chipEdge, setChipEdge] = useState({ left: 0, right: 0 })
   const clearTimer = useRef(0)
   const sweepTimer = useRef(0)
   const [navSlot, setNavSlot] = useState<HTMLElement | null>(null)
   const [drawerHost, setDrawerHost] = useState<HTMLElement | null>(null)
   const labelRef = useRef<HTMLParagraphElement>(null)
+
+  useLayoutEffect(() => {
+    const node = suggestionsRef.current
+    if (!node) return
+    const update = () => {
+      if (!node.isConnected) return
+      const max = node.scrollWidth - node.clientWidth
+      setChipEdge({
+        left: max <= 0 ? 0 : Math.min(1, node.scrollLeft / 72),
+        right: max <= 0 ? 0 : Math.min(1, (max - node.scrollLeft) / 72),
+      })
+    }
+    update()
+    node.addEventListener('scroll', update, { passive: true })
+    const observer = new ResizeObserver(update)
+    observer.observe(node)
+    return () => {
+      node.removeEventListener('scroll', update)
+      observer.disconnect()
+    }
+  }, [suggestedPrompts, streaming])
+
   const scanOpen = Boolean(snapshotId || effectiveComparisonId)
   const [scanHeading, setScanHeading] = useState(() => {
     if (!scanOpen) return 'Консультант'
@@ -1158,6 +1181,12 @@ export function ChatScreen({
               </button>
             ))}
           </div>
+          <span className="data-table-edge data-table-edge-left" style={{ ['--edge' as string]: chipEdge.left }} aria-hidden="true">
+            <span className="data-table-edge-blur" />
+          </span>
+          <span className="data-table-edge data-table-edge-right" style={{ ['--edge' as string]: chipEdge.right }} aria-hidden="true">
+            <span className="data-table-edge-blur" />
+          </span>
           </div>
         )}
         <div className="chat-composer">
