@@ -2,6 +2,7 @@ import { Button } from '@maxhub/max-ui'
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { api, rememberRemovedScan, removedScanIds, usesFixtures } from '../api/client.ts'
+import { activeViewTransition, isViewTransitionCapture } from '../app/nav.ts'
 import { errorText } from '../api/errors.ts'
 import type { SnapshotListItem } from '../api/types.ts'
 import { formatRub, formatWhen, scanCaption } from '../domain/metrics.ts'
@@ -60,11 +61,17 @@ export function Scans({
   const [enteringIds, setEnteringIds] = useState<string[]>([])
   const [picking, setPicking] = useState(false)
   const [pickClosing, setPickClosing] = useState(false)
+  const [pickShown, setPickShown] = useState(false)
   const [picked, setPicked] = useState<string[]>([])
   const [pickFont, setPickFont] = useState<{ fontFamily: string } | null>(null)
   const [pickSlot, setPickSlot] = useState<HTMLElement | null>(null)
+  const [quickMounted, setQuickMounted] = useState(false)
+  const [quickClosing, setQuickClosing] = useState(false)
+  const [quickEnter, setQuickEnter] = useState(false)
   const emptyTimer = useRef(0)
   const pickTimer = useRef(0)
+  const quickTimer = useRef(0)
+  const quickReveal = useRef<'snapshot' | 'wait' | 'css' | null>(null)
   const leavingIdsRef = useRef<string[]>([])
   const enterTimerRef = useRef<Record<string, number>>({})
 
@@ -87,6 +94,7 @@ export function Scans({
       setPickSlot(null)
       window.clearTimeout(emptyTimer.current)
       window.clearTimeout(pickTimer.current)
+      window.clearTimeout(quickTimer.current)
       Object.values(enterTimerRef.current).forEach((timer) => window.clearTimeout(timer))
     }
   }, [])
@@ -176,16 +184,20 @@ export function Scans({
 
   function stopPick() {
     if (!picking || pickClosing) return
-    setPicking(false)
-    setPicked([])
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       window.clearTimeout(pickTimer.current)
       setPickClosing(false)
+      setPicking(false)
+      setPicked([])
       return
     }
     setPickClosing(true)
     window.clearTimeout(pickTimer.current)
-    pickTimer.current = window.setTimeout(() => setPickClosing(false), 400)
+    pickTimer.current = window.setTimeout(() => {
+      setPickClosing(false)
+      setPicking(false)
+      setPicked([])
+    }, 340)
   }
 
   function startPick(initialId?: string) {
@@ -197,10 +209,12 @@ export function Scans({
   }
 
   function togglePicked(id: string) {
+    if (pickClosing) return
     setPicked((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]))
   }
 
   function removePicked() {
+    if (pickClosing) return
     const ids = picked.filter((id) => !leavingIdsRef.current.includes(id))
     stopPick()
     for (const id of ids) void removeSnapshot(id)
@@ -211,6 +225,23 @@ export function Scans({
     const shell = document.querySelector('.app-shell')
     if (!(shell instanceof HTMLElement)) return
     setPickFont({ fontFamily: getComputedStyle(shell).fontFamily })
+  }, [picking, pickClosing])
+
+  useLayoutEffect(() => {
+    if (!picking && !pickClosing) {
+      setPickShown(false)
+      return
+    }
+    if (pickClosing) {
+      setPickShown(false)
+      return
+    }
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setPickShown(true)
+      return
+    }
+    const frame = window.requestAnimationFrame(() => setPickShown(true))
+    return () => window.cancelAnimationFrame(frame)
   }, [picking, pickClosing])
 
   useEffect(() => {
@@ -269,42 +300,83 @@ export function Scans({
 
   const visible = snapshots.filter((item) => !leavingIds.includes(item.snapshot_id))
   const canPick = scansLoaded && visible.length > 0
+  const standardScans = visible.filter((item) => item.item_type !== 'comparison')
+  const showQuickCompare = standardScans.length >= 2 && !picking && !!onCompare
+  const pickedStandard = picked.filter(
+    (id) => snapshots.find((item) => item.snapshot_id === id)?.item_type !== 'comparison',
+  )
+  const showCompare = pickedStandard.length === 2 && !!onCompare
+
+  function pressCompare() {
+    if (!showCompare || pickClosing || !onCompare) return
+    const baseId = pickedStandard[0]
+    const targetId = pickedStandard[1]
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      onCompare(baseId, targetId)
+      return
+    }
+    setPickClosing(true)
+    window.clearTimeout(pickTimer.current)
+    pickTimer.current = window.setTimeout(() => onCompare(baseId, targetId), 320)
+  }
+
+  if (showQuickCompare && !quickMounted) {
+    quickReveal.current = isViewTransitionCapture() ? 'snapshot' : activeViewTransition() ? 'wait' : 'css'
+    setQuickMounted(true)
+    setQuickClosing(false)
+    setQuickEnter(quickReveal.current === 'css')
+  }
+
+  useEffect(() => {
+    if (showQuickCompare) {
+      window.clearTimeout(quickTimer.current)
+      const reveal = quickReveal.current
+      quickReveal.current = null
+      if (reveal === 'wait') {
+        const pending = activeViewTransition()
+        if (!pending) {
+          setQuickClosing(false)
+          setQuickEnter(true)
+          return
+        }
+        let cancel = false
+        void pending.finished.finally(() => {
+          if (cancel) return
+          setQuickClosing(false)
+          setQuickEnter(true)
+        })
+        return () => {
+          cancel = true
+        }
+      }
+      if (reveal !== 'snapshot') {
+        setQuickClosing(false)
+        setQuickEnter(true)
+      }
+      return
+    }
+    if (!quickMounted) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setQuickMounted(false)
+      setQuickClosing(false)
+      setQuickEnter(false)
+      return
+    }
+    setQuickClosing(true)
+    window.clearTimeout(quickTimer.current)
+    quickTimer.current = window.setTimeout(() => {
+      setQuickMounted(false)
+      setQuickClosing(false)
+      setQuickEnter(false)
+    }, 280)
+  }, [showQuickCompare, quickMounted])
 
   return (
-    <div className={`stack scans-screen${picking ? ' is-picking' : ''}`}>
+    <div className={`stack scans-screen${picking || pickClosing ? ' is-picking' : ''}${quickMounted ? ' has-quick-compare' : ''}${pickedStandard.length === 2 ? ' has-pair' : ''}`}>
       <div className="lead">
         <div className="scans-lead-header">
           <h1>Сканы</h1>
-          {canPick && !picking ? (
-            <button
-              type="button"
-              className="scans-select-text-btn"
-              onClick={() => startPick()}
-            >
-              Выбрать
-            </button>
-          ) : null}
         </div>
-        {(() => {
-          const standardScans = visible.filter((item) => item.item_type !== 'comparison')
-          if (standardScans.length >= 2 && !picking && onCompare) {
-            return (
-              <div className="scans-quick-compare-wrap">
-                <button
-                  type="button"
-                  className="action scans-quick-compare-btn"
-                  onClick={() => onCompare(standardScans[0].snapshot_id, standardScans[1].snapshot_id)}
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M7 16V4m0 0L3 8m4-4 4 4m6 4v12m0 0 4-4m-4 4-4-4" />
-                  </svg>
-                  <span>Сравнить 2 последних среза</span>
-                </button>
-              </div>
-            )
-          }
-          return null
-        })()}
       </div>
       {canPick && pickSlot
         ? createPortal(
@@ -330,27 +402,47 @@ export function Scans({
             pickSlot,
           )
         : null}
+      {quickMounted && onCompare
+        ? createPortal(
+            <div className={`scans-quick-compare-wrap${quickEnter && !quickClosing ? ' is-in' : ''}${quickClosing ? ' is-closing' : ''}`}>
+              <div className="scans-quick-compare-clip">
+              <button
+                type="button"
+                className="action scans-quick-compare-btn"
+                onClick={() => onCompare(standardScans[0].snapshot_id, standardScans[1].snapshot_id)}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M7 16V4m0 0L3 8m4-4 4 4m6 4v12m0 0 4-4m-4 4-4-4" />
+                </svg>
+                <span>Сравнить 2 последних среза</span>
+              </button>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
       {picking || pickClosing
         ? createPortal(
             <div
-              className={`scans-pick-bar${pickClosing ? ' is-closing' : ''}${picked.filter((id) => snapshots.find((s) => s.snapshot_id === id)?.item_type !== 'comparison').length === 2 && onCompare ? ' has-compare' : ''}`}
+              className={`scans-pick-bar${pickShown && !pickClosing ? ' is-in' : ''}${pickClosing ? ' is-closing' : ''}`}
               style={pickFont ?? undefined}
             >
-              {(() => {
-                const pickedStandard = picked.filter((id) => snapshots.find((s) => s.snapshot_id === id)?.item_type !== 'comparison')
-                if (pickedStandard.length === 2 && onCompare) {
-                  return (
+              {onCompare ? (
+                <div className={`scans-pick-compare-slot${showCompare ? ' is-on' : ''}`}>
+                  <div className="scans-pick-compare-clip">
                     <button
                       type="button"
                       className="action scans-pick-compare"
-                      onClick={() => onCompare(pickedStandard[0], pickedStandard[1])}
+                      disabled={!showCompare}
+                      tabIndex={showCompare ? 0 : -1}
+                      aria-hidden={showCompare ? undefined : true}
+                      onClick={pressCompare}
                     >
                       Сравнить (2)
                     </button>
-                  )
-                }
-                return null
-              })()}
+                  </div>
+                </div>
+              ) : null}
               <button
                 type="button"
                 className="action scans-pick-delete"
@@ -433,7 +525,7 @@ export function Scans({
                     >
                       <ScanFace
                         item={item}
-                        picking={picking}
+                        picking={picking && !pickClosing}
                         checked={picked.includes(item.snapshot_id)}
                         onToggle={() => togglePicked(item.snapshot_id)}
                       />

@@ -56,6 +56,12 @@ default_trusted = [
     'http://144.31.157.209:80',
     'http://144.31.157.209:5173',
     'http://144.31.157.209:8000',
+    'http://13.143.163.133',
+    'http://13.143.163.133:80',
+    'http://13.143.163.133:5173',
+    'http://13.143.163.133:8000',
+    'https://13.143.163.133',
+    'https://13.143.163.133:443',
 ]
 for origin in default_trusted:
     trusted_origins.add(origin)
@@ -220,5 +226,10 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-guest-session',
 ]
 APPEND_SLASH = False
+
+# MAX Messenger Bot Configuration
+MAX_BOT_TOKEN = os.environ.get('MAX_BOT_TOKEN', 'f9LHodD0cOJBhxITwPCdJEVxZ7O2jzj6oDVpd_ODgTheRYaSUX8ErQbLWGisLOw5-U9xswXPu-vQfO0yAcCT')
+MAX_BOT_USERNAME = os.environ.get('MAX_BOT_USERNAME', 'se14421867_bot')
+MAX_APP_URL = os.environ.get('MAX_APP_URL', 'https://xray-business-bot.online')
 
 

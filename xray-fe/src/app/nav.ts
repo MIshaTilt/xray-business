@@ -5,9 +5,20 @@ type GoOptions = { replace?: boolean }
 
 let activeTransition: ViewTransition | null = null
 let nextRun: (() => void) | null = null
+let nextTo: To | number | null = null
 let queuedFrame = 0
 let hostLeaving = false
 let hostTimer = 0
+let chromeGeneration = 0
+let capturingTransition = false
+
+export function isViewTransitionCapture() {
+  return capturingTransition
+}
+
+export function activeViewTransition() {
+  return activeTransition
+}
 
 function insideHostWebView() {
   const app = window.WebApp ?? window.Telegram?.WebApp
@@ -18,6 +29,22 @@ function insideHostWebView() {
 function stageElement() {
   const stage = document.querySelector('.page-stage:not([data-page-ghost])')
   return stage instanceof HTMLElement ? stage : null
+}
+
+function tabBarElement() {
+  const bar = document.querySelector('.tab-bar')
+  return bar instanceof HTMLElement ? bar : null
+}
+
+function pinTabBar() {
+  chromeGeneration += 1
+  tabBarElement()?.style.setProperty('view-transition-name', 'xray-tabs')
+  return chromeGeneration
+}
+
+function unpinTabBar(generation: number) {
+  if (generation !== chromeGeneration) return
+  tabBarElement()?.style.removeProperty('view-transition-name')
 }
 
 function markRouteLeave() {
@@ -41,18 +68,169 @@ function clearStageMotion() {
   stage.style.removeProperty('view-transition-name')
 }
 
+function quickCompareElement() {
+  const node = document.querySelector('.scans-quick-compare-wrap')
+  return node instanceof HTMLElement ? node : null
+}
+
+function fadeQuickCompare() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  const node = quickCompareElement()
+  if (!node) return
+  node.classList.remove('is-in')
+  node.classList.add('is-closing')
+}
+
+function settleQuickCompare() {
+  const node = quickCompareElement()
+  if (!node) return
+  node.style.animation = 'none'
+  node.getAnimations().forEach((motion) => motion.cancel())
+}
+
+function settleStageAnimations() {
+  const stage = stageElement()
+  if (!stage) return
+  stage.querySelectorAll('*').forEach((node) => {
+    if (!(node instanceof HTMLElement)) return
+    const motions = node.getAnimations()
+    if (!motions.length) return
+    const style = getComputedStyle(node)
+    node.style.animation = 'none'
+    node.style.opacity = style.opacity
+    if (style.transform && style.transform !== 'none') node.style.transform = style.transform
+    motions.forEach((motion) => motion.cancel())
+  })
+}
+
+function settleTabBar() {
+  const bar = tabBarElement()
+  if (!bar) return
+  bar.querySelectorAll('.is-stretch, .is-drop').forEach((node) => {
+    node.classList.remove('is-stretch', 'is-drop')
+  })
+  void bar.offsetWidth
+  bar.getAnimations({ subtree: true }).forEach((motion) => motion.cancel())
+}
+
+function pickBarElement() {
+  const node = document.querySelector('.scans-pick-bar')
+  return node instanceof HTMLElement ? node : null
+}
+
+function fadePickBar() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  const node = pickBarElement()
+  if (!node) return
+  node.style.removeProperty('transition')
+  node.style.removeProperty('opacity')
+  node.classList.remove('is-in')
+  node.classList.add('is-closing')
+}
+
+function isChatPath(path: string | null | undefined) {
+  if (!path) return false
+  const bare = path.split('?')[0].split('#')[0]
+  return bare === '/chat' || bare.endsWith('/chat')
+}
+
+function pathOf(to: To | number | null) {
+  if (typeof to === 'number' || to == null) return null
+  if (typeof to === 'string') {
+    try {
+      return new URL(to, window.location.href).pathname
+    } catch {
+      return null
+    }
+  }
+  return to.pathname ?? null
+}
+
+function chatChromeNodes() {
+  return [...document.querySelectorAll('.chat-history-nav, .chat-clear-nav.is-on')].flatMap((node) =>
+    node instanceof HTMLElement && node.getBoundingClientRect().width > 1 ? [node] : [],
+  )
+}
+
+function chatChromeName(node: HTMLElement) {
+  return node.classList.contains('chat-clear-nav') ? 'xray-chat-clear' : 'xray-chat-history'
+}
+
+function settleChatChrome(nodes: HTMLElement[]) {
+  for (const node of nodes) {
+    const style = getComputedStyle(node)
+    const width = style.width
+    const opacity = style.opacity
+    const marginRight = style.marginRight
+    node.style.transition = 'none'
+    node.style.animation = 'none'
+    node.style.width = width
+    node.style.opacity = opacity
+    node.style.marginRight = marginRight
+    node.getAnimations().forEach((motion) => motion.cancel())
+  }
+}
+
+function pinChatChrome(nodes: HTMLElement[]) {
+  for (const node of nodes) node.style.setProperty('view-transition-name', chatChromeName(node))
+}
+
+function unpinChatChrome() {
+  document.querySelectorAll('.chat-history-nav, .chat-clear-nav').forEach((node) => {
+    if (!(node instanceof HTMLElement)) return
+    node.style.removeProperty('view-transition-name')
+    node.style.removeProperty('transition')
+    node.style.removeProperty('animation')
+    node.style.removeProperty('width')
+    node.style.removeProperty('opacity')
+    node.style.removeProperty('margin-right')
+  })
+}
+
+function fadeChatChrome() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  chatChromeNodes().forEach((node) => {
+    node.getAnimations().forEach((motion) => motion.cancel())
+    node.style.animation = 'none'
+    node.style.opacity = '0'
+  })
+}
+
 function begin() {
   const run = nextRun
+  const to = nextTo
   nextRun = null
+  nextTo = null
   if (!run) return
   clearStageMotion()
   markRouteLeave()
+  settleQuickCompare()
+  settleStageAnimations()
+  const fromChat = isChatPath(window.location.pathname)
+  const toPath = pathOf(to)
+  const toChat = toPath == null ? fromChat : isChatPath(toPath)
+  const leaveChat = fromChat && !toChat
+  unpinChatChrome()
+  if (leaveChat) {
+    const leaving = chatChromeNodes()
+    settleChatChrome(leaving)
+    pinChatChrome(leaving)
+  }
+  settleTabBar()
+  const chromePin = pinTabBar()
   let pending: ViewTransition
   try {
     pending = document.startViewTransition(() => {
-      flushSync(run)
+      capturingTransition = true
+      try {
+        flushSync(run)
+      } finally {
+        capturingTransition = false
+      }
     })
   } catch {
+    unpinTabBar(chromePin)
+    unpinChatChrome()
     clearStageMotion()
     run()
     clearRouteLeave()
@@ -62,6 +240,8 @@ function begin() {
   void pending.ready.then(() => clearRouteLeave()).catch(() => {})
   void pending.ready.catch(() => {})
   void pending.finished.finally(() => {
+    unpinTabBar(chromePin)
+    unpinChatChrome()
     if (activeTransition !== pending) return
     activeTransition = null
     clearStageMotion()
@@ -103,6 +283,9 @@ function finishHost() {
 }
 
 function beginHost() {
+  fadeQuickCompare()
+  fadePickBar()
+  fadeChatChrome()
   const stage = stageElement()
   if (!stage) {
     const run = nextRun
@@ -135,6 +318,7 @@ function queue() {
 }
 
 export function go(navigate: NavigateFunction, to: To | number, options?: GoOptions) {
+  nextTo = to
   nextRun = () => {
     if (typeof to === 'number') navigate(to)
     else navigate(to, options)

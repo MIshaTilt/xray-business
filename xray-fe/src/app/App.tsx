@@ -18,7 +18,7 @@ import { Templates } from '../screens/Templates.tsx'
 import { AnalyzeVeil } from '../widgets/AnalyzeVeil.tsx'
 import { LiveWallpaper } from '../widgets/LiveWallpaper.tsx'
 import { FlowProvider, useFlow } from './flow.tsx'
-import { backTarget, go, tabOf, type TabName } from './nav.ts'
+import { backTarget, go, isViewTransitionCapture, tabOf, type TabName } from './nav.ts'
 
 function playTabDrop(button: HTMLButtonElement) {
   if (!button.classList.contains('is-on')) return
@@ -75,6 +75,7 @@ function Shell() {
   const showTabs = true
   const tabBarRef = useRef<HTMLElement>(null)
   const pillReady = useRef(false)
+  const seenTab = useRef<TabName | null>(null)
   const [pillMotion, setPillMotion] = useState(false)
   const [pill, setPill] = useState({ x: 4, w: 0, stretch: false })
   const lastTabPath = useRef<Record<TabName, string>>({ ...TAB_ROOT })
@@ -103,20 +104,29 @@ function Shell() {
   useLayoutEffect(() => {
     const bar = tabBarRef.current
     if (!bar) return
-    const active = bar.querySelector('.tab-item.is-on')
-    if (!(active instanceof HTMLElement)) return
-    const barRect = bar.getBoundingClientRect()
-    const rect = active.getBoundingClientRect()
-    const next = {
-      x: rect.left - barRect.left,
-      w: rect.width,
-      stretch: pillReady.current,
+    const measure = (stretch: boolean) => {
+      const active = bar.querySelector('.tab-item.is-on')
+      if (!(active instanceof HTMLElement)) return
+      setPill({
+        x: active.offsetLeft,
+        w: active.offsetWidth,
+        stretch,
+      })
     }
+    const tabChanged = seenTab.current !== null && seenTab.current !== tab
+    seenTab.current = tab
+    measure(tabChanged && !isViewTransitionCapture())
     if (!pillReady.current) {
       pillReady.current = true
       window.requestAnimationFrame(() => setPillMotion(true))
     }
-    setPill(next)
+    const onResize = () => measure(false)
+    window.addEventListener('resize', onResize)
+    window.visualViewport?.addEventListener('resize', onResize)
+    return () => {
+      window.removeEventListener('resize', onResize)
+      window.visualViewport?.removeEventListener('resize', onResize)
+    }
   }, [tab])
 
   useEffect(() => {
@@ -200,19 +210,31 @@ function Shell() {
     const root = document.documentElement
     const apply = () => {
       const viewport = window.visualViewport
-      const inset = viewport
-        ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
-        : 0
+      const active = document.activeElement
+      const typing =
+        active instanceof HTMLElement &&
+        (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)
+      const inset =
+        viewport && typing
+          ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+          : 0
       root.style.setProperty('--keyboard-inset', `${Math.round(inset)}px`)
+    }
+    const onFocusOut = () => {
+      window.requestAnimationFrame(apply)
     }
     apply()
     window.visualViewport?.addEventListener('resize', apply)
     window.visualViewport?.addEventListener('scroll', apply)
     window.addEventListener('resize', apply)
+    window.addEventListener('focusin', apply)
+    window.addEventListener('focusout', onFocusOut)
     return () => {
       window.visualViewport?.removeEventListener('resize', apply)
       window.visualViewport?.removeEventListener('scroll', apply)
       window.removeEventListener('resize', apply)
+      window.removeEventListener('focusin', apply)
+      window.removeEventListener('focusout', onFocusOut)
       root.style.removeProperty('--keyboard-inset')
     }
   }, [])
