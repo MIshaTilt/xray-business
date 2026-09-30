@@ -13,16 +13,19 @@ logger = logging.getLogger(__name__)
 class MaxWebhookView(View):
     """
     Эндпоинт для приема и обработки вебхуков от платформы MAX (https://dev.max.ru).
+    Поддерживает маршрутизацию по параметру ?bot=t720 или ?bot=xray.
     """
 
     def get(self, request, *args, **kwargs):
         """Проверка статуса подключения бота к платформе MAX."""
-        service = MaxBotService()
+        bot_key = request.GET.get('bot')
+        service = MaxBotService(bot_key=bot_key)
         try:
             bot_info = service.get_me()
             return JsonResponse({
                 "status": "ok",
                 "service": "X-Ray Business MAX Bot",
+                "bot_key": bot_key or "default",
                 "bot": {
                     "user_id": bot_info.get("user_id"),
                     "username": bot_info.get("username"),
@@ -34,22 +37,25 @@ class MaxWebhookView(View):
         except Exception as e:
             return JsonResponse({
                 "status": "error",
+                "bot_key": bot_key or "default",
                 "message": f"Не удалось получить информацию о боте: {e}",
             }, status=500)
 
     def post(self, request, *args, **kwargs):
         """Обработка входящих событий от MAX (bot_started, message_created, bot_added)."""
+        bot_key = request.GET.get('bot')
         try:
             body = request.body.decode('utf-8')
             if not body:
                 return JsonResponse({"ok": False, "error": "Empty body"}, status=400)
             data = json.loads(body)
         except Exception as e:
-            logger.error("Ошибка парсинга JSON вебхука MAX: %s", e)
+            logger.error("Ошибка парсинга JSON вебхука MAX (bot=%s): %s", bot_key, e)
             return JsonResponse({"ok": False, "error": "Invalid JSON"}, status=400)
 
-        logger.info("Получен вебхук MAX: %s", data.get("update_type"))
-        service = MaxBotService()
+        update_type = data.get("update_type") if isinstance(data, dict) else "list"
+        logger.info("Получен вебхук MAX (bot_key=%s, type=%s): %r", bot_key, update_type, data)
+        service = MaxBotService(bot_key=bot_key)
 
         try:
             # Обработка как одиночного update, так и массива updates
@@ -65,5 +71,5 @@ class MaxWebhookView(View):
 
             return JsonResponse({"ok": True})
         except Exception as e:
-            logger.error("Ошибка при обработке вебхука MAX: %s", e, exc_info=True)
+            logger.error("Ошибка при обработке вебхука MAX (bot=%s): %s", bot_key, e, exc_info=True)
             return JsonResponse({"ok": False, "error": str(e)}, status=500)
