@@ -81,6 +81,7 @@ export type Diagnosis = {
   period: { from: string | null; to: string | null }
   totals: { deals: number; amount: string; accepted: number; rejected: number }
   available_columns?: string[]
+  card_title?: string
   item_type?: 'snapshot' | 'comparison'
   compare_base_id?: string
   compare_target_id?: string

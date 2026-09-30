@@ -1,17 +1,56 @@
-import { useState, useRef, useEffect, useLayoutEffect, useMemo, type CSSProperties } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { marked } from 'marked'
-import type { ChatListItem, Diagnosis as DiagnosisData, ComparisonResult } from '../api/types.ts'
+import type { ChatListItem, Diagnosis as DiagnosisData, ComparisonResult, SnapshotListItem } from '../api/types.ts'
 import { ToolCallBadge } from './ToolCallBadge.tsx'
 import { ChartCard } from '../widgets/ChartCard.tsx'
 import { DataTable } from '../widgets/DataTable.tsx'
 import { api, authHeaders } from '../api/client.ts'
+import { activeViewTransition } from '../app/nav.ts'
 
 // Configure marked for clean inline rendering with breaks
 marked.setOptions({
   breaks: true,
   gfm: true,
 })
+
+const SCANS_CACHE_KEY = 'xray-scans-cache'
+
+function fileStem(filename?: string): string {
+  if (!filename) return ''
+  return filename.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+function headingFromItem(item: SnapshotListItem): string {
+  if (item.item_type === 'comparison') {
+    return (item.card_title || '').trim() || fileStem(item.filename) || 'Сравнение срезов'
+  }
+  const invented = (item.card_title || '').trim()
+  if (invented) return invented
+  return fileStem(item.filename) || 'Снимок'
+}
+
+function readCachedHeading(id: string): string {
+  if (!id) return ''
+  try {
+    const raw: unknown = JSON.parse(sessionStorage.getItem(SCANS_CACHE_KEY) || '[]')
+    if (!Array.isArray(raw)) return ''
+    const item = raw.find((entry) => entry && typeof entry === 'object' && entry.snapshot_id === id) as
+      | SnapshotListItem
+      | undefined
+    return item ? headingFromItem(item) : ''
+  } catch {
+    return ''
+  }
+}
+
+function comparisonHeading(comparison?: ComparisonResult | null): string {
+  if (!comparison) return ''
+  const base = fileStem(comparison.base?.filename)
+  const target = fileStem(comparison.target?.filename)
+  if (base && target) return `${base} ➔ ${target}`
+  return base || target
+}
 
 function formatChatWhen(value: string): string {
   const date = new Date(value)
@@ -261,26 +300,6 @@ export function ChatScreen({
     [diagnosis, comparison]
   )
 
-  useEffect(() => {
-    const node = suggestionsRef.current
-    if (!node) return
-    const update = () => {
-      const max = node.scrollWidth - node.clientWidth
-      setChipEdge({
-        left: max <= 0 ? 0 : Math.min(1, node.scrollLeft / 72),
-        right: max <= 0 ? 0 : Math.min(1, (max - node.scrollLeft) / 72),
-      })
-    }
-    update()
-    node.addEventListener('scroll', update, { passive: true })
-    const observer = new ResizeObserver(update)
-    observer.observe(node)
-    return () => {
-      node.removeEventListener('scroll', update)
-      observer.disconnect()
-    }
-  }, [suggestedPrompts])
-
   const defaultGreeting = comparison || effectiveComparisonId
     ? 'Здравствуйте! Я изучил динамику между двумя срезами бизнеса. Готов ответить на любые вопросы по причинам изменений выручки, спаду или росту менеджеров, динамике зависших сделок и точкам роста.'
     : 'Здравствуйте! Я проанализировал ваш бизнес-рентген и готов ответить на любые вопросы по найденным угрозам, зависшим сделкам или рекомендациям.'
@@ -383,17 +402,69 @@ export function ChatScreen({
   const listRef = useRef<HTMLDivElement>(null)
   const areaRef = useRef<HTMLTextAreaElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
-  const [chipEdge, setChipEdge] = useState({ left: 0, right: 0 })
   const clearTimer = useRef(0)
   const sweepTimer = useRef(0)
   const [navSlot, setNavSlot] = useState<HTMLElement | null>(null)
   const [drawerHost, setDrawerHost] = useState<HTMLElement | null>(null)
+  const labelRef = useRef<HTMLParagraphElement>(null)
+  const scanOpen = Boolean(snapshotId || effectiveComparisonId)
+  const [scanHeading, setScanHeading] = useState(() => {
+    if (!scanOpen) return 'Консультант'
+    return (
+      (diagnosis?.card_title || '').trim() ||
+      comparisonHeading(comparison) ||
+      readCachedHeading(effectiveComparisonId || snapshotId)
+    )
+  })
 
   useLayoutEffect(() => {
     setNavSlot(document.getElementById('chat-nav-actions'))
     const shell = document.querySelector('.app-shell')
     setDrawerHost(shell instanceof HTMLElement ? shell : document.body)
   }, [])
+
+  useLayoutEffect(() => {
+    if (!navSlot) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const delay = activeViewTransition() ? 320 : 0
+    navSlot.querySelectorAll('.chat-history-nav, .chat-clear-nav.is-on').forEach((node) => {
+      if (!(node instanceof HTMLElement)) return
+      node.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 320, delay, easing: 'ease', fill: 'backwards' })
+    })
+  }, [navSlot])
+
+  useEffect(() => {
+    if (!scanOpen && !comparison) {
+      setScanHeading('Консультант')
+      return
+    }
+    const immediate =
+      (diagnosis?.card_title || '').trim() ||
+      comparisonHeading(comparison) ||
+      readCachedHeading(effectiveComparisonId || snapshotId)
+    setScanHeading(immediate)
+
+    let alive = true
+    const wanted = effectiveComparisonId || snapshotId
+    api
+      .list()
+      .then((items) => {
+        if (!alive) return
+        const item = items.find((entry) => entry.snapshot_id === wanted)
+        if (item) {
+          setScanHeading(headingFromItem(item))
+          return
+        }
+        if (!immediate) setScanHeading(comparison ? 'Сравнение срезов' : 'Снимок')
+      })
+      .catch(() => {
+        if (!alive || immediate) return
+        setScanHeading(comparison ? comparisonHeading(comparison) || 'Сравнение срезов' : 'Снимок')
+      })
+    return () => {
+      alive = false
+    }
+  }, [scanOpen, snapshotId, effectiveComparisonId, diagnosis, comparison])
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('chats') === '1') {
@@ -866,6 +937,20 @@ export function ChatScreen({
   const canClear = messages.length > 1 && !clearing
   const showClear = canClear || sweeping
 
+  useLayoutEffect(() => {
+    const slot = navSlot
+    const label = labelRef.current
+    if (!slot || !label) return
+    const fit = () => {
+      const width = Math.ceil(slot.getBoundingClientRect().width)
+      label.style.marginRight = `${width + 12}px`
+    }
+    fit()
+    const observer = new ResizeObserver(fit)
+    observer.observe(slot)
+    return () => observer.disconnect()
+  }, [navSlot, showClear])
+
   function handleClear() {
     if (!canClear) return
     const reset = () => {
@@ -892,18 +977,6 @@ export function ChatScreen({
     <>
       <button
         type="button"
-        className={`chat-history-nav${historyOpen ? ' is-on' : ''}`}
-        aria-label="История чатов"
-        aria-expanded={historyOpen && !historyClosing}
-        onClick={openHistory}
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M5 6.5h14v9.5H9.2L5 19.2V6.5Z" />
-          <path d="M8.5 10h7M8.5 13h4.5" />
-        </svg>
-      </button>
-      <button
-        type="button"
         className={`chat-clear-nav${showClear ? ' is-on' : ''}${sweeping ? ' is-sweeping' : ''}`}
         aria-label="Очистить историю"
         tabIndex={canClear ? 0 : -1}
@@ -919,6 +992,18 @@ export function ChatScreen({
             <path d="M14.8 16.6v4.2" />
             <path d="M17.6 16.6v4.2" />
           </g>
+        </svg>
+      </button>
+      <button
+        type="button"
+        className={`chat-history-nav${historyOpen ? ' is-on' : ''}`}
+        aria-label="История чатов"
+        aria-expanded={historyOpen && !historyClosing}
+        onClick={openHistory}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 6.5h14v9.5H9.2L5 19.2V6.5Z" />
+          <path d="M8.5 10h7M8.5 13h4.5" />
         </svg>
       </button>
     </>
@@ -968,8 +1053,8 @@ export function ChatScreen({
       {navSlot ? createPortal(navActions, navSlot) : null}
       {historySheet}
       {streaming ? <span className="chat-scan" aria-hidden="true" /> : null}
-      <p className="chat-scan-label">
-        {comparison ? 'Сравнение срезов' : 'Снимок'}
+      <p ref={labelRef} className="chat-scan-label">
+        {scanOpen ? scanHeading : 'Консультант'}
       </p>
 
       <div ref={listRef} className={`chat-messages-container${clearing ? ' is-clearing' : ''}`}>
@@ -1084,12 +1169,6 @@ export function ChatScreen({
               </button>
             ))}
           </div>
-          <span className="data-table-edge data-table-edge-left" style={{ '--edge': chipEdge.left } as CSSProperties}>
-            <span className="data-table-edge-blur" />
-          </span>
-          <span className="data-table-edge data-table-edge-right" style={{ '--edge': chipEdge.right } as CSSProperties}>
-            <span className="data-table-edge-blur" />
-          </span>
           </div>
         )}
         <div className="chat-composer">
