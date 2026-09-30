@@ -66,6 +66,12 @@ async function detailOf(response: Response): Promise<string> {
   if (response.status === 404) return 'Снимок не найден'
   if (response.status === 409) return 'Снимок ещё считается'
   if (response.status === 429) return 'Слишком много загрузок за час. Попробуйте позже.'
+  if (response.status === 502 || response.status === 503 || response.status === 504) {
+    return 'Сервер перезагружается или временно недоступен. Пожалуйста, обновите страницу через несколько секунд.'
+  }
+  if (response.status >= 500) {
+    return 'Внутренняя ошибка сервера. Попробуйте повторить запрос позже.'
+  }
   return 'Запрос не прошёл'
 }
 

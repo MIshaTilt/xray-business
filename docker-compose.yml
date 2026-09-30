@@ -48,6 +48,12 @@ services:
       MAX_BOT_USERNAME: ${MAX_BOT_USERNAME:-t720_hakaton_max_bot}
       MAX_APP_URL: ${MAX_APP_URL:-https://xray-business-bot.online}
       CORS_ALLOW_ALL_ORIGINS: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/max/webhook || exit 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
     volumes:
       - backend_static:/app/xray-be/xray_be/static
       - backend_data:/app/xray-be/data
@@ -61,7 +67,8 @@ services:
     container_name: xray-frontend
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     volumes:
       - backend_static:/var/www/static:ro
       - /var/www/certbot:/var/www/certbot:ro
