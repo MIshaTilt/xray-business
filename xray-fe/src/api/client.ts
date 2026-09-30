@@ -23,6 +23,14 @@ export function authHeaders(json: boolean): Headers {
     headers.set('X-Guest-Session', getGuestSessionId())
   }
   if (json) headers.set('Content-Type', 'application/json')
+  try {
+    const csrfMatch = typeof document !== 'undefined' ? document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/) : null
+    if (csrfMatch && csrfMatch[1]) {
+      headers.set('X-CSRFToken', decodeURIComponent(csrfMatch[1]))
+    }
+  } catch {
+    // Ignore cookie read failures in sandboxed contexts
+  }
   return headers
 }
 

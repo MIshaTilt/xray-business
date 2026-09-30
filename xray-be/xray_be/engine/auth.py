@@ -137,3 +137,16 @@ def start_background_cleanup_thread():
 
     t = threading.Thread(target=loop, daemon=True, name="guest_cleanup_worker")
     t.start()
+
+
+from rest_framework.authentication import SessionAuthentication
+
+class CsrfExemptSessionAuthentication(SessionAuthentication):
+    """
+    SessionAuthentication without CSRF enforcement for stateless API clients.
+    Allows browsers that have active Django admin sessions to communicate with
+    the SPA frontend API without triggering 'CSRF Failed: CSRF token missing'.
+    """
+    def enforce_csrf(self, request):
+        return
+
